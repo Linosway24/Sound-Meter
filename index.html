@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest SoundPro SE-DL Training Module</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="device-container">
+        <!-- Device Housing -->
+        <div id="device-housing">
+            <!-- LCD Display Region -->
+            <div id="lcd-display">
+                <div id="lcd-content">
+                    <!-- Display content will be rendered here -->
+                    <div id="display-main"></div>
+                    <div id="display-status"></div>
+                    <div id="display-softkeys"></div>
+                </div>
+            </div>
+
+            <!-- Button Controls -->
+            <div id="controls">
+                <!-- Soft Keys (1-4) -->
+                <div class="soft-key" data-key="1">
+                    <div class="soft-key-label" id="soft-key-1-label"></div>
+                </div>
+                <div class="soft-key" data-key="2">
+                    <div class="soft-key-label" id="soft-key-2-label"></div>
+                </div>
+                <div class="soft-key" data-key="3">
+                    <div class="soft-key-label" id="soft-key-3-label"></div>
+                </div>
+                <div class="soft-key" data-key="4">
+                    <div class="soft-key-label" id="soft-key-4-label"></div>
+                </div>
+
+                <!-- Navigation Cluster -->
+                <div id="nav-cluster">
+                    <button class="nav-button" id="nav-up" data-action="up">↑</button>
+                    <div class="nav-horizontal">
+                        <button class="nav-button" id="nav-left" data-action="left">←</button>
+                        <button class="nav-button" id="nav-enter" data-action="enter">⏎</button>
+                        <button class="nav-button" id="nav-right" data-action="right">→</button>
+                    </div>
+                    <button class="nav-button" id="nav-down" data-action="down">↓</button>
+                </div>
+
+                <!-- Function Buttons -->
+                <button class="function-button" id="btn-alt-f" data-action="alt-f">Alt f</button>
+                <button class="function-button" id="btn-backlight" data-action="backlight">Backlight</button>
+                <button class="function-button" id="btn-run-pause" data-action="run-pause">Run/Pause</button>
+                <button class="function-button" id="btn-stop" data-action="stop">Stop</button>
+                <button class="function-button" id="btn-power" data-action="power">On/Off</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog/Modal System -->
+    <div id="dialog-overlay" class="hidden">
+        <div id="dialog-content">
+            <div id="dialog-title"></div>
+            <div id="dialog-message"></div>
+            <div id="dialog-buttons"></div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/simulator.js"></script>
+    <script src="js/display.js"></script>
+    <script src="js/buttons.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/measurement.js"></script>
+    <script src="js/device.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+
