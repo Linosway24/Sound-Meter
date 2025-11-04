@@ -3,78 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quest SoundPro SE-DL Training Module</title>
+    <title>Quest SoundPro SE-DL Simulation</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div id="device-container">
-        <!-- Device Housing -->
-        <div id="device-housing">
-            <!-- LCD Display Region -->
-            <div id="lcd-display">
-                <div id="lcd-content">
-                    <!-- Display content will be rendered here -->
-                    <div id="display-main"></div>
-                    <div id="display-status"></div>
-                    <div id="display-softkeys"></div>
-                </div>
-            </div>
+    <div id="device-stage" role="presentation">
+        <div class="device-frame" aria-label="Quest SoundPro SE-DL device" role="img">
+            <img
+                class="device-photo"
+                src="assets/Quest Sound Meter.png"
+                alt="Quest SoundPro SE-DL device photograph serving as the full device face"
+                draggable="false"
+            >
 
-            <!-- Button Controls -->
-            <div id="controls">
-                <!-- Soft Keys (1-4) -->
-                <div class="soft-key" data-key="1">
-                    <div class="soft-key-label" id="soft-key-1-label"></div>
-                </div>
-                <div class="soft-key" data-key="2">
-                    <div class="soft-key-label" id="soft-key-2-label"></div>
-                </div>
-                <div class="soft-key" data-key="3">
-                    <div class="soft-key-label" id="soft-key-3-label"></div>
-                </div>
-                <div class="soft-key" data-key="4">
-                    <div class="soft-key-label" id="soft-key-4-label"></div>
-                </div>
+            <!-- Absolute overlay layer anchored to the device photo -->
+            <div class="overlay-layer">
+                <!-- LCD overlay region -->
+                <section class="lcd lcd--powered-off testing-overlay" aria-label="LCD display" aria-live="polite">
+                    <div class="lcd__status" aria-hidden="true"></div>
+                    <div class="lcd__main" aria-hidden="true"></div>
+                    <div class="lcd__softkeys" aria-hidden="true"></div>
+                </section>
 
-                <!-- Navigation Cluster -->
-                <div id="nav-cluster">
-                    <button class="nav-button" id="nav-up" data-action="up">↑</button>
-                    <div class="nav-horizontal">
-                        <button class="nav-button" id="nav-left" data-action="left">←</button>
-                        <button class="nav-button" id="nav-enter" data-action="enter">⏎</button>
-                        <button class="nav-button" id="nav-right" data-action="right">→</button>
+                <!-- Soft keys 1–4 (top to bottom or left to right depending on device) -->
+                <button class="soft-key soft-key--1 testing-overlay" type="button" aria-label="Soft Key 1"></button>
+                <button class="soft-key soft-key--2 testing-overlay" type="button" aria-label="Soft Key 2"></button>
+                <button class="soft-key soft-key--3 testing-overlay" type="button" aria-label="Soft Key 3"></button>
+                <button class="soft-key soft-key--4 testing-overlay" type="button" aria-label="Soft Key 4"></button>
+
+                <!-- Navigation buttons: Up/Down/Left/Right/Enter -->
+                <button class="nav__btn nav__btn--up testing-overlay" type="button" aria-label="Up"></button>
+                <button class="nav__btn nav__btn--down testing-overlay" type="button" aria-label="Down"></button>
+                <button class="nav__btn nav__btn--left testing-overlay" type="button" aria-label="Left"></button>
+                <button class="nav__btn nav__btn--right testing-overlay" type="button" aria-label="Right"></button>
+                <button class="nav__btn nav__btn--enter testing-overlay" type="button" aria-label="Enter"></button>
+
+                <!-- Function buttons: Alt f, Backlight, Run/Pause, Stop, On/Off -->
+                <button class="fn-btn fn-btn--altf testing-overlay" type="button" aria-label="Alt f"></button>
+                <button class="fn-btn fn-btn--backlight testing-overlay" type="button" aria-label="Backlight"></button>
+                <button class="fn-btn fn-btn--runpause testing-overlay" type="button" aria-label="Run or Pause"></button>
+                <button class="fn-btn fn-btn--stop testing-overlay" type="button" aria-label="Stop"></button>
+                <button class="fn-btn fn-btn--power testing-overlay" type="button" aria-label="On Off"></button>
+
+                <!-- Dialog overlay (hidden by default) -->
+                <div id="dialog-overlay" class="dialog-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+                    <div class="dialog" role="document">
+                        <header class="dialog__header">
+                            <h2 class="dialog__title">Notice</h2>
+                        </header>
+                        <div class="dialog__body">
+                            <p>Dialog content goes here.</p>
+                        </div>
+                        <footer class="dialog__footer">
+                            <button class="dialog__btn dialog__btn--confirm" type="button">OK</button>
+                            <button class="dialog__btn dialog__btn--cancel" type="button">Cancel</button>
+                        </footer>
                     </div>
-                    <button class="nav-button" id="nav-down" data-action="down">↓</button>
                 </div>
-
-                <!-- Function Buttons -->
-                <button class="function-button" id="btn-alt-f" data-action="alt-f">Alt f</button>
-                <button class="function-button" id="btn-backlight" data-action="backlight">Backlight</button>
-                <button class="function-button" id="btn-run-pause" data-action="run-pause">Run/Pause</button>
-                <button class="function-button" id="btn-stop" data-action="stop">Stop</button>
-                <button class="function-button" id="btn-power" data-action="power">On/Off</button>
             </div>
         </div>
     </div>
-
-    <!-- Dialog/Modal System -->
-    <div id="dialog-overlay" class="hidden">
-        <div id="dialog-content">
-            <div id="dialog-title"></div>
-            <div id="dialog-message"></div>
-            <div id="dialog-buttons"></div>
-        </div>
-    </div>
-
-    <script src="js/utils.js"></script>
-    <script src="js/config.js"></script>
-    <script src="js/simulator.js"></script>
-    <script src="js/display.js"></script>
-    <script src="js/buttons.js"></script>
-    <script src="js/menu.js"></script>
-    <script src="js/measurement.js"></script>
-    <script src="js/device.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/measure-photo.js"></script>
+    <script src="js/viewport-size-indicator.js"></script>
+    <script src="js/fix-percentages.js"></script>
+    <script src="js/recalculate-percentages.js"></script>
+    <script src="js/debug-positioning.js"></script>
 </body>
 </html>
 
