@@ -42,18 +42,26 @@ Based on: `PRD.md`
   - [ ] 1.11 Position all interactive elements (buttons, LCD) as overlays using absolute positioning to match photo exactly, add semi-transparent overlay indicators for testing
   - [ ] 1.12 Add CSS :hover/:active states, perform user testing, adjust positioning, create reference documentation, remove testing overlays
 
-- [ ] 2.0 Core Interaction System
-  - [ ] 2.1 Create `js/device.js` module with device state object (power on/off, initialization)
-  - [ ] 2.2 Implement power on/off functionality with device initialization on power on
-  - [ ] 2.3 Create `js/buttons.js` module with button event delegation system
-  - [ ] 2.4 Implement short press detection for all buttons (immediate action on mouse/keyboard up)
-  - [ ] 2.5 Implement long press detection (~800ms hold) for power button
-  - [ ] 2.6 Implement On/Off button dual functionality: short press = Esc/Back, long press = Power toggle
-  - [ ] 2.7 Create keyboard input handlers in `buttons.js` for Arrow keys (Up/Down/Left/Right), Enter, and Esc
-  - [ ] 2.8 Map keyboard events to corresponding button actions
-  - [ ] 2.9 Create navigation state machine structure in `js/menu.js` for managing screen states
-  - [ ] 2.10 Implement display state management for device on/off states, backlight states, and active screen context
-  - [ ] 2.11 Connect button handlers to state machine for screen transitions
+- [x] 2.0 Core Interaction System
+  - [x] 2.1 Create `js/device.js` module with device state object (power on/off, initialization)
+  - [x] 2.2 Implement power on/off functionality with device initialization on power on
+  - [x] 2.3 Create `js/buttons.js` module with button event delegation system
+  - [x] 2.4 Implement short press detection for all buttons (immediate action on mouse/keyboard up)
+  - [x] 2.5 Implement long press detection (~800ms hold) for power button
+  - [x] 2.6 Implement On/Off button dual functionality: short press = Esc/Back, long press = Power toggle
+  - [x] 2.7 Create keyboard input handlers in `buttons.js` for Arrow keys (Up/Down/Left/Right), Enter, and Esc
+  - [x] 2.8 Map keyboard events to corresponding button actions
+  - [x] 2.9 Create navigation state machine structure in `js/menu.js` for managing screen states
+  - [x] 2.10 Implement display state management for device on/off states, backlight states, and active screen context
+  - [x] 2.11 Connect button handlers to state machine for screen transitions
+
+- [x] 2.12 Display Rendering Infrastructure (Essential foundation - complete before Task 3.0)
+  - [x] 2.12.1 Create display render function in `js/display.js` that accepts screen context and renders LCD content
+  - [x] 2.12.2 Implement LCD content update system (main area, status area, soft key labels area)
+  - [x] 2.12.3 Create soft key label renderer that updates labels (1-4) on LCD bottom area based on screen context
+  - [x] 2.12.4 Implement home screen renderer with device name and firmware version
+  - [x] 2.12.5 Create display refresh function that triggers on state changes (menu navigation, config changes, etc.)
+  - [x] 2.12.6 Ensure display.js reads navigation state from menu.js (remove duplicate state, display.js is presentation only)
 
 - [ ] 3.0 Menu System Implementation
   - [ ] 3.1 Extract menu structure from firmware R.13J manuals (main menu items and hierarchy)
@@ -104,19 +112,19 @@ Based on: `PRD.md`
   - [ ] 5.18 Implement real-time display updates during active measurement reflecting selected time constant behavior
   - [ ] 5.19 Test measurement calculations with different weighting and time constant combinations
 
-- [ ] 6.0 Display Behavior & LCD Rendering
-  - [ ] 6.1 Create `js/display.js` module for LCD rendering and display management
-  - [ ] 6.2 Implement LCD rendering with green tint overlay when backlight is ON
-  - [ ] 6.3 Implement LCD rendering with gray tint overlay when backlight is OFF
-  - [ ] 6.4 Create display renderer for home screen with device name and firmware version
-  - [ ] 6.5 Implement soft key label display at bottom of LCD showing labels for buttons 1-4
+- [ ] 6.0 Display Enhancements & Formatting (Advanced display features)
+  - [x] 6.1 Create `js/display.js` module for LCD rendering and display management (completed in Task 2.0)
+  - [x] 6.2 Implement LCD rendering with green tint overlay when backlight is ON (completed in Task 2.0)
+  - [x] 6.3 Implement LCD rendering with gray tint overlay when backlight is OFF (completed in Task 2.0)
+  - [x] 6.4 Create display renderer for home screen with device name and firmware version (moved to Task 2.12)
+  - [x] 6.5 Implement soft key label display at bottom of LCD showing labels for buttons 1-4 (moved to Task 2.12)
   - [ ] 6.6 Create status indicator display showing current configuration (Weighting, Time Constant, Range) on home screen
   - [ ] 6.7 Extract measurement display format specifications from firmware R.13J manuals
   - [ ] 6.8 Implement measurement reading display with proper decimal precision and unit display
   - [ ] 6.9 Format Leq, Lmax, Lmin, SEL, Peak, and Dose according to firmware specifications
   - [ ] 6.10 Implement battery indicator display (simulated 10% runtime reduction when backlight ON)
-  - [ ] 6.11 Create display update function that refreshes LCD content based on current state
-  - [ ] 6.12 Implement display refresh on state changes (menu navigation, measurement updates, config changes)
+  - [x] 6.11 Create display update function that refreshes LCD content based on current state (moved to Task 2.12)
+  - [x] 6.12 Implement display refresh on state changes (menu navigation, measurement updates, config changes) (moved to Task 2.12)
 
 - [ ] 7.0 Data Logging & Advanced Features
   - [ ] 7.1 Extract data logging interval options and default values from firmware documentation

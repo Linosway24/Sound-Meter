@@ -1,197 +1,254 @@
-// LCD Display Management
+/**
+ * Display Rendering Module
+ * Pure presentation layer - reads state from menu.js and device.js
+ * Renders LCD content based on current navigation state
+ */
 
-const Display = {
-    // Display state
-    state: {
-        powered: false,
-        backlightOn: false,
-        currentScreen: 'home', // 'home', 'menu', 'measurement', etc.
-        softKeyLabels: ['', '', '', '']
-    },
-    
+(() => {
+    'use strict';
+
+    // LCD DOM element references (set during init)
+    let lcdMain = null;
+    let lcdStatus = null;
+    let lcdSoftkeys = null;
+
+    // Soft key label elements (will be created if they don't exist)
+    let softKeyLabelElements = [];
+
     /**
-     * Initialize display
+     * Initialize display module
      */
-    init() {
-        this.updateBacklight();
-        this.updateSoftKeyLabels();
-        this.render();
-    },
-    
-    /**
-     * Update backlight state
-     */
-    updateBacklight() {
-        const lcd = getEl('lcd-display');
-        const state = Config.BACKLIGHT.STATE;
-        
-        this.state.backlightOn = state;
-        
-        if (state) {
-            lcd.classList.add('backlight-on');
-            lcd.classList.remove('backlight-off');
-        } else {
-            lcd.classList.remove('backlight-on');
-            lcd.classList.add('backlight-off');
-        }
-    },
-    
-    /**
-     * Set current screen
-     * @param {string} screen - Screen identifier
-     */
-    setScreen(screen) {
-        this.state.currentScreen = screen;
-        this.render();
-    },
-    
-    /**
-     * Update soft key labels
-     * @param {Array<string>} labels - Array of 4 labels
-     */
-    updateSoftKeyLabels(labels = ['', '', '', '']) {
-        this.state.softKeyLabels = labels;
-        for (let i = 0; i < 4; i++) {
-            const labelEl = getEl(`soft-key-${i + 1}-label`);
-            labelEl.textContent = labels[i] || '';
-        }
-    },
-    
-    /**
-     * Render current display content
-     */
-    render() {
-        const mainEl = getEl('display-main');
-        const statusEl = getEl('display-status');
-        
-        if (!this.state.powered) {
-            mainEl.innerHTML = '<div style="text-align: center; font-size: 32px; margin-top: 250px;">OFF</div>';
-            statusEl.innerHTML = '';
+    function init() {
+        // Get LCD DOM elements (refresh query in case DOM changed)
+        const lcdMainEl = document.querySelector('.lcd__main');
+        const lcdStatusEl = document.querySelector('.lcd__status');
+        const lcdSoftkeysEl = document.querySelector('.lcd__softkeys');
+
+        if (!lcdMainEl || !lcdStatusEl || !lcdSoftkeysEl) {
+            console.error('[DISPLAY] LCD elements not found:', {
+                main: !!lcdMainEl,
+                status: !!lcdStatusEl,
+                softkeys: !!lcdSoftkeysEl
+            });
             return;
         }
-        
-        switch (this.state.currentScreen) {
-            case 'home':
-                this.renderHome();
-                break;
-            case 'menu':
-                this.renderMenu();
-                break;
-            case 'measurement':
-                this.renderMeasurement();
-                break;
-            default:
-                this.renderHome();
+
+        // Store references
+        lcdMain = lcdMainEl;
+        lcdStatus = lcdStatusEl;
+        lcdSoftkeys = lcdSoftkeysEl;
+
+        // Create soft key label elements if they don't exist
+        if (lcdSoftkeys) {
+            softKeyLabelElements = [];
+            for (let i = 1; i <= 4; i++) {
+                let labelEl = lcdSoftkeys.querySelector(`.soft-key-label--${i}`);
+                if (!labelEl) {
+                    labelEl = document.createElement('div');
+                    labelEl.className = `soft-key-label soft-key-label--${i}`;
+                    lcdSoftkeys.appendChild(labelEl);
+                }
+                softKeyLabelElements.push(labelEl);
+            }
         }
-    },
-    
+
+        console.log('[DISPLAY] Initialized');
+    }
+
+    /**
+     * Update soft key labels
+     * @param {Array<string>} labels - Array of 4 labels (can be empty strings)
+     */
+    function updateSoftKeyLabels(labels) {
+        if (!labels || labels.length !== 4) {
+            labels = ['', '', '', ''];
+        }
+
+        for (let i = 0; i < 4; i++) {
+            if (softKeyLabelElements[i]) {
+                softKeyLabelElements[i].textContent = labels[i] || '';
+            }
+        }
+    }
+
+    /**
+     * Update LCD main area content
+     * @param {string} html - HTML content to display
+     */
+    function updateMainArea(html) {
+        if (lcdMain) {
+            lcdMain.innerHTML = html;
+        } else {
+            console.warn('[DISPLAY] lcdMain element not found');
+        }
+    }
+
+    /**
+     * Update LCD status area content
+     * @param {string} html - HTML content to display
+     */
+    function updateStatusArea(html) {
+        if (lcdStatus) {
+            lcdStatus.innerHTML = html;
+        } else {
+            console.warn('[DISPLAY] lcdStatus element not found');
+        }
+    }
+
     /**
      * Render home screen
      */
-    renderHome() {
-        const mainEl = getEl('display-main');
-        const statusEl = getEl('display-status');
-        
-        mainEl.innerHTML = `
-            <div style="text-align: center; font-size: 28px; margin-bottom: 30px;">
-                Quest SoundPro SE-DL
+    function renderHomeScreen() {
+        const mainHTML = `
+            <div style="text-align: center; padding-top: 100px;">
+                <div style="font-size: 32px; font-weight: bold; margin-bottom: 20px;">
+                    Quest SoundPro SE-DL
+                </div>
+                <div style="font-size: 20px; color: #888;">
+                    Firmware R.13J
+                </div>
             </div>
-            <div style="text-align: center; font-size: 20px; color: #888;">
-                Firmware R.13J
+        `;
+        
+        const statusHTML = `
+            <div style="padding: 10px; font-size: 16px;">
+                <div>Ready</div>
             </div>
         `;
-        
-        statusEl.innerHTML = `
-            <div>W: ${Config.current.weighting}</div>
-            <div>T: ${Config.current.timeConstant}</div>
-            <div>R: ${Config.current.range} dB</div>
-        `;
-        
-        this.updateSoftKeyLabels(['Menu', '', '', '']);
-    },
-    
-    /**
-     * Render menu screen
-     */
-    renderMenu() {
-        // Menu rendering is handled by Menu module
-        // This is a placeholder
-        const mainEl = getEl('display-main');
-        mainEl.innerHTML = '<div style="padding: 20px;">Menu</div>';
-    },
-    
-    /**
-     * Render measurement screen
-     */
-    renderMeasurement() {
-        const mainEl = getEl('display-main');
-        const statusEl = getEl('display-status');
-        const results = Simulator.getResults();
-        
-        if (!results.running && !results.paused) {
-            // Not running - show ready state
-            mainEl.innerHTML = `
-                <div style="text-align: center; font-size: 24px; margin-top: 200px;">
-                    Ready to Measure
-                </div>
-            `;
-        } else {
-            // Running or paused - show measurements
-            const timeConstant = Config.current.timeConstant;
-            let primaryValue = results.currentSPL || 0;
-            let primaryLabel = 'SPL';
-            
-            if (results.running && !results.paused) {
-                primaryValue = results.leq !== null ? results.leq : results.currentSPL;
-            }
-            
-            mainEl.innerHTML = `
-                <div class="measurement-display">
-                    <div class="measurement-label">${primaryLabel}</div>
-                    <div class="measurement-value">${formatSPL(primaryValue)} dB</div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; font-size: 20px;">
-                    <div>
-                        <div style="color: #888;">Lmax</div>
-                        <div>${formatSPL(results.lmax)}</div>
-                    </div>
-                    <div>
-                        <div style="color: #888;">Lmin</div>
-                        <div>${formatSPL(results.lmin)}</div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        statusEl.innerHTML = `
-            <div>${results.running ? (results.paused ? 'PAUSED' : 'RUNNING') : 'STOPPED'}</div>
-            <div>${formatTime(results.elapsedTime || 0)}</div>
-            <div>W:${Config.current.weighting} T:${Config.current.timeConstant}</div>
-        `;
-        
-        if (results.dose !== null) {
-            statusEl.innerHTML += `<div>Dose: ${formatSPL(results.dose, 1)}%</div>`;
-        }
-        
-        this.updateSoftKeyLabels(['', '', 'Pause', 'Stop']);
-    },
-    
-    /**
-     * Power on display
-     */
-    powerOn() {
-        this.state.powered = true;
-        this.state.currentScreen = 'home';
-        this.render();
-    },
-    
-    /**
-     * Power off display
-     */
-    powerOff() {
-        this.state.powered = false;
-        this.state.currentScreen = 'home';
-        this.render();
-    }
-};
 
+        updateMainArea(mainHTML);
+        updateStatusArea(statusHTML);
+        updateSoftKeyLabels(['Menu', '', '', '']);
+    }
+
+    /**
+     * Render powered-off screen
+     */
+    function renderOffScreen() {
+        updateMainArea('');
+        updateStatusArea('');
+        updateSoftKeyLabels(['', '', '', '']);
+    }
+
+    /**
+     * Render menu screen (placeholder for Task 3.0)
+     */
+    function renderMenuScreen() {
+        const mainHTML = `
+            <div style="padding: 20px; font-size: 18px;">
+                Menu screen (Task 3.0)
+            </div>
+        `;
+        
+        updateMainArea(mainHTML);
+        updateStatusArea('');
+        updateSoftKeyLabels(['', '', '', '']);
+    }
+
+    /**
+     * Main render function - reads state from menu.js and device.js
+     */
+    function render() {
+        // Ensure elements are available
+        if (!lcdMain || !lcdStatus) {
+            console.warn('[DISPLAY] LCD elements not ready, attempting re-init');
+            init();
+            if (!lcdMain || !lcdStatus) {
+                console.error('[DISPLAY] Cannot render - LCD elements not found');
+                return;
+            }
+        }
+
+        // Check if device is powered on
+        const devicePowered = window.isPoweredOn ? window.isPoweredOn() : false;
+        
+        if (!devicePowered) {
+            renderOffScreen();
+            return;
+        }
+
+        // Get current screen from menu.js
+        const currentScreen = window.getCurrentScreen ? window.getCurrentScreen() : 'home';
+
+        // Render based on screen context
+        switch (currentScreen) {
+            case 'off':
+                renderOffScreen();
+                break;
+            case 'home':
+                renderHomeScreen();
+                break;
+            case 'menu':
+            case 'settings':
+            case 'measurement':
+            case 'dialog':
+                // These will be fully implemented in Task 3.0
+                renderMenuScreen();
+                break;
+            default:
+                renderHomeScreen();
+        }
+    }
+
+    /**
+     * Update display power state and render
+     * @param {boolean} powered - Whether device is powered on
+     */
+    function updateDisplayPowerState(powered) {
+        const lcd = document.querySelector('.lcd');
+        if (!lcd) {
+            console.error('[DISPLAY] LCD element not found');
+            return;
+        }
+
+        if (powered) {
+            lcd.classList.remove('lcd--powered-off');
+            // Enable backlight by default when powered on
+            if (window.getBacklightState && window.getBacklightState()) {
+                updateDisplayBacklightState(true);
+            }
+        } else {
+            lcd.classList.add('lcd--powered-off');
+            updateDisplayBacklightState(false);
+        }
+
+        // Trigger render after power state change
+        render();
+    }
+
+    /**
+     * Update display backlight state
+     * @param {boolean} on - Whether backlight is on
+     */
+    function updateDisplayBacklightState(on) {
+        const lcd = document.querySelector('.lcd');
+        if (!lcd) return;
+
+        if (on) {
+            lcd.classList.add('lcd--backlight-on');
+            lcd.classList.remove('lcd--backlight-off');
+        } else {
+            lcd.classList.remove('lcd--backlight-on');
+            lcd.classList.add('lcd--backlight-off');
+        }
+    }
+
+    // Initialize on load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            // Initial render
+            render();
+        });
+    } else {
+        init();
+        // Initial render
+        render();
+    }
+
+    // Export functions to window for module access
+    window.renderDisplay = render;
+    window.updateDisplayPowerState = updateDisplayPowerState;
+    window.updateDisplayBacklightState = updateDisplayBacklightState;
+    window.updateSoftKeyLabels = updateSoftKeyLabels;
+})();

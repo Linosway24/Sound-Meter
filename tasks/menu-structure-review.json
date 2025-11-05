@@ -1,0 +1,743 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "firmware": "R.13J",
+    "created": "2025-10",
+    "status": "DRAFT - AWAITING USER REVIEW",
+    "notes": "This document needs to be verified against the physical Quest SoundPro SE-DL device. Please review all menu items, labels, soft key mappings, and dialog text against the actual device and provide corrections.",
+    "review_instructions": "1. Power on the device and navigate through all menus\n2. Verify menu item labels match exactly (spelling, capitalization)\n3. Verify menu order matches device\n4. Verify soft key labels for each menu\n5. Test Alt f functionality for each menu\n6. Verify dialog text matches device exactly\n7. Provide corrections in the 'user_corrections' section or edit directly"
+  },
+  "menus": {
+    "startup": {
+      "id": "startup",
+      "title": "Startup Screen",
+      "parentMenu": null,
+      "description": "First screen displayed after power-on startup - main home screen",
+      "isHomeScreen": true,
+      "menuTitle": "START",
+      "titleSeparator": "Line/separator under START header",
+      "statusBarTop": {
+        "battery": "Full charge indicator (bars)",
+        "arrow": "Right arrow indicator",
+        "square": "Solid square indicator"
+      },
+      "items": [
+        {
+          "id": "view_past_studies",
+          "label": "VIEW PAST STUDIES",
+          "order": 1,
+          "subMenu": null,
+          "softKey": null,
+          "altSoftKey": null,
+          "action": "navigate",
+          "isSelected": true,
+          "notes": "Default selected item (highlighted with dotted outline) - verify sub-menu or action"
+        },
+        {
+          "id": "view_current_study",
+          "label": "VIEW CURRENT STUDY",
+          "order": 2,
+          "subMenu": null,
+          "softKey": null,
+          "altSoftKey": null,
+          "action": "navigate",
+          "isSelected": false,
+          "notes": "VERIFY: Sub-menu or action"
+        },
+        {
+          "id": "view_session",
+          "label": "VIEW SESSION",
+          "order": 3,
+          "subMenu": null,
+          "softKey": null,
+          "altSoftKey": null,
+          "action": "navigate",
+          "isSelected": false,
+          "notes": "VERIFY: Sub-menu or action"
+        },
+        {
+          "id": "setup",
+          "label": "SETUP",
+          "order": 4,
+          "subMenu": null,
+          "softKey": null,
+          "altSoftKey": null,
+          "action": "navigate",
+          "isSelected": false,
+          "notes": "Likely contains Weighting, Time Constant, Range, Dose, Backlight settings - VERIFY"
+        },
+        {
+          "id": "unit_info",
+          "label": "UNIT INFO",
+          "order": 5,
+          "subMenu": null,
+          "softKey": null,
+          "altSoftKey": null,
+          "action": "navigate",
+          "isSelected": false,
+          "notes": "Device information screen - verify content"
+        }
+      ],
+      "softKeys": {
+        "1": "<SLM>",
+        "2": "CAL",
+        "3": "FILE",
+        "4": "LOCK"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "statusBarBottom": {
+        "description": "These ARE the soft key labels - displayed at bottom of LCD, correspond to physical soft key buttons 1-4",
+        "items": [
+          {
+            "id": "slm",
+            "label": "<SLM>",
+            "softKeyNumber": 1,
+            "hasArrows": true,
+            "notes": "VERIFY: What does SLM do? Sound Level Meter mode? What happens when soft key 1 is pressed?"
+          },
+          {
+            "id": "cal",
+            "label": "CAL",
+            "softKeyNumber": 2,
+            "notes": "VERIFY: What happens when soft key 2 is pressed? Calibration menu/function?"
+          },
+          {
+            "id": "file",
+            "label": "FILE",
+            "softKeyNumber": 3,
+            "notes": "VERIFY: What happens when soft key 3 is pressed? File management menu/function?"
+          },
+          {
+            "id": "lock",
+            "label": "LOCK",
+            "softKeyNumber": 4,
+            "notes": "VERIFY: What happens when soft key 4 is pressed? Lock function?"
+          }
+        ],
+        "separator": "Vertical bars (|) between items",
+        "layout": "Displayed horizontally at bottom of LCD, separated by vertical bars"
+      },
+      "navigation": {
+        "method": "arrow_keys_and_enter",
+        "description": "Up/Down arrow buttons move selection highlight through menu items. Enter button selects highlighted item.",
+        "upDownArrows": "Move selection highlight up/down through menu items",
+        "enterButton": "Selects highlighted/selected menu item",
+        "backButton": "Esc/Power button (short press) - goes back to previous screen",
+        "softKeys": "Context-dependent actions based on soft key labels shown at bottom"
+      },
+      "notes": "✅ CONFIRMED: This is the startup/home screen. Navigation: Up/Down arrows move selection, Enter selects. Soft key labels are <SLM>, CAL, FILE, LOCK at bottom of LCD. VERIFY: What happens when each soft key button is pressed?"
+    },
+    "home": {
+      "id": "home",
+      "title": "Home Screen",
+      "parentMenu": null,
+      "description": "Main display screen showing measurement readings and status (may be different from startup)",
+      "items": [],
+      "softKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "VERIFY: Is there a separate home/measurement screen, or is startup screen the main screen?"
+    },
+    "main": {
+      "id": "main",
+      "title": "Main Menu",
+      "parentMenu": "home",
+      "description": "Top-level menu accessed from home screen",
+      "items": [
+        {
+          "id": "measurement",
+          "label": "Measurement",
+          "order": 1,
+          "subMenu": "measurement_menu",
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Verify exact label text - may be 'Measure', 'Measurement', or similar"
+        },
+        {
+          "id": "settings",
+          "label": "Settings",
+          "order": 2,
+          "subMenu": "settings_menu",
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Configuration and device settings"
+        },
+        {
+          "id": "calibration",
+          "label": "Calibration",
+          "order": 3,
+          "subMenu": "calibration_menu",
+          "softKey": 3,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Device calibration procedures"
+        },
+        {
+          "id": "data_logging",
+          "label": "Data Logging",
+          "order": 4,
+          "subMenu": "logging_menu",
+          "softKey": 4,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Data logging configuration - verify label"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": "Select",
+        "4": "Select"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Main menu - verify all menu items, order, and soft key labels. Check if there are more/less items."
+    },
+    "settings_menu": {
+      "id": "settings_menu",
+      "title": "Settings",
+      "parentMenu": "main",
+      "description": "Configuration settings sub-menu",
+      "items": [
+        {
+          "id": "weighting",
+          "label": "Weighting",
+          "order": 1,
+          "subMenu": "weighting_menu",
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "A, C, Z weighting selection"
+        },
+        {
+          "id": "time_constant",
+          "label": "Time Constant",
+          "order": 2,
+          "subMenu": "time_constant_menu",
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Slow, Fast, Impulse selection"
+        },
+        {
+          "id": "range",
+          "label": "Range",
+          "order": 3,
+          "subMenu": "range_menu",
+          "softKey": 3,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "30-130 dB range selection"
+        },
+        {
+          "id": "dose",
+          "label": "Dose",
+          "order": 4,
+          "subMenu": "dose_menu",
+          "softKey": 4,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Dose configuration (Exchange Rate, Threshold, Criterion Level)"
+        },
+        {
+          "id": "backlight",
+          "label": "Backlight",
+          "order": 5,
+          "subMenu": "backlight_menu",
+          "softKey": null,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Backlight settings (Manual/Timed mode)"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": "Select",
+        "4": "Select"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Settings menu - verify all items, order, and if there are additional settings items"
+    },
+    "weighting_menu": {
+      "id": "weighting_menu",
+      "title": "Weighting",
+      "parentMenu": "settings_menu",
+      "description": "Weighting selection (A, C, Z)",
+      "items": [
+        {
+          "id": "weighting_a",
+          "label": "A",
+          "order": 1,
+          "subMenu": null,
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "set_weighting",
+          "value": "A",
+          "notes": "A-weighting selection"
+        },
+        {
+          "id": "weighting_c",
+          "label": "C",
+          "order": 2,
+          "subMenu": null,
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "set_weighting",
+          "value": "C",
+          "notes": "C-weighting selection"
+        },
+        {
+          "id": "weighting_z",
+          "label": "Z",
+          "order": 3,
+          "subMenu": null,
+          "softKey": 3,
+          "altSoftKey": null,
+          "action": "set_weighting",
+          "value": "Z",
+          "notes": "Z-weighting selection"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": "Select",
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Weighting menu - verify labels are exactly 'A', 'C', 'Z' or if they include 'Weighting' prefix"
+    },
+    "time_constant_menu": {
+      "id": "time_constant_menu",
+      "title": "Time Constant",
+      "parentMenu": "settings_menu",
+      "description": "Time constant selection (Slow, Fast, Impulse)",
+      "items": [
+        {
+          "id": "time_slow",
+          "label": "Slow",
+          "order": 1,
+          "subMenu": null,
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "set_time_constant",
+          "value": "Slow",
+          "notes": "Slow time constant"
+        },
+        {
+          "id": "time_fast",
+          "label": "Fast",
+          "order": 2,
+          "subMenu": null,
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "set_time_constant",
+          "value": "Fast",
+          "notes": "Fast time constant"
+        },
+        {
+          "id": "time_impulse",
+          "label": "Impulse",
+          "order": 3,
+          "subMenu": null,
+          "softKey": 3,
+          "altSoftKey": null,
+          "action": "set_time_constant",
+          "value": "Impulse",
+          "notes": "Impulse time constant"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": "Select",
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Time constant menu - verify exact labels"
+    },
+    "range_menu": {
+      "id": "range_menu",
+      "title": "Range",
+      "parentMenu": "settings_menu",
+      "description": "Range selection (30-130 dB)",
+      "items": [
+        {
+          "id": "range_30",
+          "label": "30 dB",
+          "order": 1,
+          "subMenu": null,
+          "softKey": null,
+          "altSoftKey": null,
+          "action": "set_range",
+          "value": 30,
+          "notes": "30 dB range - verify if displayed as '30 dB' or '30'"
+        }
+      ],
+      "softKeys": {
+        "1": "Up",
+        "2": "Down",
+        "3": "Enter",
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Range menu - verify how range values are displayed and adjusted. May use Up/Down arrows instead of list selection. Range values: 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130 dB"
+    },
+    "dose_menu": {
+      "id": "dose_menu",
+      "title": "Dose",
+      "parentMenu": "settings_menu",
+      "description": "Dose configuration menu",
+      "items": [
+        {
+          "id": "dose_exchange_rate",
+          "label": "Exchange Rate",
+          "order": 1,
+          "subMenu": "dose_exchange_rate_menu",
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Exchange rate setting (3-6 dB)"
+        },
+        {
+          "id": "dose_threshold",
+          "label": "Threshold",
+          "order": 2,
+          "subMenu": "dose_threshold_menu",
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Threshold setting (50-100 dB)"
+        },
+        {
+          "id": "dose_criterion",
+          "label": "Criterion Level",
+          "order": 3,
+          "subMenu": "dose_criterion_menu",
+          "softKey": 3,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Criterion level setting (70-100 dB)"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": "Select",
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Dose menu - verify all dose configuration options"
+    },
+    "backlight_menu": {
+      "id": "backlight_menu",
+      "title": "Backlight",
+      "parentMenu": "settings_menu",
+      "description": "Backlight settings",
+      "items": [
+        {
+          "id": "backlight_mode",
+          "label": "Mode",
+          "order": 1,
+          "subMenu": "backlight_mode_menu",
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Manual or Timed mode selection"
+        },
+        {
+          "id": "backlight_timeout",
+          "label": "Timeout",
+          "order": 2,
+          "subMenu": "backlight_timeout_menu",
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Timeout duration (1-60 seconds) - only if Timed mode"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": null,
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Backlight menu - verify mode options and timeout settings"
+    },
+    "measurement_menu": {
+      "id": "measurement_menu",
+      "title": "Measurement",
+      "parentMenu": "main",
+      "description": "Measurement controls and options",
+      "items": [
+        {
+          "id": "measurement_start",
+          "label": "Start",
+          "order": 1,
+          "subMenu": null,
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "start_measurement",
+          "notes": "Start measurement - verify if this is in menu or direct button"
+        },
+        {
+          "id": "measurement_logging",
+          "label": "Logging",
+          "order": 2,
+          "subMenu": "logging_menu",
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Data logging settings"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": null,
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Measurement menu - verify if this menu exists or if measurement is controlled by Run/Pause/Stop buttons directly"
+    },
+    "calibration_menu": {
+      "id": "calibration_menu",
+      "title": "Calibration",
+      "parentMenu": "main",
+      "description": "Device calibration procedures",
+      "items": [
+        {
+          "id": "calibration_start",
+          "label": "Start Calibration",
+          "order": 1,
+          "subMenu": null,
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "start_calibration",
+          "notes": "Begin calibration procedure - verify exact label"
+        },
+        {
+          "id": "calibration_status",
+          "label": "Calibration Status",
+          "order": 2,
+          "subMenu": null,
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "show_calibration_status",
+          "notes": "View calibration status and results"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": null,
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Calibration menu - verify menu items and calibration procedure flow from firmware manuals"
+    },
+    "logging_menu": {
+      "id": "logging_menu",
+      "title": "Data Logging",
+      "parentMenu": "main",
+      "description": "Data logging configuration",
+      "items": [
+        {
+          "id": "logging_enable",
+          "label": "Enable Logging",
+          "order": 1,
+          "subMenu": null,
+          "softKey": 1,
+          "altSoftKey": null,
+          "action": "toggle_logging",
+          "notes": "Enable/disable data logging"
+        },
+        {
+          "id": "logging_interval",
+          "label": "Interval",
+          "order": 2,
+          "subMenu": "logging_interval_menu",
+          "softKey": 2,
+          "altSoftKey": null,
+          "action": "navigate",
+          "notes": "Logging interval settings"
+        }
+      ],
+      "softKeys": {
+        "1": "Select",
+        "2": "Select",
+        "3": null,
+        "4": "Back"
+      },
+      "altSoftKeys": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      },
+      "notes": "Data logging menu - verify logging options and interval settings from firmware"
+    }
+  },
+  "dialogs": {
+    "warning_measurement_active": {
+      "id": "warning_measurement_active",
+      "type": "warning",
+      "title": "Warning",
+      "message": "Measurement in progress. Stop measurement?",
+      "buttons": [
+        {
+          "label": "OK",
+          "action": "confirm",
+          "softKey": 1
+        },
+        {
+          "label": "Cancel",
+          "action": "cancel",
+          "softKey": 2
+        }
+      ],
+      "trigger": "Attempt to change settings during active measurement",
+      "notes": "Verify exact warning text from firmware"
+    },
+    "confirmation_reset_settings": {
+      "id": "confirmation_reset_settings",
+      "type": "confirmation",
+      "title": "Confirm",
+      "message": "Reset all settings to defaults?",
+      "buttons": [
+        {
+          "label": "Yes",
+          "action": "confirm",
+          "softKey": 1
+        },
+        {
+          "label": "No",
+          "action": "cancel",
+          "softKey": 2
+        }
+      ],
+      "trigger": "Reset settings action",
+      "notes": "Verify exact confirmation text"
+    },
+    "error_over_range": {
+      "id": "error_over_range",
+      "type": "error",
+      "title": "Error",
+      "message": "Measurement exceeds selected range",
+      "buttons": [
+        {
+          "label": "OK",
+          "action": "confirm",
+          "softKey": 1
+        }
+      ],
+      "trigger": "Measurement exceeds range",
+      "notes": "Verify exact error message text"
+    },
+    "info_calibration_complete": {
+      "id": "info_calibration_complete",
+      "type": "information",
+      "title": "Calibration",
+      "message": "Calibration complete",
+      "buttons": [
+        {
+          "label": "OK",
+          "action": "confirm",
+          "softKey": 1
+        }
+      ],
+      "trigger": "Calibration procedure completed",
+      "notes": "Verify exact calibration completion message"
+    }
+  },
+  "navigation": {
+    "entry_points": {
+      "main_menu": "From home screen, press soft key 1 (Menu) or navigate via menu button",
+      "settings": "Main Menu > Settings",
+      "measurement": "Main Menu > Measurement or direct Run/Pause/Stop buttons",
+      "calibration": "Main Menu > Calibration"
+    },
+    "back_behavior": {
+      "description": "Pressing Esc/Power (short press) or Back soft key returns to previous menu",
+      "from_submenu": "Returns to parent menu",
+      "from_main_menu": "Returns to home screen",
+      "from_home": "No action (or power off if long press)"
+    },
+    "navigation_notes": "Verify back button behavior matches firmware exactly. Some menus may have context-dependent back behavior."
+  },
+  "user_corrections": {
+    "notes": "Use this section to document corrections or additions needed after reviewing against physical device",
+    "corrections": [],
+    "questions": [
+      "Are there additional main menu items not listed?",
+      "Are menu item labels exactly as shown?",
+      "Do all menus have Alt f functionality or only specific ones?",
+      "Are there additional dialogs/warnings not documented?",
+      "Is the menu order correct?",
+      "Are soft key labels exactly as shown on device?"
+    ]
+  }
+}
+

@@ -92,14 +92,62 @@ body {
     pointer-events: none;
 }
 
-.lcd__status { background: var(--lcd-status-bg); }
-.lcd__main { background: var(--lcd-bg); }
-.lcd__softkeys { background: var(--lcd-softkeys-bg); }
+.lcd__status { 
+    background: var(--lcd-status-bg);
+    color: #e6e6e6;
+    overflow: hidden;
+    padding: 8px;
+}
+.lcd__main { 
+    background: var(--lcd-bg);
+    color: #e6e6e6;
+    overflow: hidden;
+    position: relative;
+    padding: 20px;
+}
+.lcd__softkeys { 
+    background: var(--lcd-softkeys-bg);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px;
+    color: #ccc;
+}
+
+/* Soft key labels */
+.soft-key-label {
+    font-size: 14px;
+    color: #ccc;
+    text-align: center;
+    flex: 1;
+}
 
 .lcd--powered-off .lcd__status,
 .lcd--powered-off .lcd__main,
 .lcd--powered-off .lcd__softkeys {
     filter: grayscale(0.3) brightness(0.8);
+}
+
+/* Backlight states */
+.lcd--backlight-on {
+    filter: brightness(1.2) saturate(1.1);
+    background: rgba(0, 255, 0, 0.05); /* Subtle green tint */
+}
+
+.lcd--backlight-on .lcd__main,
+.lcd--backlight-on .lcd__status,
+.lcd--backlight-on .lcd__softkeys {
+    filter: brightness(1.1);
+}
+
+.lcd--backlight-off {
+    filter: grayscale(0.5) brightness(0.7);
+}
+
+.lcd--backlight-off .lcd__main,
+.lcd--backlight-off .lcd__status,
+.lcd--backlight-off .lcd__softkeys {
+    filter: grayscale(0.4) brightness(0.8);
 }
 
 /* Testing overlay helper - will be removed after positioning verification */
@@ -126,6 +174,13 @@ body {
 .soft-key:active,
 .nav__btn:active,
 .fn-btn:active { background: var(--btn-fill-active); transform: translateY(1px); }
+
+/* Visual button press feedback for debugging */
+.button--pressed {
+    background: var(--btn-fill-active) !important;
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
 
 /* Soft keys (approximate positions under LCD) */
 .soft-key { width: var(--soft-w); height: var(--soft-h); }

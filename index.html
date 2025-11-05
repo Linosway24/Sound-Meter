@@ -20,9 +20,9 @@
             <div class="overlay-layer">
                 <!-- LCD overlay region -->
                 <section class="lcd lcd--powered-off testing-overlay" aria-label="LCD display" aria-live="polite">
-                    <div class="lcd__status" aria-hidden="true"></div>
-                    <div class="lcd__main" aria-hidden="true"></div>
-                    <div class="lcd__softkeys" aria-hidden="true"></div>
+                    <div class="lcd__status"></div>
+                    <div class="lcd__main"></div>
+                    <div class="lcd__softkeys"></div>
                 </section>
 
                 <!-- Soft keys 1–4 (top to bottom or left to right depending on device) -->
@@ -63,11 +63,35 @@
             </div>
         </div>
     </div>
+    <!-- Core modules (Task 2.0) -->
+    <script src="js/utils.js"></script>
+    <script src="js/device.js"></script>
+    <script src="js/display.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/buttons.js"></script>
+    
+    <!-- Development/debugging scripts -->
     <script src="js/measure-photo.js"></script>
     <script src="js/viewport-size-indicator.js"></script>
     <script src="js/fix-percentages.js"></script>
     <script src="js/recalculate-percentages.js"></script>
     <script src="js/debug-positioning.js"></script>
+    
+    <!-- Initialize application -->
+    <script>
+        // Initialize button handlers when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.initButtons) {
+                    window.initButtons();
+                }
+            });
+        } else {
+            if (window.initButtons) {
+                window.initButtons();
+            }
+        }
+    </script>
 </body>
 </html>
 

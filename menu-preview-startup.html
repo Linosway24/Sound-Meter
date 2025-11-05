@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Startup Screen Preview - Quest SoundPro SE-DL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1d232b;
+            color: #00ff00;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .device-preview {
+            background: #222933;
+            border: 3px solid #2a3340;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .lcd-screen {
+            background: #0a0f14;
+            border: 2px solid #2a3340;
+            border-radius: 4px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a3340;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .battery {
+            display: flex;
+            gap: 2px;
+        }
+
+        .battery-bar {
+            width: 4px;
+            height: 12px;
+            background: #00ff00;
+        }
+
+        .menu-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2a3340;
+            margin-bottom: 15px;
+            color: #00ff00;
+        }
+
+        .menu-items {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .menu-item {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .menu-item.selected {
+            border-left-color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            outline: 1px dashed #00ff00;
+            outline-offset: -1px;
+        }
+
+        .status-bar-bottom {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #2a3340;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        .status-item {
+            padding: 4px 8px;
+        }
+
+        .status-item.highlighted {
+            background: rgba(0, 255, 0, 0.2);
+            outline: 1px dashed #00ff00;
+        }
+
+        .status-separator {
+            color: #2a3340;
+        }
+
+        .soft-key-labels {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-top: 10px;
+            margin-top: 10px;
+            border-top: 1px solid #2a3340;
+            font-size: 11px;
+            color: #00ff88;
+        }
+
+        .soft-key {
+            padding: 4px 8px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .soft-key.highlighted {
+            background: rgba(0, 255, 136, 0.2);
+            outline: 1px dashed #00ff88;
+        }
+
+        .arrows-indicator {
+            display: inline-block;
+            margin-left: 4px;
+        }
+
+        .info-box {
+            background: #1a1f28;
+            border: 1px solid #2a3340;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #88aabb;
+        }
+
+        .info-box h3 {
+            color: #00ff00;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+        }
+
+        .info-box li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="device-preview">
+        <div class="lcd-screen">
+            <!-- Top Status Bar -->
+            <div class="status-bar-top">
+                <div class="battery">
+                    <div class="battery-bar"></div>
+                    <div class="battery-bar"></div>
+                    <div class="battery-bar"></div>
+                    <div class="battery-bar"></div>
+                    <div class="battery-bar"></div>
+                </div>
+                <div>→</div>
+                <div>■</div>
+            </div>
+
+            <!-- Menu Title -->
+            <div class="menu-title">START</div>
+
+            <!-- Menu Items -->
+            <div class="menu-items">
+                <div class="menu-item">VIEW PAST STUDIES</div>
+                <div class="menu-item selected">VIEW CURRENT STUDY</div>
+                <div class="menu-item">VIEW SESSION</div>
+                <div class="menu-item">SETUP</div>
+                <div class="menu-item">UNIT INFO</div>
+            </div>
+
+            <!-- Status Bar Bottom -->
+            <div class="status-bar-bottom">
+                <span class="status-item highlighted">&lt;SLM&gt;</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">CAL</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">FILE</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">LOCK</span>
+            </div>
+
+            <!-- Soft Key Labels -->
+            <div class="soft-key-labels">
+                <div class="soft-key highlighted">&lt;SLM&gt;<span class="arrows-indicator">◄►</span></div>
+                <div class="soft-key">CAL</div>
+                <div class="soft-key">FILE</div>
+                <div class="soft-key">LOCK</div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>Startup Screen Preview</h3>
+            <ul>
+                <li><strong>Menu Title:</strong> START (header, not selectable)</li>
+                <li><strong>Selected Item:</strong> VIEW CURRENT STUDY (dotted outline/highlight)</li>
+                <li><strong>Navigation:</strong> Up/Down arrows move selection, Enter selects</li>
+                <li><strong>Soft Keys:</strong> &lt;SLM&gt; CAL FILE LOCK (at bottom of LCD)</li>
+                <li><strong>Status Bar:</strong> &lt;SLM&gt; | CAL | FILE | LOCK (bottom)</li>
+            </ul>
+            <p style="margin-top: 10px; color: #ffaa00;">
+                <strong>Note:</strong> This is a preview. Actual LCD will have green monochrome display with pixelated text.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
