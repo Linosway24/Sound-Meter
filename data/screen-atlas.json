@@ -1,0 +1,520 @@
+[
+    {
+      "id": "boot_screen",
+      "title": "Startup / Boot",
+      "mode": "BOOT",
+      "referenceImage": "capture/startup/boot_screen.jpg",
+      "elements": [
+        { "type": "label", "id": "fw", "text": "Quest SoundPro SE/DL" },
+        { "type": "label", "id": "ver", "text": "Firmware v1.13J" }
+      ],
+      "softkeys": [],
+      "keys": [],
+      "display": { "backlight": false, "dwellMs": 1500 }
+    },
+    {
+      "id": "home_screen_dim",
+      "title": "START",
+      "mode": "START",
+      "referenceImage": "capture/startup/home_screen_dim.jpg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "START" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "main_menu",
+          "items": [
+            "VIEW PAST STUDIES",
+            "VIEW CURRENT STUDY",
+            "VIEW SESSION",
+            "SETUP",
+            "UNIT INFO"
+          ],
+          "bind": "menu.selectedIndex"
+        },
+        {
+          "type": "timer",
+          "id": "context_timer",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss",
+          "visibleWhen": { "anySelectedEquals": ["VIEW CURRENT STUDY", "VIEW SESSION"] },
+          "position": "top-right"
+        },
+        { "type": "softKeyRow", "id": "softkeys", "labels": ["{modeLabel}", "CAL", "FILE", "LOCK"] }
+      ],
+      "softkeys": ["{modeLabel}", "CAL", "FILE", "LOCK"],
+      "keys": ["up", "down", "enter", "esc", "soft1", "soft2", "soft3", "soft4", "backlight", "power"],
+      "display": { "backlight": false }
+    },
+    {
+      "id": "home_screen",
+      "title": "START",
+      "mode": "START",
+      "referenceImage": "capture/startup/home_screen.jpg",
+      "elementsRef": "home_screen_dim",
+      "softkeys": ["{modeLabel}", "CAL", "FILE", "LOCK"],
+      "keys": ["up", "down", "enter", "esc", "soft1", "soft2", "soft3", "soft4", "backlight", "power"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home",
+      "title": "SLM Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "", "", ""],
+      "keys": ["runpause", "stop", "esc", "soft2"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_paused",
+      "title": "SLM Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "", "", ""],
+      "keys": ["runpause", "stop", "esc", "soft2"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_stopped",
+      "title": "SLM Stopped",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/home_after_stop.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "STOPPED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "", "", ""],
+      "keys": ["runpause", "esc", "soft2"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_view_menu",
+      "title": "View Menu",
+      "mode": "MENU",
+      "referenceImage": "capture/operational/slm_view_menu.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "VIEW" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "view_menu",
+          "items": [
+            "VIEW PAST STUDIES",
+            "VIEW CURRENT STUDY",
+            "VIEW SESSION"
+          ],
+          "bind": "menu.selectedIndex"
+        }
+      ],
+      "softkeys": ["OK", "Cancel", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "setup_menu",
+      "title": "Setup",
+      "mode": "MENU",
+      "referenceImage": "capture/operational/setup_menu.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SETUP" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "setup_menu_list",
+          "items": [
+            "METER SET"
+          ],
+          "bind": "menu.selectedIndex"
+        }
+      ],
+      "softkeys": ["Select", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "meter_set_menu",
+      "title": "Meter Set",
+      "mode": "MENU",
+      "referenceImage": "capture/operational/meter_set_menu.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "METER SET" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "meter_set_list",
+          "items": [
+            "Weighting: A",
+            "Time Constant: Slow",
+            "Range: 80"
+          ],
+          "bind": "meterSet.selectedIndex"
+        }
+      ],
+      "softkeys": ["Edit", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "meter_set_edit",
+      "title": "Meter Set Edit",
+      "mode": "EDIT",
+      "referenceImage": "capture/operational/meter_set_edit.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "METER SET" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "label",
+          "id": "edit_item",
+          "text": "Weighting: A"
+        }
+      ],
+      "softkeys": ["Save", "Cancel", "", ""],
+      "keys": ["up", "down", "left", "right", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "view_past_studies",
+      "title": "View Past Studies",
+      "mode": "VIEW",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "VIEW PAST STUDIES" },
+        { "type": "label", "id": "content", "text": "No past studies" }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "view_current_study",
+      "title": "View Current Study",
+      "mode": "VIEW",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "VIEW CURRENT STUDY" },
+        { "type": "label", "id": "content", "text": "No current study" }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "view_session",
+      "title": "View Session",
+      "mode": "VIEW",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "VIEW SESSION" },
+        { "type": "label", "id": "content", "text": "No session data" }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "unit_info",
+      "title": "Unit Info",
+      "mode": "INFO",
+      "referenceImage": "capture/operational/unit_info.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "UNIT INFO" },
+        { "type": "label", "id": "content", "text": "Quest SoundPro SE-DL" }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "home_screen_running",
+      "title": "Home Running",
+      "mode": "START",
+      "referenceImage": "Capture/Startup/home_screen_running.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "stop_confirm",
+      "title": "Stop Confirm",
+      "mode": "SLM",
+      "referenceImage": "Capture/operational/stop_confirm.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["enter", "esc", "stop"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "measure_menu",
+      "title": "Measure",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/measure_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "auto_run_menu",
+      "title": "Auto Run",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/auto_run_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "datetime_menu",
+      "title": "Date/Time",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/datetime_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "datetime_edit",
+      "title": "Date/Time Edit",
+      "mode": "EDIT",
+      "referenceImage": "Capture/operational/datetime_edit.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "left", "right", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "digital_out_menu",
+      "title": "Digital Out",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/digital_out_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "options_menu",
+      "title": "Options",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/options_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "sig_input_menu",
+      "title": "Signal Input",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/sig_input_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "logging_menu",
+      "title": "Logging",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/logging_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "comms_menu",
+      "title": "Comms",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/comms_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "comms_edit",
+      "title": "Comms Edit",
+      "mode": "EDIT",
+      "referenceImage": "Capture/operational/comms_edit.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "battery_menu",
+      "title": "Battery",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/battery_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "display_menu",
+      "title": "Display",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/display_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "display_language",
+      "title": "Display Language",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/display_language.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "display_backlight",
+      "title": "Display Backlight",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/display_blacklight.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "display_contrast",
+      "title": "Display Contrast",
+      "mode": "EDIT",
+      "referenceImage": "Capture/operational/display_contrast.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["left", "right", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_menu",
+      "title": "Files",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_session_dir",
+      "title": "Session Directory",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_session_dir.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_config_dir",
+      "title": "Config Directory",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_config_dir.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_rename_last",
+      "title": "Rename Last Session",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_rename_last.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_save_config",
+      "title": "Save Config File",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_save_config.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_format_card",
+      "title": "Format Card",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_format_card.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": [],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_delete_confirm",
+      "title": "Delete Confirm",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_delete_confirm.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "lock_menu",
+      "title": "Lock",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/lock_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "cal_menu",
+      "title": "Calibration",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/cal_menu.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "cal_running",
+      "title": "Calibration Running",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/cal_running.jpeg",
+      "elements": [],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    }
+  ]

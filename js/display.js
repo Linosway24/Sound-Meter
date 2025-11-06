@@ -15,6 +15,10 @@
     // Soft key label elements (will be created if they don't exist)
     let softKeyLabelElements = [];
 
+    // FSM integration
+    let fsmUnsubscribe = null;
+    let useFSM = false;
+
     /**
      * Initialize display module
      */
@@ -50,6 +54,18 @@
                 }
                 softKeyLabelElements.push(labelEl);
             }
+        }
+
+        // Check if FSM integration is enabled
+        useFSM = window.Config && window.Config.FEATURE_STARTUP_INTEGRATION;
+        const useFSMV2 = window.Config && window.Config.FEATURE_FSM_V2;
+        
+        // Subscribe to FSM state changes if enabled
+        if ((useFSM || useFSMV2) && window.subscribeStartup) {
+            fsmUnsubscribe = window.subscribeStartup((state) => {
+                renderFromFSMState(state);
+            });
+            console.log('[DISPLAY] FSM integration enabled', useFSMV2 ? '(v2)' : '(v1)');
         }
 
         console.log('[DISPLAY] Initialized');
@@ -146,9 +162,66 @@
     }
 
     /**
+     * Render from FSM state
+     * @param {Object} state - FSM state
+     */
+    function renderFromFSMState(state) {
+        if (!useFSM || !state) return;
+
+        // Ensure elements are available
+        if (!lcdMain || !lcdStatus) {
+            console.warn('[DISPLAY] LCD elements not ready, attempting re-init');
+            init();
+            if (!lcdMain || !lcdStatus) {
+                console.error('[DISPLAY] Cannot render - LCD elements not found');
+                return;
+            }
+        }
+
+        const viewId = state.viewId || 'OFF';
+        
+        // Update LCD power state
+        const lcd = document.querySelector('.lcd');
+        if (lcd) {
+            if (viewId === 'OFF') {
+                lcd.classList.add('lcd--powered-off');
+                updateDisplayBacklightState(false);
+            } else {
+                lcd.classList.remove('lcd--powered-off');
+                // Update backlight based on FSM state
+                updateDisplayBacklightState(state.backlight || false);
+            }
+        }
+
+        // Render screen using screen renderer
+        if (viewId === 'OFF') {
+            renderOffScreen();
+        } else if (window.renderScreen) {
+            const rendered = window.renderScreen(viewId, state);
+            updateMainArea(rendered.mainHTML);
+            updateStatusArea(rendered.statusHTML);
+            updateSoftKeyLabels(rendered.softkeys);
+        } else {
+            // Fallback if screen renderer not ready
+            console.warn('[DISPLAY] Screen renderer not available');
+            renderHomeScreen();
+        }
+    }
+
+    /**
      * Main render function - reads state from menu.js and device.js
      */
     function render() {
+        // If FSM is enabled, rendering is handled by FSM state changes
+        const useFSM = window.Config && window.Config.FEATURE_STARTUP_INTEGRATION;
+        const useFSMV2 = window.Config && window.Config.FEATURE_FSM_V2;
+        
+        if ((useFSM || useFSMV2) && window.getStartupState) {
+            const state = window.getStartupState();
+            renderFromFSMState(state);
+            return;
+        }
+
         // Ensure elements are available
         if (!lcdMain || !lcdStatus) {
             console.warn('[DISPLAY] LCD elements not ready, attempting re-init');
@@ -233,6 +306,57 @@
         }
     }
 
+    /**
+     * Render toast notification
+     * @param {Object} toast - Toast object with message property
+     */
+    function renderToast(toast) {
+        if (!toast || !toast.message) {
+            hideToast();
+            return;
+        }
+
+        let toastEl = document.getElementById('toast-notification');
+        if (!toastEl) {
+            toastEl = document.createElement('div');
+            toastEl.id = 'toast-notification';
+            toastEl.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 20px 40px;
+                border-radius: 8px;
+                font-size: 18px;
+                z-index: 10000;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            `;
+            const overlayLayer = document.querySelector('.overlay-layer');
+            if (overlayLayer) {
+                overlayLayer.appendChild(toastEl);
+            } else {
+                document.body.appendChild(toastEl);
+            }
+        }
+
+        toastEl.textContent = toast.message;
+        toastEl.style.opacity = '1';
+    }
+
+    /**
+     * Hide toast notification
+     */
+    function hideToast() {
+        const toastEl = document.getElementById('toast-notification');
+        if (toastEl) {
+            toastEl.style.opacity = '0';
+        }
+    }
+
     // Initialize on load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
@@ -251,4 +375,8 @@
     window.updateDisplayPowerState = updateDisplayPowerState;
     window.updateDisplayBacklightState = updateDisplayBacklightState;
     window.updateSoftKeyLabels = updateSoftKeyLabels;
+    window.updateMainArea = updateMainArea;
+    window.updateStatusArea = updateStatusArea;
+    window.renderToast = renderToast;
+    window.hideToast = hideToast;
 })();

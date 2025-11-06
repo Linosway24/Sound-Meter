@@ -92,13 +92,25 @@
      * @param {Object} buttonInfo - Button info object
      */
     function handleButtonPress(element, buttonInfo) {
-        // Check if device is powered on
-        const devicePowered = window.isPoweredOn ? window.isPoweredOn() : false;
-        
-        if (!devicePowered) {
-            // Device is off - only power button works
-            if (buttonInfo.action !== 'power') {
+        // Check if mainFSM is available
+        if (window.dispatch) {
+            // For mainFSM mode, check FSM state instead of device power state
+            const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
+            const isOff = !fsmState || fsmState.viewId === 'OFF';
+            
+            if (isOff && buttonInfo.action !== 'power') {
+                // Device is off - only power button works
                 return;
+            }
+        } else {
+            // Original behavior: check device power state
+            const devicePowered = window.isPoweredOn ? window.isPoweredOn() : false;
+            
+            if (!devicePowered) {
+                // Device is off - only power button works
+                if (buttonInfo.action !== 'power') {
+                    return;
+                }
             }
         }
 
@@ -122,6 +134,31 @@
      * @param {number} key - Soft key number (1-4)
      */
     function handleSoftKey(key) {
+        // Use mainFSM dispatch if available
+        if (window.dispatch) {
+            if (key === 1) {
+                console.log('[BUTTON] Soft Key 1: View menu (via mainFSM)');
+                window.dispatch({ type: 'SOFT1' });
+                return;
+            }
+            if (key === 2) {
+                console.log('[BUTTON] Soft Key 2: Files menu (via mainFSM)');
+                window.dispatch({ type: 'SOFT2' });
+                return;
+            }
+            if (key === 3) {
+                console.log('[BUTTON] Soft Key 3: Calibration menu (via mainFSM)');
+                window.dispatch({ type: 'SOFT3' });
+                return;
+            }
+            if (key === 4) {
+                console.log('[BUTTON] Soft Key 4: Lock menu (via mainFSM)');
+                window.dispatch({ type: 'LOCK_SOFTKEY' });
+                return;
+            }
+        }
+        
+        // Fallback to original handler
         if (window.handleSoftKey) {
             window.handleSoftKey(key);
         }
@@ -132,6 +169,25 @@
      * @param {string} direction - 'up', 'down', 'left', 'right', 'enter'
      */
     function handleNavigation(direction) {
+        // Use mainFSM dispatch if available
+        if (window.dispatch) {
+            const fsmEvents = {
+                'up': 'UP',
+                'down': 'DOWN',
+                'left': 'LEFT',
+                'right': 'RIGHT',
+                'enter': 'ENTER'
+            };
+            
+            const fsmEvent = fsmEvents[direction];
+            if (fsmEvent) {
+                console.log(`[BUTTON] Navigation ${direction}: (via mainFSM)`);
+                window.dispatch({ type: fsmEvent });
+                return;
+            }
+        }
+        
+        // Fallback to original handler
         if (window.handleNavigation) {
             window.handleNavigation(direction);
         }
@@ -156,7 +212,7 @@
                 handleRunPause();
                 break;
             case 'stop':
-                handleStop();
+                // Stop button handled separately for down/up events
                 break;
             case 'power':
                 // Power button handled separately for long press
@@ -165,27 +221,88 @@
     }
 
     /**
-     * Handle backlight button (placeholder for Task 4.0)
+     * Handle backlight button
      */
     function handleBacklight() {
-        console.log('[BUTTON] Backlight: Toggle (placeholder for Task 4.0)');
-        // Full implementation in Task 4.0
+        console.log('[BUTTON] Backlight: Button pressed');
+        
+        // Use mainFSM dispatch if available
+        if (window.dispatch) {
+            console.log('[BUTTON] Backlight: Dispatching BACKLIGHT event (via mainFSM)');
+            window.dispatch({ type: 'BACKLIGHT' });
+        } else {
+            console.log('[BUTTON] Backlight: Toggle (placeholder for Task 4.0)');
+            // Full implementation in Task 4.0
+        }
     }
 
     /**
-     * Handle Run/Pause button (placeholder for Task 5.0)
+     * Handle Run/Pause button
      */
     function handleRunPause() {
+        // Use mainFSM dispatch if available
+        if (window.dispatch) {
+            console.log('[BUTTON] Run/Pause: Toggle (via mainFSM)');
+            window.dispatch({ type: 'RUNPAUSE' });
+            return;
+        }
+        
         console.log('[BUTTON] Run/Pause: Toggle (placeholder for Task 5.0)');
         // Full implementation in Task 5.0
+    }
+
+    // Stop button press state tracking
+    const stopButtonState = {
+        pressStart: null,
+        activeTimer: null
+    };
+
+    /**
+     * Handle Stop button down (mouse/keyboard down)
+     * @param {HTMLElement} element - Stop button element
+     */
+    function handleStopDown(element) {
+        // Use mainFSM dispatch if available
+        if (window.dispatch) {
+            stopButtonState.pressStart = Date.now();
+            addPressFeedback(element);
+            console.log('[BUTTON] Stop: Button down (via mainFSM)');
+            window.dispatch({ type: 'STOP_DOWN' });
+            return;
+        }
+        
+        // Fallback behavior
+        console.log('[BUTTON] Stop: Stop measurement (placeholder for Task 5.0)');
+    }
+
+    /**
+     * Handle Stop button up (mouse/keyboard up)
+     * @param {HTMLElement} element - Stop button element
+     */
+    function handleStopUp(element) {
+        // Use mainFSM dispatch if available
+        if (window.dispatch) {
+            removePressFeedback(element);
+            console.log('[BUTTON] Stop: Button up (via mainFSM)');
+            window.dispatch({ type: 'STOP_UP' });
+            stopButtonState.pressStart = null;
+            return;
+        }
+        
+        // Fallback behavior
+        removePressFeedback(element);
     }
 
     /**
      * Handle Stop button (placeholder for Task 5.0)
      */
     function handleStop() {
-        console.log('[BUTTON] Stop: Stop measurement (placeholder for Task 5.0)');
-        // Full implementation in Task 5.0
+        // This is called for short press - but v2 uses down/up events
+        const useFSMV2 = window.Config && window.Config.FEATURE_FSM_V2;
+        
+        if (!useFSMV2) {
+            console.log('[BUTTON] Stop: Stop measurement (placeholder for Task 5.0)');
+        }
     }
 
     /**
@@ -197,19 +314,47 @@
         pressState.activeButton = element;
         addPressFeedback(element);
 
-        // Start long press timer
-        pressState.activePressTimer = setTimeout(() => {
-            const duration = Date.now() - pressState.powerPressStart;
-            console.log(`[BUTTON] Power: LONG PRESS (${duration}ms) - Power ${window.isPoweredOn() ? 'OFF' : 'ON'}`);
+        // Check if mainFSM is available
+        if (window.dispatch) {
+            // For mainFSM mode, short press triggers boot sequence
+            // Long press still toggles power off
+            const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
+            const isOff = !fsmState || fsmState.viewId === 'OFF';
             
-            if (window.togglePower) {
-                window.togglePower();
-            }
-            
-            pressState.powerPressStart = null;
-            pressState.activePressTimer = null;
-            removePressFeedback(element);
-        }, pressState.powerPressThreshold);
+            // Start long press timer
+            pressState.activePressTimer = setTimeout(() => {
+                const duration = Date.now() - pressState.powerPressStart;
+                console.log(`[BUTTON] Power: LONG PRESS (${duration}ms) - Power OFF`);
+                
+                // Power off via device.js
+                if (window.powerOff) {
+                    window.powerOff();
+                }
+                // Reset mainFSM
+                if (window.initMainFSM) {
+                    window.initMainFSM();
+                }
+                
+                pressState.powerPressStart = null;
+                pressState.activePressTimer = null;
+                removePressFeedback(element);
+            }, pressState.powerPressThreshold);
+        } else {
+            // Original behavior
+            // Start long press timer
+            pressState.activePressTimer = setTimeout(() => {
+                const duration = Date.now() - pressState.powerPressStart;
+                console.log(`[BUTTON] Power: LONG PRESS (${duration}ms) - Power ${window.isPoweredOn() ? 'OFF' : 'ON'}`);
+                
+                if (window.togglePower) {
+                    window.togglePower();
+                }
+                
+                pressState.powerPressStart = null;
+                pressState.activePressTimer = null;
+                removePressFeedback(element);
+            }, pressState.powerPressThreshold);
+        }
     }
 
     /**
@@ -225,14 +370,29 @@
             const duration = Date.now() - pressState.powerPressStart;
             
             if (duration < pressState.powerPressThreshold) {
-                // Short press - Esc/Back action (only if device is on)
-                if (window.isPoweredOn && window.isPoweredOn()) {
-                    console.log(`[BUTTON] Power: SHORT PRESS - Esc/Back`);
-                    if (window.handleEsc) {
-                        window.handleEsc();
+                // Short press
+                if (window.dispatch) {
+                    // MainFSM mode: short press triggers boot sequence if off, or Esc/Back if on
+                    const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
+                    const isOff = !fsmState || fsmState.viewId === 'OFF';
+                    
+                    if (isOff) {
+                        console.log(`[BUTTON] Power: SHORT PRESS - Boot sequence (via mainFSM)`);
+                        window.dispatch({ type: 'POWER' });
+                    } else {
+                        console.log(`[BUTTON] Power: SHORT PRESS - Esc/Back (via mainFSM)`);
+                        window.dispatch({ type: 'ESC' });
                     }
                 } else {
-                    console.log(`[BUTTON] Power: SHORT PRESS (device off - no action)`);
+                    // Original behavior: Esc/Back action (only if device is on)
+                    if (window.isPoweredOn && window.isPoweredOn()) {
+                        console.log(`[BUTTON] Power: SHORT PRESS - Esc/Back`);
+                        if (window.handleEsc) {
+                            window.handleEsc();
+                        }
+                    } else {
+                        console.log(`[BUTTON] Power: SHORT PRESS (device off - no action)`);
+                    }
                 }
             }
             
@@ -256,6 +416,9 @@
         // Power button gets special handling
         if (buttonInfo.action === 'power') {
             handlePowerDown(element);
+        } else if (buttonInfo.action === 'stop') {
+            // Stop button gets special handling for v2 FSM
+            handleStopDown(element);
         } else {
             // Other buttons - add visual feedback
             addPressFeedback(element);
@@ -278,6 +441,9 @@
         // Power button gets special handling
         if (buttonInfo.action === 'power') {
             handlePowerUp(element);
+        } else if (buttonInfo.action === 'stop') {
+            // Stop button gets special handling for v2 FSM
+            handleStopUp(element);
         } else {
             // Other buttons - handle press
             removePressFeedback(element);
@@ -340,6 +506,13 @@
                 handlePowerDown(button);
             } else if (event.type === 'keyup') {
                 handlePowerUp(button);
+            }
+        } else if (buttonInfo.action === 'stop') {
+            // Stop button gets special handling for v2 FSM
+            if (event.type === 'keydown') {
+                handleStopDown(button);
+            } else if (event.type === 'keyup') {
+                handleStopUp(button);
             }
         } else {
             // Other buttons

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Startup FSM Sandbox</title>
+</head>
+<body>
+  <button onclick="dispatch({type:'POWER'})">Power</button>
+  <button onclick="dispatch({type:'BACKLIGHT'})">Backlight</button>
+  <button onclick="dispatch({type:'UP'})">Up</button>
+  <button onclick="dispatch({type:'DOWN'})">Down</button>
+  <button onclick="dispatch({type:'ENTER'})">Enter</button>
+  <button onclick="dispatch({type:'SOFT1'})">Softkey 1 (SLM/1/1/1/3)</button>
+
+  <pre id="out"></pre>
+
+  <script type="module">
+    import { initStartupFSM, subscribeStartup, dispatchStartup as dispatch } from "../js/fsm/startupHomeFSM.js";
+    const out = document.getElementById('out');
+
+    initStartupFSM();
+    subscribeStartup(s => {
+      out.textContent = JSON.stringify(s, null, 2);
+      console.log("viewId:", s.viewId, "backlight:", s.backlight, "selected:", s.menu.selectedIndex, "mode:", s.ui.measureTypeLabel);
+    });
+
+    // expose for buttons
+    window.dispatch = dispatch;
+  </script>
+</body>
+</html>

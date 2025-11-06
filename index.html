@@ -65,10 +65,15 @@
     </div>
     <!-- Core modules (Task 2.0) -->
     <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
     <script src="js/device.js"></script>
     <script src="js/display.js"></script>
     <script src="js/menu.js"></script>
     <script src="js/buttons.js"></script>
+    
+    <!-- FSM integration -->
+    <script src="js/screen-renderer.js"></script>
+    <!-- FSM will be loaded conditionally in initializeApp -->
     
     <!-- Development/debugging scripts -->
     <script src="js/measure-photo.js"></script>
@@ -79,17 +84,68 @@
     
     <!-- Initialize application -->
     <script>
-        // Initialize button handlers when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
+        async function initializeApp() {
+            // Initialize screen renderer first (loads screen-atlas.json)
+            if (window.initScreenRenderer) {
+                await window.initScreenRenderer();
+            }
+            
+            // Load mainFSM (production FSM)
+            const fsmScript = document.createElement('script');
+            fsmScript.src = 'js/fsm/mainFSM.js';
+            fsmScript.onload = function() {
+                // Initialize mainFSM
+                if (window.initMainFSM) {
+                    window.initMainFSM();
+                }
+                
+                // Subscribe display to FSM state changes
+                if (window.subscribeMainFSM && window.renderDisplay) {
+                    window.subscribeMainFSM((state) => {
+                        // Render by viewId
+                        if (window.renderScreen) {
+                            const rendered = window.renderScreen(state.viewId, state);
+                            if (window.updateMainArea) {
+                                window.updateMainArea(rendered.mainHTML);
+                            }
+                            if (window.updateStatusArea) {
+                                window.updateStatusArea(rendered.statusHTML);
+                            }
+                            if (window.updateSoftKeyLabels) {
+                                window.updateSoftKeyLabels(rendered.softkeys);
+                            }
+                        }
+                        // Set backlight state
+                        if (window.updateDisplayBacklightState) {
+                            window.updateDisplayBacklightState(state.backlight);
+                        }
+                        // Render toast if present
+                        if (window.renderToast && state.toast) {
+                            window.renderToast(state.toast);
+                        } else if (window.hideToast) {
+                            window.hideToast();
+                        }
+                    });
+                }
+                
+                // Initialize button handlers
                 if (window.initButtons) {
                     window.initButtons();
                 }
-            });
+                
+                // Initial render
+                if (window.renderDisplay) {
+                    window.renderDisplay();
+                }
+            };
+            document.head.appendChild(fsmScript);
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
         } else {
-            if (window.initButtons) {
-                window.initButtons();
-            }
+            initializeApp();
         }
     </script>
 </body>

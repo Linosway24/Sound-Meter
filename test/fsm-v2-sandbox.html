@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSM v2 Sandbox - Quest SoundPro SE-DL</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .sandbox-controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 10000;
+            max-width: 300px;
+        }
+        .sandbox-controls h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+        .sandbox-controls button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 5px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .sandbox-controls button:hover {
+            background: #555;
+        }
+        .state-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #555;
+            font-size: 11px;
+        }
+        .state-info div {
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="device-stage" role="presentation">
+        <div class="device-frame" aria-label="Quest SoundPro SE-DL device" role="img">
+            <img
+                class="device-photo"
+                src="../assets/Quest Sound Meter.png"
+                alt="Quest SoundPro SE-DL device photograph serving as the full device face"
+                draggable="false"
+            >
+
+            <!-- Absolute overlay layer anchored to the device photo -->
+            <div class="overlay-layer">
+                <!-- LCD overlay region -->
+                <section class="lcd lcd--powered-off testing-overlay" aria-label="LCD display" aria-live="polite">
+                    <div class="lcd__status"></div>
+                    <div class="lcd__main"></div>
+                    <div class="lcd__softkeys"></div>
+                </section>
+
+                <!-- Soft keys 1–4 -->
+                <button class="soft-key soft-key--1 testing-overlay" type="button" aria-label="Soft Key 1"></button>
+                <button class="soft-key soft-key--2 testing-overlay" type="button" aria-label="Soft Key 2"></button>
+                <button class="soft-key soft-key--3 testing-overlay" type="button" aria-label="Soft Key 3"></button>
+                <button class="soft-key soft-key--4 testing-overlay" type="button" aria-label="Soft Key 4"></button>
+
+                <!-- Navigation buttons -->
+                <button class="nav__btn nav__btn--up testing-overlay" type="button" aria-label="Up"></button>
+                <button class="nav__btn nav__btn--down testing-overlay" type="button" aria-label="Down"></button>
+                <button class="nav__btn nav__btn--left testing-overlay" type="button" aria-label="Left"></button>
+                <button class="nav__btn nav__btn--right testing-overlay" type="button" aria-label="Right"></button>
+                <button class="nav__btn nav__btn--enter testing-overlay" type="button" aria-label="Enter"></button>
+
+                <!-- Function buttons -->
+                <button class="fn-btn fn-btn--altf testing-overlay" type="button" aria-label="Alt f"></button>
+                <button class="fn-btn fn-btn--backlight testing-overlay" type="button" aria-label="Backlight"></button>
+                <button class="fn-btn fn-btn--runpause testing-overlay" type="button" aria-label="Run or Pause"></button>
+                <button class="fn-btn fn-btn--stop testing-overlay" type="button" aria-label="Stop"></button>
+                <button class="fn-btn fn-btn--power testing-overlay" type="button" aria-label="On Off"></button>
+
+                <!-- Dialog overlay -->
+                <div id="dialog-overlay" class="dialog-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+                    <div class="dialog" role="document">
+                        <header class="dialog__header">
+                            <h2 class="dialog__title">Notice</h2>
+                        </header>
+                        <div class="dialog__body">
+                            <p>Dialog content goes here.</p>
+                        </div>
+                        <footer class="dialog__footer">
+                            <button class="dialog__btn dialog__btn--confirm" type="button">OK</button>
+                            <button class="dialog__btn dialog__btn--cancel" type="button">Cancel</button>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sandbox Controls -->
+    <div class="sandbox-controls">
+        <h3>FSM v2 Sandbox</h3>
+        <button onclick="resetFSM()">Reset FSM</button>
+        <button onclick="toggleFeatureFlag()">Toggle FSM v2 Flag</button>
+        <div class="state-info" id="state-info">
+            <div>Loading...</div>
+        </div>
+    </div>
+
+    <!-- Core modules -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/config.js"></script>
+    <script>
+        // Force enable FSM v2 for sandbox BEFORE other modules load
+        if (window.Config) {
+            window.Config.FEATURE_FSM_V2 = true;
+            window.Config.FEATURE_STARTUP_INTEGRATION = true;
+            console.log('[SANDBOX] FSM v2 flag enabled');
+        }
+    </script>
+    <script src="../js/device.js"></script>
+    <script src="../js/display.js"></script>
+    <script src="../js/menu.js"></script>
+    <script src="../js/buttons.js"></script>
+    
+    <!-- FSM integration - Force v2 for sandbox -->
+    <script src="../js/screen-renderer.js"></script>
+    <script src="../js/fsm/startupHomeFSM.v2.js"></script>
+    
+    <!-- Initialize application -->
+    <script>
+        let stateUpdateInterval = null;
+
+        function updateStateInfo() {
+            const stateInfo = document.getElementById('state-info');
+            if (!window.getStartupState) {
+                stateInfo.innerHTML = '<div style="color: red;">FSM not loaded</div><div>Check console for errors</div>';
+                return;
+            }
+
+            try {
+                const state = window.getStartupState();
+                const flagStatus = window.Config && window.Config.FEATURE_FSM_V2 ? 'ON' : 'OFF';
+                
+                stateInfo.innerHTML = `
+                    <div><strong>FSM v2:</strong> ${flagStatus}</div>
+                    <div><strong>View ID:</strong> ${state.viewId || 'N/A'}</div>
+                    <div><strong>Backlight:</strong> ${state.backlight ? 'ON' : 'OFF'}</div>
+                    <div><strong>Measurement:</strong> ${state.measurement?.state || 'N/A'}</div>
+                    <div><strong>SLM View Menu:</strong> ${state.slmViewMenu?.visible ? 'Visible' : 'Hidden'}</div>
+                    <div><strong>Meter Set:</strong> ${state.meterSet?.visible ? 'Visible' : 'Hidden'}</div>
+                    <div><strong>Edit Mode:</strong> ${state.meterSet?.editMode ? 'ON' : 'OFF'}</div>
+                    <div><strong>Stop Confirm:</strong> ${state.stopConfirm?.visible ? `Visible (${Math.floor((state.stopConfirm.holdDuration || 0) / 1000)}s)` : 'Hidden'}</div>
+                `;
+            } catch (e) {
+                stateInfo.innerHTML = `<div style="color: red;">Error: ${e.message}</div>`;
+            }
+        }
+
+        function resetFSM() {
+            if (window.initStartupFSM) {
+                window.initStartupFSM();
+                console.log('[SANDBOX] FSM reset');
+                updateStateInfo();
+            } else {
+                console.error('[SANDBOX] initStartupFSM not available');
+                alert('FSM not loaded. Check console for errors.');
+            }
+        }
+
+        function toggleFeatureFlag() {
+            if (window.Config) {
+                window.Config.FEATURE_FSM_V2 = !window.Config.FEATURE_FSM_V2;
+                const status = window.Config.FEATURE_FSM_V2 ? 'ON' : 'OFF';
+                console.log('[SANDBOX] FSM v2 flag:', status);
+                updateStateInfo();
+                alert(`Feature flag toggled to ${status}. Reload page to fully apply changes.`);
+            } else {
+                alert('Config not available');
+            }
+        }
+
+        async function initializeApp() {
+            console.log('[SANDBOX] Starting initialization...');
+            
+            // Check if FSM is loaded
+            if (!window.getStartupState) {
+                console.error('[SANDBOX] FSM not loaded! Check script loading order.');
+                updateStateInfo();
+                return;
+            }
+            
+            // Initialize screen renderer first
+            if (window.initScreenRenderer) {
+                await window.initScreenRenderer();
+                console.log('[SANDBOX] Screen renderer initialized');
+            }
+            
+            // Initialize FSM
+            if (window.initStartupFSM) {
+                window.initStartupFSM();
+                console.log('[SANDBOX] FSM initialized');
+            } else {
+                console.error('[SANDBOX] initStartupFSM not available');
+            }
+            
+            // Initialize button handlers
+            if (window.initButtons) {
+                window.initButtons();
+                console.log('[SANDBOX] Buttons initialized');
+            }
+            
+            // Initial render
+            if (window.renderDisplay) {
+                window.renderDisplay();
+                console.log('[SANDBOX] Display rendered');
+            }
+
+            // Subscribe to state changes for sandbox display
+            if (window.subscribeStartup) {
+                window.subscribeStartup(() => {
+                    updateStateInfo();
+                });
+                console.log('[SANDBOX] Subscribed to FSM state changes');
+            }
+
+            // Update state info periodically
+            stateUpdateInterval = setInterval(updateStateInfo, 100);
+            updateStateInfo();
+
+            console.log('[SANDBOX] FSM v2 sandbox initialized');
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            // Wait a bit for scripts to load
+            setTimeout(initializeApp, 100);
+        }
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            if (stateUpdateInterval) {
+                clearInterval(stateUpdateInterval);
+            }
+        });
+    </script>
+</body>
+</html>
+

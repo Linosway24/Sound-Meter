@@ -171,3 +171,14 @@ const Config = {
     }
 };
 
+// Feature flags
+Config.FEATURE_STARTUP_INTEGRATION = true;
+Config.FEATURE_FSM_V2 = true; // FSM v2 enabled - includes SLM operation, View menu, and Meter Set
+
+// Main FSM configuration
+Config.START_AT_HOME = false; // Set true to skip boot during author testing
+Config.ENABLE_TOASTS = true; // Enable toast notifications
+
+// Export to window for global access
+window.Config = Config;
+
