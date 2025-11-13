@@ -125,6 +125,23 @@
                         } else if (window.hideToast) {
                             window.hideToast();
                         }
+                        
+                        // Debug: Show selected index in status area (temporary until highlighting is implemented)
+                        if (window.updateStatusArea) {
+                            const statusEl = document.querySelector('.lcd__status');
+                            if (statusEl && (state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' || 
+                                state.viewId === 'setup_menu' || state.viewId === 'files_menu' || state.viewId === 'slm_view_menu')) {
+                                const menuItems = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' ? 
+                                    ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION', 'SETUP', 'UNIT INFO'] :
+                                    state.viewId === 'setup_menu' ? 
+                                    ['METER SET', 'MEASURE', 'AUTO RUN', 'DATETIME', 'DIGITAL OUT', 'OPTIONS', 'SIG INPUT', 'LOGGING', 'COMMS', 'BATTERY', 'DISPLAY'] :
+                                    state.viewId === 'files_menu' ?
+                                    ['SESSION DIRECTORY', 'CONFIG DIRECTORY', 'RENAME LAST SESSION', 'SAVE CONFIG FILE', 'FORMAT CARD'] :
+                                    ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION'];
+                                const selectedItem = menuItems[state.menu.selectedIndex] || 'N/A';
+                                statusEl.innerHTML = `<span style="font-size: 10px; opacity: 0.7;">[${state.menu.selectedIndex}] ${selectedItem}</span>`;
+                            }
+                        }
                     });
                 }
                 
@@ -140,6 +157,41 @@
             };
             document.head.appendChild(fsmScript);
         }
+        
+        // Handle window resize - ensure overlays stay aligned
+        let resizeFrameId = null;
+        function handleResize() {
+            if (resizeFrameId !== null) {
+                cancelAnimationFrame(resizeFrameId);
+            }
+            // Use requestAnimationFrame to ensure recalculation happens after browser layout
+            resizeFrameId = requestAnimationFrame(() => {
+                resizeFrameId = null;
+                // Force browser to recalculate layout
+                const deviceFrame = document.querySelector('.device-frame');
+                const devicePhoto = document.querySelector('.device-photo');
+                const overlayLayer = document.querySelector('.overlay-layer');
+                
+                if (deviceFrame && devicePhoto && overlayLayer) {
+                    // Force reflow by reading dimensions - this ensures percentages recalculate
+                    void deviceFrame.offsetWidth;
+                    void deviceFrame.offsetHeight;
+                    void devicePhoto.offsetWidth;
+                    void devicePhoto.offsetHeight;
+                    void overlayLayer.offsetWidth;
+                    void overlayLayer.offsetHeight;
+                }
+                
+                // Re-render display if available
+                if (window.renderDisplay) {
+                    window.renderDisplay();
+                }
+            });
+        }
+        
+        window.addEventListener('resize', handleResize);
+        // Also handle orientation change
+        window.addEventListener('orientationchange', handleResize);
         
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {

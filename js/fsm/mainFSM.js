@@ -55,7 +55,8 @@
         timers: {
             stopHold: null,
             formatting: null,
-            cal: null
+            cal: null,
+            measurementRuntime: null
         },
         files: { cursor: 0 },
         display: { contrast: 0, backlightMode: "On", language: "EN" },
@@ -69,10 +70,32 @@
     const _subs = new Set();
     function _emit() { _subs.forEach(cb => cb(getState())); }
 
+    // Navigation history management
+    function _pushHistory(viewId) {
+        if (_state.viewId && _state.viewId !== viewId) {
+            _state.history.push(_state.viewId);
+            // Limit history stack to prevent memory growth
+            if (_state.history.length > 50) {
+                _state.history.shift();
+            }
+        }
+    }
+
+    function _popHistory() {
+        if (_state.history.length > 0) {
+            return _state.history.pop();
+        }
+        return null;
+    }
+
     // Timer management
     function _clearTimer(timerName) {
         if (_state.timers[timerName]) {
-            clearTimeout(_state.timers[timerName]);
+            if (timerName === 'measurementRuntime') {
+                clearInterval(_state.timers[timerName]);
+            } else {
+                clearTimeout(_state.timers[timerName]);
+            }
             _state.timers[timerName] = null;
         }
     }
@@ -81,9 +104,25 @@
         Object.keys(_state.timers).forEach(key => _clearTimer(key));
     }
 
+    // Measurement runtime timer
+    function _startMeasurementTimer() {
+        _stopMeasurementTimer();
+        _state.timers.measurementRuntime = setInterval(() => {
+            if (_state.measurement.isRunning) {
+                _state.measurement.runtime++;
+                _emit();
+            }
+        }, 1000);
+    }
+
+    function _stopMeasurementTimer() {
+        _clearTimer('measurementRuntime');
+    }
+
     // Toast management
     function _showToast(message, duration = 1500) {
-        if (window.Config && window.Config.ENABLE_TOASTS) {
+        // Enable toasts by default unless explicitly disabled
+        if (!window.Config || window.Config.ENABLE_TOASTS !== false) {
             _state.toast = { message, timestamp: Date.now() };
             _emit();
             setTimeout(() => {
@@ -123,7 +162,7 @@
             mode: "SLM",
             menu: { selectedIndex: 0 },
             toast: null,
-            timers: { stopHold: null, formatting: null, cal: null },
+            timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null },
             files: { cursor: 0 },
             display: { contrast: 0, backlightMode: "On", language: "EN" },
             meterSet: { editing: false, focus: "title", selectedIndex: 0, items: METER_SET_ITEMS.map(item => ({ ...item })) },
@@ -210,15 +249,19 @@
                     }
                 } else if (_state.viewId === "slm_view_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + SLM_VIEW_ITEMS.length - 1) % SLM_VIEW_ITEMS.length;
+                    console.log(`[MENU] SLM View menu - Selected index: ${_state.menu.selectedIndex} → "${SLM_VIEW_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "setup_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + SETUP_MENU_ITEMS.length - 1) % SETUP_MENU_ITEMS.length;
+                    console.log(`[MENU] Setup menu - Selected index: ${_state.menu.selectedIndex} → "${SETUP_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "files_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + FILES_MENU_ITEMS.length - 1) % FILES_MENU_ITEMS.length;
+                    console.log(`[MENU] Files menu - Selected index: ${_state.menu.selectedIndex} → "${FILES_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (isHome()) {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + MENU_ITEMS.length - 1) % MENU_ITEMS.length;
+                    console.log(`[MENU] Home menu - Selected index: ${_state.menu.selectedIndex} → "${MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (isInFiles() && (_state.viewId === "files_session_dir" || _state.viewId === "files_config_dir")) {
                     _state.files.cursor = Math.max(0, _state.files.cursor - 1);
@@ -241,15 +284,19 @@
                     }
                 } else if (_state.viewId === "slm_view_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % SLM_VIEW_ITEMS.length;
+                    console.log(`[MENU] SLM View menu - Selected index: ${_state.menu.selectedIndex} → "${SLM_VIEW_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "setup_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % SETUP_MENU_ITEMS.length;
+                    console.log(`[MENU] Setup menu - Selected index: ${_state.menu.selectedIndex} → "${SETUP_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "files_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % FILES_MENU_ITEMS.length;
+                    console.log(`[MENU] Files menu - Selected index: ${_state.menu.selectedIndex} → "${FILES_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (isHome()) {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % MENU_ITEMS.length;
+                    console.log(`[MENU] Home menu - Selected index: ${_state.menu.selectedIndex} → "${MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (isInFiles() && (_state.viewId === "files_session_dir" || _state.viewId === "files_config_dir")) {
                     _state.files.cursor++;
@@ -290,7 +337,10 @@
                 } else if (_state.viewId === "slm_view_menu") {
                     const item = SLM_VIEW_ITEMS[_state.menu.selectedIndex];
                     if (item === "VIEW PAST STUDIES") {
-                        _showToast("No studies yet");
+                        // Do nothing - no action for VIEW PAST STUDIES
+                        // Toast disabled - user cannot test on actual device
+                        // _showToast("No studies yet");
+                        return; // Explicitly do nothing
                     } else if (item === "VIEW CURRENT STUDY") {
                         _state.viewId = "home_screen_running";
                         _emit();
@@ -408,7 +458,10 @@
                 } else if (isHome()) {
                     const item = MENU_ITEMS[_state.menu.selectedIndex];
                     if (item === "VIEW PAST STUDIES") {
-                        _showToast("No studies yet");
+                        // Do nothing - no action for VIEW PAST STUDIES
+                        // Toast disabled - user cannot test on actual device
+                        // _showToast("No studies yet");
+                        return; // Explicitly do nothing
                     } else if (item === "VIEW CURRENT STUDY") {
                         _state.measurement.state = "running";
                         _state.measurement.isRunning = true;
@@ -552,22 +605,31 @@
 
             case "SOFT2":
                 if (isSlm() || isHome()) {
-                    _state.viewId = "files_menu";
-                    _state.menu.selectedIndex = 0;
+                    // SOFT2 = CAL (Calibration)
+                    console.log('[FSM] SOFT2 pressed → Navigating to cal_menu');
+                    _state.previousViewId = _state.viewId;
+                    _state.viewId = "cal_menu";
                     _emit();
+                } else {
+                    console.log('[FSM] SOFT2 pressed → Ignored (not on SLM or Home)');
                 }
                 break;
 
             case "SOFT3":
                 if (isSlm() || isHome()) {
-                    _state.previousViewId = _state.viewId;
-                    _state.viewId = "cal_menu";
+                    // SOFT3 = FILE (Files menu)
+                    console.log('[FSM] SOFT3 pressed → Navigating to files_menu');
+                    _state.viewId = "files_menu";
+                    _state.menu.selectedIndex = 0;
                     _emit();
+                } else {
+                    console.log('[FSM] SOFT3 pressed → Ignored (not on SLM or Home)');
                 }
                 break;
 
             case "LOCK_SOFTKEY":
                 if (isHome()) {
+                    console.log('[FSM] LOCK_SOFTKEY pressed → Navigating to lock_menu');
                     _state.viewId = "lock_menu";
                     _state.flags.locked = true;
                     _emit();

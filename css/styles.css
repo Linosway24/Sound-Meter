@@ -61,12 +61,17 @@ body {
 .device-frame {
     position: relative;
     display: inline-block;
+    /* Frame should match photo dimensions exactly */
+    width: fit-content;
+    height: fit-content;
 }
 
 .device-photo {
     display: block;
-    height: calc(100vh - 48px); /* fit to screen height with padding top/bottom */
-    width: auto;
+    /* Scale based on viewport height - width will auto-scale to maintain aspect ratio */
+    height: calc(100vh - 48px);
+    width: auto; /* Width automatically maintains aspect ratio */
+    max-width: 100vw; /* Prevent horizontal overflow */
     margin: 0 auto;
     user-select: none;
     pointer-events: none; /* photo is not interactive */

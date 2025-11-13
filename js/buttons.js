@@ -310,12 +310,14 @@
      * @param {HTMLElement} element - Power button element
      */
     function handlePowerDown(element) {
+        console.log('[BUTTON] Power: DOWN event received');
         pressState.powerPressStart = Date.now();
         pressState.activeButton = element;
         addPressFeedback(element);
 
         // Check if mainFSM is available
         if (window.dispatch) {
+            console.log('[BUTTON] Power: mainFSM mode detected');
             // For mainFSM mode, short press triggers boot sequence
             // Long press still toggles power off
             const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
@@ -362,19 +364,27 @@
      * @param {HTMLElement} element - Power button element
      */
     function handlePowerUp(element) {
+        console.log('[BUTTON] Power: UP event received');
+        console.log('[BUTTON] Power: activePressTimer =', pressState.activePressTimer);
+        console.log('[BUTTON] Power: powerPressStart =', pressState.powerPressStart);
+        
         if (pressState.activePressTimer) {
             // Cancel long press timer
             clearTimeout(pressState.activePressTimer);
             pressState.activePressTimer = null;
 
             const duration = Date.now() - pressState.powerPressStart;
+            console.log('[BUTTON] Power: Press duration =', duration, 'ms');
             
             if (duration < pressState.powerPressThreshold) {
                 // Short press
+                console.log('[BUTTON] Power: Detected SHORT PRESS');
                 if (window.dispatch) {
+                    console.log('[BUTTON] Power: window.dispatch is available');
                     // MainFSM mode: short press triggers boot sequence if off, or Esc/Back if on
                     const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
                     const isOff = !fsmState || fsmState.viewId === 'OFF';
+                    console.log('[BUTTON] Power: FSM state =', fsmState ? fsmState.viewId : 'null', ', isOff =', isOff);
                     
                     if (isOff) {
                         console.log(`[BUTTON] Power: SHORT PRESS - Boot sequence (via mainFSM)`);
@@ -384,6 +394,7 @@
                         window.dispatch({ type: 'ESC' });
                     }
                 } else {
+                    console.log('[BUTTON] Power: window.dispatch is NOT available');
                     // Original behavior: Esc/Back action (only if device is on)
                     if (window.isPoweredOn && window.isPoweredOn()) {
                         console.log(`[BUTTON] Power: SHORT PRESS - Esc/Back`);
@@ -394,10 +405,14 @@
                         console.log(`[BUTTON] Power: SHORT PRESS (device off - no action)`);
                     }
                 }
+            } else {
+                console.log('[BUTTON] Power: Press duration exceeded threshold (long press)');
             }
             
             pressState.powerPressStart = null;
             removePressFeedback(element);
+        } else {
+            console.log('[BUTTON] Power: No activePressTimer - button may have been released too quickly or not pressed correctly');
         }
     }
 

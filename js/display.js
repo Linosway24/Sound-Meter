@@ -316,6 +316,13 @@
             return;
         }
 
+        // Find LCD main area to position toast inside LCD
+        const lcdMain = document.querySelector('.lcd__main');
+        if (!lcdMain) {
+            console.warn('[DISPLAY] LCD main area not found for toast');
+            return;
+        }
+
         let toastEl = document.getElementById('toast-notification');
         if (!toastEl) {
             toastEl = document.createElement('div');
@@ -325,22 +332,21 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.9);
-                color: white;
-                padding: 20px 40px;
-                border-radius: 8px;
-                font-size: 18px;
-                z-index: 10000;
+                background: rgba(0, 0, 0, 0.95);
+                color: #e6e6e6;
+                padding: 12px 24px;
+                border-radius: 4px;
+                font-size: 16px;
+                font-family: ui-monospace, monospace;
+                z-index: 1000;
                 pointer-events: none;
                 opacity: 0;
                 transition: opacity 0.3s ease;
+                white-space: nowrap;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
             `;
-            const overlayLayer = document.querySelector('.overlay-layer');
-            if (overlayLayer) {
-                overlayLayer.appendChild(toastEl);
-            } else {
-                document.body.appendChild(toastEl);
-            }
+            // Append to LCD main area so it's positioned relative to LCD
+            lcdMain.appendChild(toastEl);
         }
 
         toastEl.textContent = toast.message;
