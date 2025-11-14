@@ -121,10 +121,13 @@ body {
 
 /* Soft key labels */
 .soft-key-label {
-    font-size: 14px;
+    font-size: 11px;
     color: #ccc;
     text-align: center;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .lcd--powered-off .lcd__status,
@@ -408,5 +411,183 @@ body {
 }
 .pos-debug__btn--primary:hover { background: #225a84; }
 .pos-debug__btn--close { margin-left: auto; font-weight: 700; }
+
+/* Screen element styles */
+.screen-element {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.screen-element--title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e6e6e6;
+    margin-bottom: 8px;
+}
+
+.screen-element--textList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.screen-element--twoColumns {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.menu-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.menu-column--left {
+    /* Left column styles */
+}
+
+.menu-column--right {
+    /* Right column styles */
+}
+
+.menu-item {
+    font-size: 13px;
+    color: #888888;
+    padding: 1px 8px;
+    cursor: default;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    display: flex;
+    align-items: center;
+}
+
+.menu-item--meter-set {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-width: 0; /* Allow flex items to shrink */
+}
+
+.menu-item--meter-set .menu-item__value {
+    min-width: 0; /* Allow value to shrink if needed */
+}
+
+.menu-item__title {
+    flex: 1;
+    text-align: left;
+}
+
+.menu-item__value {
+    text-align: right;
+    margin-left: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.menu-item--display .menu-item__value {
+    margin-left: 0;
+    text-align: left;
+}
+
+.menu-item__value--editing {
+    background-color: #4a5568;
+    color: #ffffff;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.menu-item--selected {
+    /* Don't highlight the whole item, just the title */
+    background-color: transparent;
+    color: inherit;
+}
+
+.menu-item--selected .menu-item__title {
+    background-color: #2a3340;
+    color: #ffffff;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.menu-item--selected .menu-item__value {
+    color: #888888; /* Keep value dimmed when title is selected */
+}
+
+.menu-item--selected .menu-item__value--editing {
+    background-color: #5a6578;
+    color: #ffffff;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+/* Display menu items (BACKLIGHT = MANUAL, CONTRAST = bar) */
+.menu-item--display {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.menu-item__equals {
+    color: #888888;
+    margin: 0 2px;
+}
+
+.menu-item__bar {
+    font-family: monospace;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    letter-spacing: 0px;
+}
+
+.bar-segment {
+    display: inline-block;
+    font-size: 12px;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.bar-segment-filled {
+    color: #000000;
+}
+
+.bar-segment-empty {
+    color: #888888;
+    opacity: 0.4;
+}
+
+.menu-item__bar--editing {
+    background-color: #4a5568;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.menu-item__bar--editing .bar-segment-filled {
+    color: #ffffff;
+}
+
+.menu-item__bar--editing .bar-segment-empty {
+    color: #cccccc;
+    opacity: 0.5;
+}
+
+.menu-item__diamond {
+    display: inline;
+    margin-right: 6px;
+    color: inherit;
+    font-size: 0.9em;
+    vertical-align: baseline;
+}
+
+/* Smaller font for two-column setup menu */
+.screen-element--twoColumns .menu-item {
+    font-size: 11px;
+    padding: 1px 6px;
+}
 
 

@@ -148,9 +148,20 @@
           "type": "textList",
           "id": "setup_menu_list",
           "items": [
-            "METER SET"
+            "MEASURE",
+            "METER SET",
+            "AUTO RUN",
+            "DATETIME",
+            "DIGITAL OUT",
+            "OPTIONS",
+            "SIG INPUT",
+            "LOGGING",
+            "COMMS",
+            "BATTERY",
+            "DISPLAY"
           ],
-          "bind": "menu.selectedIndex"
+          "bind": "menu.selectedIndex",
+          "columns": 2
         }
       ],
       "softkeys": ["Select", "", "", ""],
@@ -163,20 +174,17 @@
       "mode": "MENU",
       "referenceImage": "capture/operational/meter_set_menu.jpeg",
       "elements": [
-        { "type": "title", "id": "screen_title", "text": "METER SET" },
+        { "type": "title", "id": "screen_title", "text": "setup\\METER SET 1" },
         { "type": "divider", "id": "title_rule" },
         {
           "type": "textList",
           "id": "meter_set_list",
-          "items": [
-            "Weighting: A",
-            "Time Constant: Slow",
-            "Range: 80"
-          ],
-          "bind": "meterSet.selectedIndex"
+          "items": [],
+          "bind": "meterSet.selectedIndex",
+          "dynamicItems": "meterSet.items"
         }
       ],
-      "softkeys": ["Edit", "", "", ""],
+      "softkeys": ["", "F-S-I", "R-C-Z-F", "METER 1"],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -272,8 +280,19 @@
       "title": "Measure",
       "mode": "MENU",
       "referenceImage": "Capture/operational/measure_menu.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\MEASURES" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "measure_menu_list",
+          "items": [],
+          "bind": "measure.selectedIndex",
+          "dynamicItems": "measure.items",
+          "columns": 2
+        }
+      ],
+      "softkeys": ["Select", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -382,8 +401,18 @@
       "title": "Display",
       "mode": "MENU",
       "referenceImage": "Capture/operational/display_menu.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\DISPLAY" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "display_menu_list",
+          "items": [],
+          "bind": "menu.selectedIndex",
+          "dynamicItems": "display.items"
+        }
+      ],
+      "softkeys": ["Select", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -392,8 +421,25 @@
       "title": "Display Language",
       "mode": "MENU",
       "referenceImage": "Capture/operational/display_language.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\display\\LANGUAGE" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "language_list",
+          "items": [
+            "ENGLISH",
+            "FRANÇAIS",
+            "ESPAÑOL",
+            "PORTUGUESE",
+            "ITALIANO",
+            "DEUTSCH"
+          ],
+          "bind": "display.languageIndex",
+          "columns": 2
+        }
+      ],
+      "softkeys": ["Select", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },

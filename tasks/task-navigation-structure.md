@@ -354,6 +354,12 @@ N/A - No database.
 3. **Display Menu Submenus**
    - Implement Display menu navigation
    - Implement Display Language submenu
+     - Language selection navigation (UP/DOWN)
+     - Language selection display (two-column layout with full language names)
+     - Diamond indicator shows currently saved language
+     - Highlight shows currently navigated language
+     - ENTER saves selected language and returns to display menu
+     - **NOTE:** Language selection currently only updates state - actual device language change functionality will be implemented at the end once all features are working and tested
    - Implement Display Backlight submenu
    - Implement Display Contrast submenu with LEFT/RIGHT adjustment
 
@@ -715,6 +721,33 @@ N/A - No database.
 - **`js/fsm/mainFSM.js`** - Current FSM implementation (to extend)
 - **`js/buttons.js`** - Button event system
 - **`js/display.js`** - Display rendering system
+
+---
+
+## 14.5. Future Enhancements & Deferred Features
+
+### Language Change Functionality
+**Status:** Deferred until end of project
+
+**Current Implementation:**
+- Language selection screen displays all available languages (ENGLISH, FRANÇAIS, ESPAÑOL, PORTUGUESE, ITALIANO, DEUTSCH)
+- Language selection navigation works (UP/DOWN to navigate, ENTER to save)
+- Language state is saved in `state.display.language`
+- Diamond indicator shows currently saved language
+- Highlight shows currently navigated language
+
+**Future Implementation:**
+- **TODO:** Implement actual device language change functionality
+- When language is selected and saved, the device's display language should change
+- All menu text, labels, and UI elements should update to the selected language
+- This will be implemented at the end of the project once all core features are working and tested
+- **Rationale:** Language change affects the entire UI, so it's safer to implement after all features are stable
+
+**Files to Modify (Future):**
+- `js/fsm/mainFSM.js` - Add language change handler
+- `js/screen-renderer.js` - Add language translation system
+- `data/language-translations.json` - Create translation mappings (if needed)
+- All screen atlas entries - Update to support multiple languages (if needed)
 
 ---
 
