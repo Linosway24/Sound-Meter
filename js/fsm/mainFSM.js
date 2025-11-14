@@ -52,6 +52,7 @@
         mode: "SLM",
         menu: { selectedIndex: 0 },
         toast: null,
+        slmLabelIndex: 0, // 0 = "SLM", 1 = "1/1", 2 = "1/3"
         timers: {
             stopHold: null,
             formatting: null,
@@ -162,6 +163,7 @@
             mode: "SLM",
             menu: { selectedIndex: 0 },
             toast: null,
+            slmLabelIndex: 0, // 0 = "SLM", 1 = "1/1", 2 = "1/3"
             timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null },
             files: { cursor: 0 },
             display: { contrast: 0, backlightMode: "On", language: "EN" },
@@ -402,6 +404,7 @@
                     }
                 } else if (_state.viewId === "display_menu") {
                     // Navigate to display submenus (simplified - could be expanded)
+                    _pushHistory("display_contrast");
                     _state.viewId = "display_contrast";
                     _emit();
                 } else if (_state.viewId === "comms_menu") {
@@ -417,10 +420,12 @@
                 } else if (_state.viewId === "files_menu") {
                     const item = FILES_MENU_ITEMS[_state.menu.selectedIndex];
                     if (item === "SESSION DIRECTORY") {
+                        _pushHistory("files_session_dir");
                         _state.viewId = "files_session_dir";
                         _state.files.cursor = 0;
                         _emit();
                     } else if (item === "CONFIG DIRECTORY") {
+                        _pushHistory("files_config_dir");
                         _state.viewId = "files_config_dir";
                         _state.files.cursor = 0;
                         _emit();
@@ -473,10 +478,12 @@
                         _state.viewId = "slm_home";
                         _emit();
                     } else if (item === "SETUP") {
+                        _pushHistory("setup_menu");
                         _state.viewId = "setup_menu";
                         _state.menu.selectedIndex = 0;
                         _emit();
                     } else if (item === "UNIT INFO") {
+                        _pushHistory("unit_info");
                         _state.viewId = "unit_info";
                         _emit();
                     }
@@ -526,7 +533,8 @@
                     _emit();
                 } else if (isInSetup()) {
                     if (_state.viewId === "setup_menu") {
-                        _state.viewId = "home_screen";
+                        const previousView = _popHistory() || "home_screen";
+                        _state.viewId = previousView;
                         _emit();
                     } else {
                         _state.viewId = "setup_menu";
@@ -534,20 +542,29 @@
                     }
                 } else if (isInFiles()) {
                     if (_state.viewId === "files_menu") {
-                        _state.viewId = "home_screen";
+                        const previousView = _popHistory() || "home_screen";
+                        _state.viewId = previousView;
                         _emit();
                     } else if (_state.viewId === "files_delete_confirm") {
                         _state.viewId = _state.previousViewId || "files_menu";
                         _emit();
                     } else {
-                        _state.viewId = "files_menu";
+                        // Pop history for submenus (SESSION DIRECTORY, CONFIG DIRECTORY, etc.)
+                        const previousView = _popHistory() || "files_menu";
+                        _state.viewId = previousView;
                         _emit();
                     }
                 } else if (_state.viewId === "lock_menu") {
-                    _state.viewId = "home_screen";
+                    const previousView = _popHistory() || "home_screen";
+                    _state.viewId = previousView;
                     _emit();
                 } else if (_state.viewId === "unit_info") {
-                    _state.viewId = "home_screen";
+                    const previousView = _popHistory() || "home_screen";
+                    _state.viewId = previousView;
+                    _emit();
+                } else if (_state.viewId === "display_contrast") {
+                    const previousView = _popHistory() || "setup_menu";
+                    _state.viewId = previousView;
                     _emit();
                 } else if (isSlm()) {
                     _state.measurement.state = "stopped";
@@ -596,7 +613,12 @@
                 break;
 
             case "SOFT1":
-                if (isSlm()) {
+                if (isHome()) {
+                    // Cycle SLM label: SLM (0) → 1/1 (1) → 1/3 (2) → SLM (0)
+                    _state.slmLabelIndex = (_state.slmLabelIndex + 1) % 3;
+                    console.log('[FSM] SOFT1 pressed on home → Cycling SLM label, index:', _state.slmLabelIndex);
+                    _emit();
+                } else if (isSlm()) {
                     _state.viewId = "slm_view_menu";
                     _state.menu.selectedIndex = 0;
                     _emit();

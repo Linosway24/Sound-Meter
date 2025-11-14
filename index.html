@@ -182,9 +182,15 @@
                     void overlayLayer.offsetHeight;
                 }
                 
-                // Re-render display if available
-                if (window.renderDisplay) {
-                    window.renderDisplay();
+                // Re-render using current FSM state (don't use renderDisplay as it uses old logic)
+                if (window.getMainFSMState && window.renderScreen) {
+                    const state = window.getMainFSMState();
+                    if (state && state.viewId !== 'OFF') {
+                        const rendered = window.renderScreen(state.viewId, state);
+                        if (window.updateMainArea) window.updateMainArea(rendered.mainHTML);
+                        if (window.updateStatusArea) window.updateStatusArea(rendered.statusHTML);
+                        if (window.updateSoftKeyLabels) window.updateSoftKeyLabels(rendered.softkeys);
+                    }
                 }
             });
         }

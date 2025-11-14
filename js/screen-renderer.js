@@ -107,8 +107,17 @@
         for (let i = 0; i < 4; i++) {
             let label = softkeys[i] || '';
             // Replace placeholders
-            if (label === '{modeLabel}' && state?.ui?.measureTypeLabel) {
-                label = state.ui.measureTypeLabel;
+            if (label === '{modeLabel}') {
+                // Use slmLabelIndex from FSM state: 0 = "SLM", 1 = "1/1", 2 = "1/3"
+                if (state?.slmLabelIndex !== undefined) {
+                    const labelMap = ['SLM', '1/1', '1/3'];
+                    label = labelMap[state.slmLabelIndex] || 'SLM';
+                } else if (state?.ui?.measureTypeLabel) {
+                    // Fallback to old ui.measureTypeLabel if present
+                    label = state.ui.measureTypeLabel;
+                } else {
+                    label = 'SLM'; // Default
+                }
             }
             labels.push(label);
         }
