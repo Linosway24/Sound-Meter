@@ -301,8 +301,18 @@
       "title": "Auto Run",
       "mode": "MENU",
       "referenceImage": "Capture/operational/auto_run_menu.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\AUTO-RUN" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "auto_run_list",
+          "items": [],
+          "bind": "autoRun.selectedIndex",
+          "dynamicItems": "autoRun.items"
+        }
+      ],
+      "softkeys": ["Select", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -311,8 +321,20 @@
       "title": "Date/Time",
       "mode": "MENU",
       "referenceImage": "Capture/operational/datetime_menu.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\DATETIME" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "datetime_list",
+          "items": [
+            "DATE",
+            "TIME"
+          ],
+          "bind": "menu.selectedIndex"
+        }
+      ],
+      "softkeys": ["Select", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -321,8 +343,16 @@
       "title": "Date/Time Edit",
       "mode": "EDIT",
       "referenceImage": "Capture/operational/datetime_edit.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "DATETIME" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "label",
+          "id": "edit_item",
+          "text": "Date: 01/01/2024"
+        }
+      ],
+      "softkeys": ["Save", "Cancel", "", ""],
       "keys": ["up", "down", "left", "right", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -331,8 +361,22 @@
       "title": "Digital Out",
       "mode": "MENU",
       "referenceImage": "Capture/operational/digital_out_menu.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\DIGITAL OUT" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "digital_out_list",
+          "items": [
+            "ENABLE",
+            "FORMAT",
+            "BAUD RATE",
+            "DATA RATE"
+          ],
+          "bind": "menu.selectedIndex"
+        }
+      ],
+      "softkeys": ["Select", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },

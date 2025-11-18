@@ -53,6 +53,23 @@
         "CONTRAST"
     ];
 
+    const AUTO_RUN_MENU_ITEMS = [
+        { title: "AUTO-RUN", value: "Disabled", options: ["Disabled", "Enabled"], showEquals: false },
+        { title: "VIEW/SET PARAMETERS", showValue: false }
+    ];
+
+    const DATETIME_MENU_ITEMS = [
+        "DATE",
+        "TIME"
+    ];
+
+    const DIGITAL_OUT_MENU_ITEMS = [
+        "ENABLE",
+        "FORMAT",
+        "BAUD RATE",
+        "DATA RATE"
+    ];
+
     // Generate L01 to L99 options (all values from 1 to 99)
     // Lmax is not included in UP/DOWN navigation - only L01 to L99
     const L_OPTIONS = ["OFF"];
@@ -106,6 +123,7 @@
         },
         meterSet: { editing: false, focus: "title", selectedIndex: 0, items: METER_SET_ITEMS.map(item => ({ ...item })) },
         measure: { editing: false, focus: "title", selectedIndex: 0, items: MEASURE_MENU_ITEMS.map(item => ({ ...item })) },
+        autoRun: { editing: false, focus: "title", selectedIndex: 0, items: AUTO_RUN_MENU_ITEMS.map(item => ({ ...item })) },
         flags: { locked: false },
         measurement: { runtime: 0, state: "stopped", isRunning: false },
         history: [],
@@ -222,6 +240,7 @@
             },
             meterSet: { editing: false, focus: "title", selectedIndex: 0, items: METER_SET_ITEMS.map(item => ({ ...item })) },
             measure: { editing: false, focus: "title", selectedIndex: 0, items: MEASURE_MENU_ITEMS.map(item => ({ ...item })) },
+            autoRun: { editing: false, focus: "title", selectedIndex: 0, items: AUTO_RUN_MENU_ITEMS.map(item => ({ ...item })) },
             flags: { locked: false },
             measurement: { runtime: 0, state: "stopped", isRunning: false },
             history: [],
@@ -399,6 +418,19 @@
                         console.log(`[MENU] Display menu - Selected index: ${_state.menu.selectedIndex} → "${DISPLAY_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                         _emit();
                     }
+                } else if (_state.viewId === "auto_run_menu") {
+                    _state.autoRun.selectedIndex = (_state.autoRun.selectedIndex + AUTO_RUN_MENU_ITEMS.length - 1) % AUTO_RUN_MENU_ITEMS.length;
+                    _state.autoRun.focus = "title"; // Ensure focus is on title when navigating
+                    console.log(`[MENU] Auto Run menu - Selected index: ${_state.autoRun.selectedIndex} → "${AUTO_RUN_MENU_ITEMS[_state.autoRun.selectedIndex].title}"`);
+                    _emit();
+                } else if (_state.viewId === "datetime_menu") {
+                    _state.menu.selectedIndex = (_state.menu.selectedIndex + DATETIME_MENU_ITEMS.length - 1) % DATETIME_MENU_ITEMS.length;
+                    console.log(`[MENU] Date/Time menu - Selected index: ${_state.menu.selectedIndex} → "${DATETIME_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    _emit();
+                } else if (_state.viewId === "digital_out_menu") {
+                    _state.menu.selectedIndex = (_state.menu.selectedIndex + DIGITAL_OUT_MENU_ITEMS.length - 1) % DIGITAL_OUT_MENU_ITEMS.length;
+                    console.log(`[MENU] Digital Out menu - Selected index: ${_state.menu.selectedIndex} → "${DIGITAL_OUT_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    _emit();
                 } else if (isHome()) {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + MENU_ITEMS.length - 1) % MENU_ITEMS.length;
                     console.log(`[MENU] Home menu - Selected index: ${_state.menu.selectedIndex} → "${MENU_ITEMS[_state.menu.selectedIndex]}"`);
@@ -515,6 +547,19 @@
                         console.log(`[MENU] Display menu - Selected index: ${_state.menu.selectedIndex} → "${DISPLAY_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                         _emit();
                     }
+                } else if (_state.viewId === "auto_run_menu") {
+                    _state.autoRun.selectedIndex = (_state.autoRun.selectedIndex + 1) % AUTO_RUN_MENU_ITEMS.length;
+                    _state.autoRun.focus = "title"; // Ensure focus is on title when navigating
+                    console.log(`[MENU] Auto Run menu - Selected index: ${_state.autoRun.selectedIndex} → "${AUTO_RUN_MENU_ITEMS[_state.autoRun.selectedIndex].title}"`);
+                    _emit();
+                } else if (_state.viewId === "datetime_menu") {
+                    _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % DATETIME_MENU_ITEMS.length;
+                    console.log(`[MENU] Date/Time menu - Selected index: ${_state.menu.selectedIndex} → "${DATETIME_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    _emit();
+                } else if (_state.viewId === "digital_out_menu") {
+                    _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % DIGITAL_OUT_MENU_ITEMS.length;
+                    console.log(`[MENU] Digital Out menu - Selected index: ${_state.menu.selectedIndex} → "${DIGITAL_OUT_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    _emit();
                 } else if (isHome()) {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % MENU_ITEMS.length;
                     console.log(`[MENU] Home menu - Selected index: ${_state.menu.selectedIndex} → "${MENU_ITEMS[_state.menu.selectedIndex]}"`);
@@ -607,14 +652,19 @@
                     } else if (item === "AUTO RUN") {
                         _pushHistory("auto_run_menu");
                         _state.viewId = "auto_run_menu";
+                        _state.autoRun.selectedIndex = 0;
+                        _state.autoRun.focus = "title";
+                        _state.autoRun.editing = false;
                         _emit();
                     } else if (item === "DATETIME") {
                         _pushHistory("datetime_menu");
                         _state.viewId = "datetime_menu";
+                        _state.menu.selectedIndex = 0;
                         _emit();
                     } else if (item === "DIGITAL OUT") {
                         _pushHistory("digital_out_menu");
                         _state.viewId = "digital_out_menu";
+                        _state.menu.selectedIndex = 0;
                         _emit();
                     } else if (item === "OPTIONS") {
                         _pushHistory("options_menu");
@@ -835,7 +885,39 @@
                     _state.viewId = "comms_menu";
                     _emit();
                 } else if (_state.viewId === "datetime_menu") {
+                    // Route to datetime_edit when ENTER is pressed
+                    _pushHistory("datetime_edit");
                     _state.viewId = "datetime_edit";
+                    _emit();
+                } else if (_state.viewId === "datetime_edit") {
+                    // Save and return to datetime_menu
+                    const previousView = _popHistory() || "datetime_menu";
+                    _state.viewId = previousView;
+                    _emit();
+                } else if (_state.viewId === "auto_run_menu") {
+                    const item = _state.autoRun.items[_state.autoRun.selectedIndex];
+                    if (item.title === "AUTO-RUN") {
+                        // Toggle between Disabled and Enabled
+                        if (item.value === "Disabled") {
+                            item.value = "Enabled";
+                            console.log(`[AUTO RUN] AUTO-RUN = ${item.value} (Disabled → Enabled)`);
+                        } else {
+                            item.value = "Disabled";
+                            console.log(`[AUTO RUN] AUTO-RUN = ${item.value} (Enabled → Disabled)`);
+                        }
+                        // Keep focus on title (don't enter edit mode)
+                        _state.autoRun.focus = "title";
+                        _state.autoRun.editing = false;
+                        _emit();
+                    } else if (item.title === "VIEW/SET PARAMETERS") {
+                        // Stub: ENTER on VIEW/SET PARAMETERS (submenu not yet implemented)
+                        console.log(`[AUTO RUN] Selected item: ${item.title} (submenu not yet implemented)`);
+                        _emit();
+                    }
+                } else if (_state.viewId === "digital_out_menu") {
+                    // Stub: ENTER on digital_out_menu items (editing not yet implemented)
+                    const item = DIGITAL_OUT_MENU_ITEMS[_state.menu.selectedIndex];
+                    console.log(`[DIGITAL OUT] Selected item: ${item} (editing not yet implemented)`);
                     _emit();
                 } else if (_state.viewId === "files_menu") {
                     const item = FILES_MENU_ITEMS[_state.menu.selectedIndex];
@@ -978,6 +1060,29 @@
                         _state.viewId = previousView;
                         _emit();
                     }
+                } else if (_state.viewId === "datetime_edit") {
+                    // Cancel editing and return to datetime_menu
+                    const previousView = _popHistory() || "datetime_menu";
+                    _state.viewId = previousView;
+                    _emit();
+                } else if (_state.viewId === "auto_run_menu") {
+                    // Return to setup_menu
+                    const previousView = _popHistory() || "setup_menu";
+                    _state.viewId = previousView;
+                    _state.autoRun.selectedIndex = 0;
+                    _emit();
+                } else if (_state.viewId === "datetime_menu") {
+                    // Return to setup_menu
+                    const previousView = _popHistory() || "setup_menu";
+                    _state.viewId = previousView;
+                    _state.menu.selectedIndex = 0;
+                    _emit();
+                } else if (_state.viewId === "digital_out_menu") {
+                    // Return to setup_menu
+                    const previousView = _popHistory() || "setup_menu";
+                    _state.viewId = previousView;
+                    _state.menu.selectedIndex = 0;
+                    _emit();
                 } else if (_state.viewId === "display_menu") {
                     const previousView = _popHistory() || "setup_menu";
                     _state.viewId = previousView;

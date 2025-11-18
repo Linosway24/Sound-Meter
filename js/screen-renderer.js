@@ -92,11 +92,12 @@
                                         enabled: item.enabled // Preserve enabled property for "off" toggle
                                     };
                                 } else {
-                                    // Measure menu items (have value but no unit, displayed as "title = value")
+                                    // Measure menu items or AUTO-RUN items (have value but no unit, displayed as "title = value" or "title value")
                                     return {
                                         title: item.title,
                                         value: String(item.value),
-                                        showValue: true
+                                        showValue: true,
+                                        showEquals: item.showEquals !== false // Preserve showEquals property, default to true
                                     };
                                 }
                             } else if (item.title && item.valueKey) {
@@ -202,16 +203,24 @@
                                 html += `</span>`;
                                 html += `</div>`;
                             } else if (item.value !== undefined && item.value !== null && !item.unit && !item.valueKey) {
-                                // Measure menu items - shows "title = value" format (no valueKey, no unit)
+                                // Measure menu items or AUTO-RUN items - shows "title = value" or "title value" format
                                 const isMeasureEditing = state?.measure?.editing && isSelected;
+                                const isAutoRunEditing = state?.autoRun?.editing && isSelected;
                                 const measureFocusValue = state?.measure?.focus === "value";
+                                const autoRunFocusValue = state?.autoRun?.focus === "value";
                                 // When editing, title should NOT be highlighted - only value should be highlighted
                                 const measureFocusTitle = !isMeasureEditing && (state?.measure?.focus === "title" || (!state?.measure?.focus && isSelected));
+                                const autoRunFocusTitle = !isAutoRunEditing && (state?.autoRun?.focus === "title" || (!state?.autoRun?.focus && isSelected));
+                                const showEquals = item.showEquals !== false; // Default to true unless explicitly false
                                 html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                                const titleClass = measureFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                const titleClass = (measureFocusTitle || autoRunFocusTitle) && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
                                 html += `<span class="${titleClass}">${item.title}</span>`;
-                                html += `<span class="menu-item__equals"> = </span>`;
-                                const valueClass = (isMeasureEditing && measureFocusValue) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
+                                if (showEquals) {
+                                    html += `<span class="menu-item__equals"> = </span>`;
+                                } else {
+                                    html += `<span class="menu-item__spacer"> </span>`;
+                                }
+                                const valueClass = ((isMeasureEditing && measureFocusValue) || (isAutoRunEditing && autoRunFocusValue)) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
                                 html += `<span class="${valueClass}">${item.value}</span>`;
                                 html += `</div>`;
                             } else if (item.value !== undefined && item.value !== null && !item.unit && item.valueKey) {
@@ -286,16 +295,24 @@
                                 html += `</span>`;
                                 html += `</div>`;
                             } else if (item.value !== undefined && item.value !== null && !item.unit && !item.valueKey) {
-                                // Measure menu items - shows "title = value" format (no valueKey, no unit)
+                                // Measure menu items or AUTO-RUN items - shows "title = value" or "title value" format
                                 const isMeasureEditing = state?.measure?.editing && isSelected;
+                                const isAutoRunEditing = state?.autoRun?.editing && isSelected;
                                 const measureFocusValue = state?.measure?.focus === "value";
+                                const autoRunFocusValue = state?.autoRun?.focus === "value";
                                 // When editing, title should NOT be highlighted - only value should be highlighted
                                 const measureFocusTitle = !isMeasureEditing && (state?.measure?.focus === "title" || (!state?.measure?.focus && isSelected));
+                                const autoRunFocusTitle = !isAutoRunEditing && (state?.autoRun?.focus === "title" || (!state?.autoRun?.focus && isSelected));
+                                const showEquals = item.showEquals !== false; // Default to true unless explicitly false
                                 html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                                const titleClass = measureFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                const titleClass = (measureFocusTitle || autoRunFocusTitle) && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
                                 html += `<span class="${titleClass}">${item.title}</span>`;
-                                html += `<span class="menu-item__equals"> = </span>`;
-                                const valueClass = (isMeasureEditing && measureFocusValue) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
+                                if (showEquals) {
+                                    html += `<span class="menu-item__equals"> = </span>`;
+                                } else {
+                                    html += `<span class="menu-item__spacer"> </span>`;
+                                }
+                                const valueClass = ((isMeasureEditing && measureFocusValue) || (isAutoRunEditing && autoRunFocusValue)) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
                                 html += `<span class="${valueClass}">${item.value}</span>`;
                                 html += `</div>`;
                             } else if (item.value !== undefined && item.value !== null && !item.unit && item.valueKey) {
@@ -372,16 +389,24 @@
                                 html += `</span>`;
                                 html += `</div>`;
                             } else if (item.value !== undefined && item.value !== null && !item.unit && !item.valueKey) {
-                                // Measure menu items - shows "title = value" format (no valueKey, no unit)
+                                // Measure menu items or AUTO-RUN items - shows "title = value" or "title value" format
                                 const isMeasureEditing = state?.measure?.editing && isSelected;
+                                const isAutoRunEditing = state?.autoRun?.editing && isSelected;
                                 const measureFocusValue = state?.measure?.focus === "value";
+                                const autoRunFocusValue = state?.autoRun?.focus === "value";
                                 // When editing, title should NOT be highlighted - only value should be highlighted
                                 const measureFocusTitle = !isMeasureEditing && (state?.measure?.focus === "title" || (!state?.measure?.focus && isSelected));
+                                const autoRunFocusTitle = !isAutoRunEditing && (state?.autoRun?.focus === "title" || (!state?.autoRun?.focus && isSelected));
+                                const showEquals = item.showEquals !== false; // Default to true unless explicitly false
                                 html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                                const titleClass = measureFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                const titleClass = (measureFocusTitle || autoRunFocusTitle) && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
                                 html += `<span class="${titleClass}">${item.title}</span>`;
-                                html += `<span class="menu-item__equals"> = </span>`;
-                                const valueClass = (isMeasureEditing && measureFocusValue) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
+                                if (showEquals) {
+                                    html += `<span class="menu-item__equals"> = </span>`;
+                                } else {
+                                    html += `<span class="menu-item__spacer"> </span>`;
+                                }
+                                const valueClass = ((isMeasureEditing && measureFocusValue) || (isAutoRunEditing && autoRunFocusValue)) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
                                 html += `<span class="${valueClass}">${item.value}</span>`;
                                 html += `</div>`;
                             } else if (item.value !== undefined && item.value !== null && !item.unit && item.valueKey) {

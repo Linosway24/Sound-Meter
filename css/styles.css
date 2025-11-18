@@ -456,6 +456,7 @@ body {
     font-size: 13px;
     color: #888888;
     padding: 1px 8px;
+    margin-bottom: 4px;
     cursor: default;
     transition: background-color 0.15s ease, color 0.15s ease;
     display: flex;
@@ -534,6 +535,10 @@ body {
 .menu-item__equals {
     color: #888888;
     margin: 0 2px;
+}
+
+.menu-item__spacer {
+    margin: 0 4px;
 }
 
 .menu-item__bar {
