@@ -142,8 +142,19 @@
                 return;
             }
             if (key === 2) {
-                console.log('[BUTTON] Soft Key 2: Files menu (via mainFSM)');
-                window.dispatch({ type: 'SOFT2' });
+                // Check current view to determine action
+                const fsmState = window.getMainFSMState?.();
+                const viewId = fsmState?.viewId;
+                
+                if (viewId === "battery_menu") {
+                    // On battery menu, send SOFT2 for NiMH
+                    console.log(`[BUTTON] Soft Key 2: Battery NiMH (via mainFSM)`);
+                    window.dispatch({ type: 'SOFT2' });
+                } else {
+                    // On other screens (SLM, Home, etc.), send SOFT2 for Calibration
+                    console.log('[BUTTON] Soft Key 2: Calibration menu (via mainFSM)');
+                    window.dispatch({ type: 'SOFT2' });
+                }
                 return;
             }
             if (key === 3) {
@@ -152,8 +163,19 @@
                 return;
             }
             if (key === 4) {
-                console.log('[BUTTON] Soft Key 4: Lock menu (via mainFSM)');
-                window.dispatch({ type: 'LOCK_SOFTKEY' });
+                // Check current view to determine action
+                const fsmState = window.getMainFSMState?.();
+                const viewId = fsmState?.viewId;
+                
+                if (viewId === "logging_menu" || viewId === "auto_run_date_params") {
+                    // On logging menu or date params screen, send SOFT4
+                    console.log(`[BUTTON] Soft Key 4: (via mainFSM)`);
+                    window.dispatch({ type: 'SOFT4' });
+                } else {
+                    // On home or SLM screens, send LOCK_SOFTKEY
+                    console.log('[BUTTON] Soft Key 4: Lock menu (via mainFSM)');
+                    window.dispatch({ type: 'LOCK_SOFTKEY' });
+                }
                 return;
             }
         }

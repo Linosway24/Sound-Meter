@@ -95,33 +95,36 @@ body {
     display: grid;
     grid-template-rows: 14% 1fr 16%; /* status, main, softkey labels */
     pointer-events: none;
+    /* Base font size scales with viewport height - LCD scales with device photo which scales with vh */
+    font-size: clamp(0.6rem, 1.2vh, 1rem); /* Scales between 0.6rem and 1rem based on viewport height */
 }
 
 .lcd__status { 
     background: var(--lcd-status-bg);
     color: #e6e6e6;
     overflow: hidden;
-    padding: 8px;
+    padding: 0.6em; /* Scale relative to LCD base font size */
 }
 .lcd__main { 
     background: var(--lcd-bg);
     color: #e6e6e6;
-    overflow: hidden;
+    overflow-y: auto; /* Allow scrolling if content exceeds visible area */
+    overflow-x: hidden; /* Prevent horizontal scrolling */
     position: relative;
-    padding: 20px;
+    padding: 1.5em; /* Scale relative to LCD base font size */
 }
 .lcd__softkeys { 
     background: var(--lcd-softkeys-bg);
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 8px;
+    padding: 0.6em; /* Scale relative to LCD base font size */
     color: #ccc;
 }
 
 /* Soft key labels */
 .soft-key-label {
-    font-size: 11px;
+    font-size: 0.9em; /* Scale relative to LCD base font size */
     color: #ccc;
     text-align: center;
     flex: 1;
@@ -418,29 +421,85 @@ body {
 }
 
 .screen-element--title {
-    font-size: 16px;
+    font-size: 1.3em; /* Scale relative to LCD base font size */
     font-weight: 600;
     color: #e6e6e6;
-    margin-bottom: 8px;
+    margin-bottom: 0.5em;
+    white-space: nowrap; /* Prevent wrapping */
+    padding-left: 0; /* No left padding to align with menu items */
+}
+
+/* Smaller title font for AUTO RUN Timed Run to fit on screen */
+.screen-element--title-small {
+    /* Scale relative to LCD base font size and viewport height - split difference between previous sizes */
+    font-size: clamp(0.7em, 1.1vh, 1.1em); /* Middle ground: scales better than original but not as small as before */
+    letter-spacing: -0.025em; /* Slightly less tight spacing */
+    word-spacing: 0; /* No extra word spacing */
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden; /* Hide overflow if still too large */
+    text-overflow: ellipsis; /* Show ellipsis if truncated */
+    max-width: 100%; /* Ensure it doesn't exceed container width */
+}
+
+.screen-element--label {
+    font-size: 1em; /* Scale relative to LCD base font size */
+    white-space: nowrap; /* Prevent wrapping - text should scale instead */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Centered label for AUTO RUN Timed Run */
+.screen-element--centered {
+    text-align: center;
+    width: 100%;
+}
+
+/* Highlighted label for AUTO RUN Timed Run */
+.screen-element--highlighted {
+    color: #e6e6e6; /* Bright white/highlighted color */
+    font-weight: 600;
+    margin-top: 0.5em; /* Spacing from divider */
+    margin-bottom: 1em; /* One line space before duration */
 }
 
 .screen-element--textList {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.05em; /* Scale relative to LCD base font size - minimal spacing */
+}
+
+/* Spacer line for AUTO RUN menu */
+.menu-item--spacer-line {
+    height: 1em; /* Height of one line */
+    min-height: 1em;
+    padding: 0;
+    margin: 0;
+    visibility: hidden; /* Invisible but takes up space */
+}
+
+/* Highlighted text for DOW "Days" label */
+.screen-element--highlighted {
+    color: #e6e6e6;
+    font-weight: bold;
 }
 
 .screen-element--twoColumns {
     display: flex;
+    flex-direction: column;
+    gap: 0.15em; /* Scale relative to LCD base font size */
+}
+
+.screen-element--twoColumns > .menu-columns-wrapper {
+    display: flex;
     flex-direction: row;
-    gap: 12px;
+    gap: 0.9em; /* Scale relative to LCD base font size */
     align-items: flex-start;
 }
 
 .menu-column {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.05em; /* Scale relative to LCD base font size - minimal spacing between lines */
     flex: 1;
 }
 
@@ -453,14 +512,15 @@ body {
 }
 
 .menu-item {
-    font-size: 13px;
+    font-size: 1em; /* Scale relative to LCD base font size */
     color: #888888;
-    padding: 1px 8px;
-    margin-bottom: 4px;
+    padding: 0.02em 0.6em; /* Minimal vertical padding to reduce line spacing */
+    margin-bottom: 0.05em; /* Minimal margin to reduce line spacing */
     cursor: default;
     transition: background-color 0.15s ease, color 0.15s ease;
     display: flex;
     align-items: center;
+    white-space: nowrap; /* Prevent wrapping - text should scale instead */
 }
 
 .menu-item--meter-set {
@@ -481,7 +541,7 @@ body {
 
 .menu-item__value {
     text-align: right;
-    margin-left: 12px;
+    margin-left: 0.9em; /* Scale relative to LCD base font size */
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -489,13 +549,14 @@ body {
 .menu-item--display .menu-item__value {
     margin-left: 0;
     text-align: left;
+    white-space: nowrap; /* Prevent wrapping */
 }
 
 .menu-item__value--editing {
     background-color: #4a5568;
     color: #ffffff;
-    padding: 2px 4px;
-    border-radius: 3px;
+    padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
+    border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
 }
 
@@ -509,19 +570,60 @@ body {
     background-color: #2a3340;
     color: #ffffff;
     font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 3px;
+    padding: 0.15em 0.45em; /* Scale relative to LCD base font size */
+    border-radius: 0.2em; /* Scale relative to LCD base font size */
+}
+
+/* Ensure AUTO-RUN menu items align with title (no left padding) */
+#auto_run_list .menu-item {
+    padding-left: 0; /* Remove left padding to align with title */
+}
+
+#auto_run_list .menu-item .menu-item__title {
+    padding-left: 0; /* No padding on title */
+}
+
+#auto_run_list .menu-item--selected .menu-item__title {
+    padding: 0.15em 0.45em; /* Padding for selected highlight, but starts from left edge */
+}
+
+/* When value is being edited, don't highlight the title and gray it out like non-selected items */
+.menu-item--selected.menu-item--editing-value .menu-item__title {
+    background-color: transparent;
+    color: #888888; /* Same gray color as non-selected menu items */
+    font-weight: normal;
+    padding: 0;
+    border-radius: 0;
 }
 
 .menu-item--selected .menu-item__value {
     color: #888888; /* Keep value dimmed when title is selected */
 }
 
+/* Ensure Level-Triggered values are visible */
+#level_triggered_list .menu-item__value {
+    color: #888888 !important; /* Ensure values are visible */
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline !important;
+}
+
+#level_triggered_list .menu-item--selected .menu-item__value {
+    color: #888888 !important; /* Keep values visible when title is selected */
+}
+
+#level_triggered_list .menu-item__equals {
+    color: #888888 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline !important;
+}
+
 .menu-item--selected .menu-item__value--editing {
     background-color: #5a6578;
     color: #ffffff;
-    padding: 2px 4px;
-    border-radius: 3px;
+    padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
+    border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
 }
 
@@ -529,29 +631,30 @@ body {
 .menu-item--display {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 0.15em; /* Scale relative to LCD base font size */
 }
 
 .menu-item__equals {
     color: #888888;
-    margin: 0 2px;
+    margin: 0 0.15em; /* Scale relative to LCD base font size */
 }
 
 .menu-item__spacer {
-    margin: 0 4px;
+    margin: 0 0.3em; /* Scale relative to LCD base font size */
 }
 
 .menu-item__bar {
     font-family: monospace;
     display: inline-flex;
     align-items: center;
-    gap: 1px;
+    gap: 0.08em; /* Scale relative to LCD base font size */
     letter-spacing: 0px;
+    font-size: 0.9em; /* Scale relative to LCD base font size */
 }
 
 .bar-segment {
     display: inline-block;
-    font-size: 12px;
+    font-size: 0.9em; /* Scale relative to LCD base font size */
     line-height: 1;
     vertical-align: middle;
 }
@@ -567,8 +670,8 @@ body {
 
 .menu-item__bar--editing {
     background-color: #4a5568;
-    padding: 2px 4px;
-    border-radius: 3px;
+    padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
+    border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
 }
 
@@ -591,8 +694,9 @@ body {
 
 /* Smaller font for two-column setup menu */
 .screen-element--twoColumns .menu-item {
-    font-size: 11px;
-    padding: 1px 6px;
+    font-size: 0.85em; /* Scale relative to LCD base font size */
+    padding: 0.08em 0.5em;
+    white-space: nowrap; /* Prevent wrapping */
 }
 
 

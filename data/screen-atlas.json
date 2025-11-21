@@ -156,7 +156,7 @@
             "OPTIONS",
             "SIG INPUT",
             "LOGGING",
-            "COMMS",
+            "COMM-SET",
             "BATTERY",
             "DISPLAY"
           ],
@@ -312,8 +312,78 @@
           "dynamicItems": "autoRun.items"
         }
       ],
-      "softkeys": ["Select", "", "", ""],
+      "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "auto_run_timed_run_params",
+      "title": "Auto Run Timed Run",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/auto_run_timed_run_params.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "\\...\\AUTO-RUN\\TIMED-RUN" },
+        { "type": "divider", "id": "title_rule" },
+        { "type": "label", "id": "timed_run_label", "text": "TIMED-RUN" },
+        { "type": "label", "id": "duration_label", "text": "D 00:00:02" }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc", "left", "right"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "auto_run_dow_params",
+      "title": "Auto Run DOW",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/auto_run_dow_params.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\AUTO-RUN:DOW" },
+        { "type": "divider", "id": "title_rule" },
+        { "type": "label", "id": "days_label", "text": "S M T W T F S" },
+        { "type": "label", "id": "auto_run_1", "text": "Auto-Run #1" },
+        { "type": "label", "id": "auto_run_2", "text": "Auto-Run #2" }
+      ],
+      "softkeys": ["-1", "-2", "", ""],
+      "keys": ["up", "down", "enter", "esc", "left", "right"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "auto_run_date_params",
+      "title": "Auto Run Date",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/auto_run_date_params.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\AUTO-RUN\\DATE" },
+        { "type": "divider", "id": "title_rule" },
+        { "type": "label", "id": "auto_run_date_display", "text": "AUTO-RUN #1" }
+      ],
+      "softkeys": ["-1", "-2", "-3", "-4"],
+      "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "auto_run_level_triggered_params",
+      "title": "Auto Run Level Triggered",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/auto_run_level_triggered_params.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "\\setup\\LVL-TRG-Run" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "level_triggered_list",
+          "items": [
+            "MODE",
+            "ACTION",
+            "TRIGGER",
+            "SOURCE",
+            "LEVEL"
+          ],
+          "bind": "autoRunLevelTriggered.selectedIndex"
+        }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc", "left", "right"],
       "display": { "backlight": true }
     },
     {
@@ -328,14 +398,16 @@
           "type": "textList",
           "id": "datetime_list",
           "items": [
-            "DATE",
+            "YEAR",
+            "MONTH",
+            "DAY",
             "TIME"
           ],
-          "bind": "menu.selectedIndex"
+          "bind": "datetime.selectedIndex"
         }
       ],
       "softkeys": ["Select", "", "", ""],
-      "keys": ["up", "down", "enter", "esc"],
+      "keys": ["up", "down", "enter", "esc", "left", "right"],
       "display": { "backlight": true }
     },
     {
@@ -367,17 +439,12 @@
         {
           "type": "textList",
           "id": "digital_out_list",
-          "items": [
-            "ENABLE",
-            "FORMAT",
-            "BAUD RATE",
-            "DATA RATE"
-          ],
-          "bind": "menu.selectedIndex"
+          "dynamicItems": "digitalOut.items",
+          "bind": "digitalOut.selectedIndex"
         }
       ],
-      "softkeys": ["Select", "", "", ""],
-      "keys": ["up", "down", "enter", "esc"],
+      "softkeys": ["", "", "", ""],
+      "keys": ["up", "down", "enter", "esc", "left", "right"],
       "display": { "backlight": true }
     },
     {
@@ -385,9 +452,22 @@
       "title": "Options",
       "mode": "MENU",
       "referenceImage": "Capture/operational/options_menu.jpeg",
-      "elements": [],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "\\DATA FILE" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "label",
+          "id": "options_status",
+          "text": "OPTIONS NOT LOADED"
+        },
+        {
+          "type": "label",
+          "id": "options_error",
+          "text": "FILE NOT FOUND"
+        }
+      ],
       "softkeys": ["", "", "", ""],
-      "keys": ["up", "down", "enter", "esc"],
+      "keys": ["esc"],
       "display": { "backlight": true }
     },
     {
@@ -395,7 +475,17 @@
       "title": "Signal Input",
       "mode": "MENU",
       "referenceImage": "Capture/operational/sig_input_menu.jpeg",
-      "elements": [],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\SIG INPUT" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "sig_input_list",
+          "items": [],
+          "bind": "sigInput.selectedIndex",
+          "dynamicItems": "sigInput.items"
+        }
+      ],
       "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
@@ -405,8 +495,19 @@
       "title": "Logging",
       "mode": "MENU",
       "referenceImage": "Capture/operational/logging_menu.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\LOGGING" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "logging_list",
+          "items": [],
+          "bind": "logging.selectedIndex",
+          "dynamicItems": "logging.items",
+          "columns": 2
+        }
+      ],
+      "softkeys": ["", "", "", "Meter"],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -415,7 +516,20 @@
       "title": "Comms",
       "mode": "MENU",
       "referenceImage": "Capture/operational/comms_menu.jpeg",
-      "elements": [],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\COMM-SET" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "comms_list",
+          "items": [
+            "USB",
+            "RS-232",
+            "BAUD RATE"
+          ],
+          "bind": "menu.selectedIndex"
+        }
+      ],
       "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
@@ -425,8 +539,16 @@
       "title": "Comms Edit",
       "mode": "EDIT",
       "referenceImage": "Capture/operational/comms_edit.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "COMM-SET" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "label",
+          "id": "edit_item",
+          "text": "BAUD RATE: 9600"
+        }
+      ],
+      "softkeys": ["Save", "Cancel", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -435,9 +557,17 @@
       "title": "Battery",
       "mode": "MENU",
       "referenceImage": "Capture/operational/battery_menu.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
-      "keys": ["up", "down", "enter", "esc"],
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "setup\\BATTERY" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "label",
+          "id": "battery_status",
+          "text": "B1 B2 B3 B4"
+        }
+      ],
+      "softkeys": ["ALK", "NiMH", "", ""],
+      "keys": ["esc"],
       "display": { "backlight": true }
     },
     {
