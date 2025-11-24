@@ -236,16 +236,22 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Softkeys 1-2 show "+1"/"+2" when times are programmed
 - Softkeys update dynamically when returning from DOW params screen
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.4 Enter Days Edit Mode
-**Test:** Select Auto-Run #1, press ENTER
+**Test:** With "Days" highlighted (selectedIndex = -1), press ENTER
 **Expected:**
-- Enters days edit mode
-- Console log: `[AUTO RUN DOW] ENTER: Entered days edit mode for line 1`
+- Enters days edit mode for line 1 (switches to line 1 if needed)
+- Console log: `[AUTO RUN DOW] ENTER: Days selected, entered days edit mode for line 1`
 - Days field is ready for editing
+- Works regardless of which line (1 or 2) was previously selected or if times are entered
 
-**Pass/Fail:** [ ]
+**Test:** With line 1 or 2 selected, press ENTER
+**Expected:**
+- Also enters days edit mode for the selected line
+- Console log: `[AUTO RUN DOW] ENTER: Entered days edit mode for line X`
+
+**Pass/Fail:** [x ]
 
 ### 3.5 Enter Start Time Edit Mode
 **Test:** In days edit mode, press ENTER
@@ -272,7 +278,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - Minute/hour decreases appropriately
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.7 Enter Stop Time Edit Mode
 **Test:** In start time edit mode, with minute highlighted, press ENTER
@@ -282,7 +288,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Console log: `[AUTO RUN DOW] ENTER: Entered stop time edit mode`
 - Stop time shows "00:00" format
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.8 Adjust Stop Time
 **Test:** In stop time edit mode, adjust hour and minute using UP/DOWN
@@ -291,7 +297,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Console logs confirm adjustments
 - Display updates immediately
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 3.9 LEFT/RIGHT in Time Edit Mode
 **Test:** In start time or stop time edit mode, press LEFT/RIGHT arrows
@@ -300,7 +306,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - RIGHT: Moves between hour and minute (H → M → H)
 - Console logs confirm subfield changes
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.10 Exit Edit Mode
 **Test:** In stop time edit mode, with minute highlighted, press ENTER
@@ -309,7 +315,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Console log: `[AUTO RUN DOW] ENTER: Exited edit mode`
 - No fields are highlighted
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.11 ESC Behavior
 **Test:** In any edit mode (days, startTime, stopTime), press ESC
@@ -323,7 +329,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Returns to AUTO RUN menu
 - Console log: `[AUTO RUN DOW] ESC: Returned to auto_run_menu`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 3.12 Value Persistence
 **Test:** Set line 1 start time to 08:30, stop time to 17:00. Enable line, exit, return to DOW parameters.
@@ -333,7 +339,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Values persist
 - On main AUTO RUN menu, softkey shows "+1" (times are programmed)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.13 Both Lines Independent
 **Test:** Configure line 1 with one time, line 2 with different time. Navigate between them.
@@ -348,7 +354,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Line shows "---OFF---" below the line number
 - Softkey shows "-1" or "-2" (not "+1" or "+2")
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -381,7 +387,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 
 **Note:** UP/DOWN arrows do not navigate between lines on the Date params screen - use softkeys instead.
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.3 Enable Line via Softkey
 **Test:** Press SOFT1 (should show "-1")
@@ -397,7 +403,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Each softkey jumps to and enables its respective line
 - Softkey labels update to show "+X" for enabled lines
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.4 Enable Line via ENTER
 **Test:** Select Auto-Run #1 (OFF), press ENTER

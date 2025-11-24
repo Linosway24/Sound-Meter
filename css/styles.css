@@ -699,4 +699,12 @@ body {
     white-space: nowrap; /* Prevent wrapping */
 }
 
+/* Responsive font scaling for DOW time display (auto_run_1 and auto_run_2) */
+.menu-item--dow-time {
+    font-size: clamp(0.85em, 1vh, 0.95em); /* Middle ground between small and original size - responsive font size */
+    white-space: nowrap; /* Prevent wrapping - text should scale instead */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Show ellipsis if still too long */
+}
+
 

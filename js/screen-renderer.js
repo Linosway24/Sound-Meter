@@ -85,17 +85,41 @@
                 if (element.id === "days_label" && state?.viewId === "auto_run_dow_params") {
                     const isSelected = state?.autoRunDow?.selectedIndex === -1; // -1 means Days is selected
                     const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
+                    // Check if we're in days edit mode (on line 1, which is the default when Days is selected)
+                    const line = state?.autoRunDow?.lines?.[0]; // Default to line 1 for days editing
+                    const isEditingDays = line?.editMode === "days";
+                    const editDayIndex = line?.editDayIndex !== null && line?.editDayIndex !== undefined ? line.editDayIndex : null;
+                    
                     // Show "Days" with selection styling if selected, grey if not selected
                     const selectedClass = isSelected ? 'menu-item--selected' : '';
                     let daysDisplay;
-                    if (isSelected) {
-                        // Selected: use menu-item__title--selected for highlighting with padding
+                    if (isSelected && !isEditingDays) {
+                        // Selected but not editing: use menu-item__title--selected for highlighting with padding
                         daysDisplay = `<span class="menu-item__title menu-item__title--selected">Days</span> `;
+                    } else if (isSelected && isEditingDays) {
+                        // Selected and editing: Days title should be greyed out (like when editing values)
+                        daysDisplay = `<span class="menu-item__title" style="color: #888888; padding: 0;">Days</span> `;
                     } else {
                         // Not selected: use normal grey text (same color as non-selected menu items), no padding
                         daysDisplay = `<span class="menu-item__title" style="color: #888888; padding: 0;">Days</span> `;
                     }
-                    daysDisplay += dayLabels.map(() => "-").join(" ");
+                    
+                    // Show dashes/letters - highlight the current dash position, show stored value (letter or dash)
+                    const daysHtml = dayLabels.map((day, index) => {
+                        const dayValue = line?.days?.[index] || "-"; // Get stored value: "-" or day letter (S, M, T, etc.)
+                        const isCurrentPosition = isEditingDays && editDayIndex === index;
+                        
+                        if (isCurrentPosition) {
+                            // Highlight the current dash position being edited (shows "-" or letter based on stored value)
+                            const displayChar = dayValue === "-" ? "-" : dayValue; // Show the stored value
+                            return `<span class="menu-item__value--editing">${displayChar}</span>`;
+                        } else {
+                            // Show stored value (dash or letter) for non-current positions
+                            return dayValue === "-" ? "-" : dayValue;
+                        }
+                    }).join(" ");
+                    daysDisplay += daysHtml;
+                    
                     // Ensure consistent height/padding to prevent layout shift - reserve space for selection padding
                     const minHeight = '1.4em'; // Reserve space for padding when selected
                     return `<div id="${element.id}" class="screen-element screen-element--label menu-item ${selectedClass}" style="min-height: ${minHeight}; padding: 0; display: flex; align-items: center;">${daysDisplay}</div><div class="menu-item--spacer-line"></div>`;
@@ -105,42 +129,49 @@
                     const lineIdx = element.id === "auto_run_1" ? 0 : 1;
                     const line = state?.autoRunDow?.lines?.[lineIdx];
                     const enabled = line?.enabled;
-                    const startTime = line?.startTime || { hour: 0, minute: 0 };
-                    const stopTime = line?.stopTime || { hour: 0, minute: 0 };
+                    const startTime = line?.startTime || { hour: 0, minute: 0, second: 0 };
+                    const stopTime = line?.stopTime || { hour: 0, minute: 0, second: 0 };
                     const isSelected = state?.autoRunDow?.selectedIndex === lineIdx;
                     const editMode = line?.editMode;
                     const editSubField = line?.editSubField;
                     let displayText;
                     
-                    // If line is not enabled or no time set, show "---OFF---"
-                    if (!enabled || (!startTime || (startTime.hour === 0 && startTime.minute === 0 && stopTime.hour === 0 && stopTime.minute === 0))) {
+                    // If line is not enabled, show "---OFF---"
+                    if (!enabled) {
                         displayText = `${lineIdx + 1} ---OFF---`;
                     } else {
-                        const startHour = String(startTime.hour).padStart(2, '0');
-                        const startMinute = String(startTime.minute).padStart(2, '0');
-                        const stopHour = String(stopTime.hour).padStart(2, '0');
-                        const stopMinute = String(stopTime.minute).padStart(2, '0');
-                        displayText = `${lineIdx + 1} ${startHour}:${startMinute} - ${stopHour}:${stopMinute}`;
+                        // Line is enabled - show "S HH:MM:SS  D HH:MM:SS" format (S = Start, D = Duration/Stop)
+                        const startHour = String(startTime.hour || 0).padStart(2, '0');
+                        const startMinute = String(startTime.minute || 0).padStart(2, '0');
+                        const startSecond = String(startTime.second || 0).padStart(2, '0');
+                        const stopHour = String(stopTime.hour || 0).padStart(2, '0');
+                        const stopMinute = String(stopTime.minute || 0).padStart(2, '0');
+                        const stopSecond = String(stopTime.second || 0).padStart(2, '0');
+                        displayText = `${lineIdx + 1} S ${startHour}:${startMinute}:${startSecond}  D ${stopHour}:${stopMinute}:${stopSecond}`;
                         
                         // Highlight editing fields
                         if (isSelected && editMode === "startTime") {
                             if (editSubField === "hour") {
-                                displayText = `${lineIdx + 1} <span class="menu-item__value--editing">${startHour}</span>:${startMinute} - ${stopHour}:${stopMinute}`;
+                                displayText = `${lineIdx + 1} S <span class="menu-item__value--editing">${startHour}</span>:${startMinute}:${startSecond}  D ${stopHour}:${stopMinute}:${stopSecond}`;
                             } else if (editSubField === "minute") {
-                                displayText = `${lineIdx + 1} ${startHour}:<span class="menu-item__value--editing">${startMinute}</span> - ${stopHour}:${stopMinute}`;
+                                displayText = `${lineIdx + 1} S ${startHour}:<span class="menu-item__value--editing">${startMinute}</span>:${startSecond}  D ${stopHour}:${stopMinute}:${stopSecond}`;
+                            } else if (editSubField === "second") {
+                                displayText = `${lineIdx + 1} S ${startHour}:${startMinute}:<span class="menu-item__value--editing">${startSecond}</span>  D ${stopHour}:${stopMinute}:${stopSecond}`;
                             }
                         } else if (isSelected && editMode === "stopTime") {
                             if (editSubField === "hour") {
-                                displayText = `${lineIdx + 1} ${startHour}:${startMinute} - <span class="menu-item__value--editing">${stopHour}</span>:${stopMinute}`;
+                                displayText = `${lineIdx + 1} S ${startHour}:${startMinute}:${startSecond}  D <span class="menu-item__value--editing">${stopHour}</span>:${stopMinute}:${stopSecond}`;
                             } else if (editSubField === "minute") {
-                                displayText = `${lineIdx + 1} ${startHour}:${startMinute} - ${stopHour}:<span class="menu-item__value--editing">${stopMinute}</span>`;
+                                displayText = `${lineIdx + 1} S ${startHour}:${startMinute}:${startSecond}  D ${stopHour}:<span class="menu-item__value--editing">${stopMinute}</span>:${stopSecond}`;
+                            } else if (editSubField === "second") {
+                                displayText = `${lineIdx + 1} S ${startHour}:${startMinute}:${startSecond}  D ${stopHour}:${stopMinute}:<span class="menu-item__value--editing">${stopSecond}</span>`;
                             }
                         }
                     }
                     const selectedClass = isSelected ? 'menu-item--selected' : '';
                     // Ensure consistent height/padding to prevent layout shift - reserve space for selection padding
                     const minHeight = '1.4em'; // Reserve space for padding when selected
-                    return `<div id="${element.id}" class="screen-element screen-element--label menu-item ${selectedClass}" style="min-height: ${minHeight}; padding: 0; display: flex; align-items: center;">${displayText}</div>`;
+                    return `<div id="${element.id}" class="screen-element screen-element--label menu-item menu-item--dow-time ${selectedClass}" style="min-height: ${minHeight}; padding: 0; display: flex; align-items: center;">${displayText}</div>`;
                 }
                 // Special handling for AUTO RUN Date display (only shows #1, switches via softkeys)
                 if (element.id === "auto_run_date_display" && state?.viewId === "auto_run_date_params") {
@@ -942,22 +973,16 @@
             if (state?.viewId === "auto_run_menu") {
                 const currentMode = state?.autoRun?.items?.[0]?.value;
                 if (currentMode === "DOW") {
-                    // Show -1/+1, -2/+2 based on DOW line having times programmed
-                    // A line has times programmed if it's enabled AND has non-zero times
+                    // Show -1/+1, -2/+2 based on DOW line enabled state
+                    // On AUTO RUN menu: show + if line is enabled (for easier testing)
                     if (i === 0) {
                         // Softkey 1: show -1 or +1
                         const line = state?.autoRunDow?.lines?.[0];
-                        const hasTime = line && line.enabled && line.startTime && line.stopTime && 
-                            !(line.startTime.hour === 0 && line.startTime.minute === 0 && 
-                              line.stopTime.hour === 0 && line.stopTime.minute === 0);
-                        label = hasTime ? "+1" : "-1";
+                        label = line?.enabled ? "+1" : "-1";
                     } else if (i === 1) {
                         // Softkey 2: show -2 or +2
                         const line = state?.autoRunDow?.lines?.[1];
-                        const hasTime = line && line.enabled && line.startTime && line.stopTime && 
-                            !(line.startTime.hour === 0 && line.startTime.minute === 0 && 
-                              line.stopTime.hour === 0 && line.stopTime.minute === 0);
-                        label = hasTime ? "+2" : "-2";
+                        label = line?.enabled ? "+2" : "-2";
                     } else {
                         label = ''; // Clear other softkeys when DOW is selected
                     }

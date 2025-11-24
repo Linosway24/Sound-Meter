@@ -372,8 +372,8 @@
             autoRunDow: {
                 selectedIndex: -1, // -1 = "Days" selected, 0 = line 1, 1 = line 2
                 lines: [
-                    { days: ["-", "-", "-", "-", "-", "-", "-"], startTime: { hour: 0, minute: 0 }, stopTime: { hour: 0, minute: 0 }, enabled: false, editMode: null, editSubField: null }, // editMode: "days" | "startTime" | "stopTime" | null, editSubField: "hour" | "minute" | null
-                    { days: ["-", "-", "-", "-", "-", "-", "-"], startTime: { hour: 0, minute: 0 }, stopTime: { hour: 0, minute: 0 }, enabled: false, editMode: null, editSubField: null }
+                    { days: ["-", "-", "-", "-", "-", "-", "-"], startTime: { hour: 0, minute: 0, second: 0 }, stopTime: { hour: 0, minute: 0, second: 0 }, enabled: false, editMode: null, editSubField: null, editDayIndex: null }, // editMode: "days" | "startTime" | "stopTime" | null, editSubField: "hour" | "minute" | "second" | null, editDayIndex: 0-6 for day of week
+                    { days: ["-", "-", "-", "-", "-", "-", "-"], startTime: { hour: 0, minute: 0, second: 0 }, stopTime: { hour: 0, minute: 0, second: 0 }, enabled: false, editMode: null, editSubField: null, editDayIndex: null }
                 ]
             },
             autoRunDate: {
@@ -736,22 +736,62 @@
                     console.log(`[MENU] Comms menu - Selected index: ${_state.menu.selectedIndex} → "${COMMS_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "auto_run_dow_params") {
-                    // UP arrow: cycle Days → Line 1 → Line 2 → Days
-                    // -1 = Days, 0 = Line 1, 1 = Line 2
+                    // Check if we're editing time (startTime or stopTime) on a line
+                    if (_state.autoRunDow.selectedIndex >= 0 && _state.autoRunDow.selectedIndex < 2) {
+                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
+                        if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                            // In time edit mode - UP arrow increases the current subfield value
+                            const timeField = line.editMode === "startTime" ? line.startTime : line.stopTime;
+                            const subField = line.editSubField;
+                            if (subField === "hour") {
+                                timeField.hour = (timeField.hour + 1) % 24;
+                                console.log(`[AUTO RUN DOW] UP: ${line.editMode} hour = ${String(timeField.hour).padStart(2, '0')}`);
+                            } else if (subField === "minute") {
+                                timeField.minute = (timeField.minute + 1) % 60;
+                                console.log(`[AUTO RUN DOW] UP: ${line.editMode} minute = ${String(timeField.minute).padStart(2, '0')}`);
+                            } else if (subField === "second") {
+                                timeField.second = (timeField.second + 1) % 60;
+                                console.log(`[AUTO RUN DOW] UP: ${line.editMode} second = ${String(timeField.second).padStart(2, '0')}`);
+                            }
+                            _emit();
+                            return;
+                        }
+                    }
+                    // Check if we're in days edit mode (on line 1 when Days is selected)
                     if (_state.autoRunDow.selectedIndex === -1) {
-                        // From Days, go to Line 2 (last)
-                        _state.autoRunDow.selectedIndex = 1;
-                        console.log(`[AUTO RUN DOW] UP: Selected Line 2`);
+                        const line = _state.autoRunDow.lines[0];
+                        if (line.editMode === "days" && line.editDayIndex !== null && line.editDayIndex !== undefined) {
+                            // In days edit mode - UP arrow toggles the current day between "-" and the day letter
+                            const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
+                            const currentDayIndex = line.editDayIndex;
+                            const currentDayValue = line.days[currentDayIndex] || "-";
+                            // Toggle: if "-", change to day letter; if day letter, change to "-"
+                            if (currentDayValue === "-") {
+                                line.days[currentDayIndex] = dayLabels[currentDayIndex];
+                                console.log(`[AUTO RUN DOW] UP: Day ${currentDayIndex} changed from "-" to "${dayLabels[currentDayIndex]}"`);
+                            } else {
+                                line.days[currentDayIndex] = "-";
+                                console.log(`[AUTO RUN DOW] UP: Day ${currentDayIndex} changed from "${dayLabels[currentDayIndex]}" to "-"`);
+                            }
+                            _emit();
+                        } else {
+                            // Not in days edit mode - navigate Days → Line 1 → Line 2 → Days
+                            // From Days, go to Line 2 (last)
+                            _state.autoRunDow.selectedIndex = 1;
+                            console.log(`[AUTO RUN DOW] UP: Selected Line 2`);
+                            _emit();
+                        }
                     } else if (_state.autoRunDow.selectedIndex === 0) {
                         // From Line 1, go to Days
                         _state.autoRunDow.selectedIndex = -1;
                         console.log(`[AUTO RUN DOW] UP: Selected Days`);
+                        _emit();
                     } else if (_state.autoRunDow.selectedIndex === 1) {
                         // From Line 2, go to Line 1
                         _state.autoRunDow.selectedIndex = 0;
                         console.log(`[AUTO RUN DOW] UP: Selected Line 1`);
+                        _emit();
                     }
-                    _emit();
                 } else if (_state.viewId === "comms_edit") {
                     // UP arrow: cycle baud rate up
                     _state.comms.baudRateIndex = (_state.comms.baudRateIndex + 1) % BAUD_RATE_OPTIONS.length;
@@ -1035,22 +1075,62 @@
                     console.log(`[MENU] Comms menu - Selected index: ${_state.menu.selectedIndex} → "${COMMS_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "auto_run_dow_params") {
-                    // DOWN arrow: cycle Days → Line 1 → Line 2 → Days
-                    // -1 = Days, 0 = Line 1, 1 = Line 2
+                    // Check if we're editing time (startTime or stopTime) on a line
+                    if (_state.autoRunDow.selectedIndex >= 0 && _state.autoRunDow.selectedIndex < 2) {
+                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
+                        if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                            // In time edit mode - DOWN arrow decreases the current subfield value
+                            const timeField = line.editMode === "startTime" ? line.startTime : line.stopTime;
+                            const subField = line.editSubField;
+                            if (subField === "hour") {
+                                timeField.hour = (timeField.hour - 1 + 24) % 24;
+                                console.log(`[AUTO RUN DOW] DOWN: ${line.editMode} hour = ${String(timeField.hour).padStart(2, '0')}`);
+                            } else if (subField === "minute") {
+                                timeField.minute = (timeField.minute - 1 + 60) % 60;
+                                console.log(`[AUTO RUN DOW] DOWN: ${line.editMode} minute = ${String(timeField.minute).padStart(2, '0')}`);
+                            } else if (subField === "second") {
+                                timeField.second = (timeField.second - 1 + 60) % 60;
+                                console.log(`[AUTO RUN DOW] DOWN: ${line.editMode} second = ${String(timeField.second).padStart(2, '0')}`);
+                            }
+                            _emit();
+                            return;
+                        }
+                    }
+                    // Check if we're in days edit mode (on line 1 when Days is selected)
                     if (_state.autoRunDow.selectedIndex === -1) {
-                        // From Days, go to Line 1
-                        _state.autoRunDow.selectedIndex = 0;
-                        console.log(`[AUTO RUN DOW] DOWN: Selected Line 1`);
+                        const line = _state.autoRunDow.lines[0];
+                        if (line.editMode === "days" && line.editDayIndex !== null && line.editDayIndex !== undefined) {
+                            // In days edit mode - DOWN arrow toggles the current day between "-" and the day letter
+                            const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
+                            const currentDayIndex = line.editDayIndex;
+                            const currentDayValue = line.days[currentDayIndex] || "-";
+                            // Toggle: if "-", change to day letter; if day letter, change to "-"
+                            if (currentDayValue === "-") {
+                                line.days[currentDayIndex] = dayLabels[currentDayIndex];
+                                console.log(`[AUTO RUN DOW] DOWN: Day ${currentDayIndex} changed from "-" to "${dayLabels[currentDayIndex]}"`);
+                            } else {
+                                line.days[currentDayIndex] = "-";
+                                console.log(`[AUTO RUN DOW] DOWN: Day ${currentDayIndex} changed from "${dayLabels[currentDayIndex]}" to "-"`);
+                            }
+                            _emit();
+                        } else {
+                            // Not in days edit mode - navigate Days → Line 1 → Line 2 → Days
+                            // From Days, go to Line 1
+                            _state.autoRunDow.selectedIndex = 0;
+                            console.log(`[AUTO RUN DOW] DOWN: Selected Line 1`);
+                            _emit();
+                        }
                     } else if (_state.autoRunDow.selectedIndex === 0) {
                         // From Line 1, go to Line 2
                         _state.autoRunDow.selectedIndex = 1;
                         console.log(`[AUTO RUN DOW] DOWN: Selected Line 2`);
+                        _emit();
                     } else if (_state.autoRunDow.selectedIndex === 1) {
                         // From Line 2, go to Days
                         _state.autoRunDow.selectedIndex = -1;
                         console.log(`[AUTO RUN DOW] DOWN: Selected Days`);
+                        _emit();
                     }
-                    _emit();
                 } else if (_state.viewId === "comms_edit") {
                     // DOWN arrow: cycle baud rate down
                     _state.comms.baudRateIndex = (_state.comms.baudRateIndex + BAUD_RATE_OPTIONS.length - 1) % BAUD_RATE_OPTIONS.length;
@@ -1148,27 +1228,95 @@
                     console.log(`[AUTO RUN TIMED RUN] LEFT: Moved to subfield ${_state.autoRunTimedRun.editSubField}`);
                     _emit();
                 } else if (_state.viewId === "auto_run_dow_params") {
-                    // LEFT/RIGHT only work when a line is selected (not Days)
+                    // LEFT/RIGHT work on Days (when in days edit mode) and on lines (when editing times or not editing)
                     if (_state.autoRunDow.selectedIndex === -1) {
-                        // Days selected - LEFT does nothing
-                        console.log(`[AUTO RUN DOW] LEFT: Days selected, no action`);
-                        // Do nothing
-                    } else {
-                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
-                        if (line.editMode === "startTime" || line.editMode === "stopTime") {
-                            // LEFT arrow: move to previous subfield (H → M → H)
-                            if (line.editSubField === "hour") {
-                                line.editSubField = "minute";
-                            } else if (line.editSubField === "minute") {
-                                line.editSubField = "hour";
+                        // Days selected - check if in days edit mode
+                        const line = _state.autoRunDow.lines[0];
+                        if (line.editMode === "days" && line.editDayIndex !== null && line.editDayIndex !== undefined) {
+                            // In days edit mode - LEFT arrow: move to previous day or Line 2
+                            const currentDayIndex = line.editDayIndex;
+                            if (currentDayIndex === 0) {
+                                // At Sunday (first day) - move back to "Days" selection (exit days edit mode)
+                                line.editMode = null;
+                                line.editDayIndex = null;
+                                console.log(`[AUTO RUN DOW] LEFT: At Sunday, moved back to Days selection`);
+                            } else {
+                                // Move to previous day
+                                const newDayIndex = currentDayIndex - 1;
+                                line.editDayIndex = newDayIndex;
+                                console.log(`[AUTO RUN DOW] LEFT: Moved to day index ${newDayIndex} (${["S", "M", "T", "W", "T", "F", "S"][newDayIndex]})`);
                             }
-                            console.log(`[AUTO RUN DOW] LEFT: Moved to ${line.editMode}.${line.editSubField}`);
                             _emit();
-                        } else if (line.editMode === "days") {
-                            // LEFT arrow: move across day-of-week fields (right to left)
-                            // For now, just log - full day cycling will be implemented with ENTER
-                            console.log(`[AUTO RUN DOW] LEFT: Day navigation`);
+                        } else {
+                            // Days selected but not in edit mode - LEFT moves to Line 2 (wrap backward)
+                            _state.autoRunDow.selectedIndex = 1;
+                            console.log(`[AUTO RUN DOW] LEFT: Days selected, moved to Line 2 (wrapping)`);
                             _emit();
+                        }
+                    } else if (_state.autoRunDow.selectedIndex === 0 || _state.autoRunDow.selectedIndex === 1) {
+                        // Line 1 or 2 selected - check if in time edit mode
+                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
+                        console.log(`[AUTO RUN DOW] LEFT: Line ${_state.autoRunDow.selectedIndex + 1} selected, editMode=${line.editMode}, editSubField=${line.editSubField}, enabled=${line.enabled}`);
+                        if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                            // In time edit mode - LEFT arrow: move backward through the flow (reverse of ENTER)
+                            console.log(`[AUTO RUN DOW] LEFT: In time edit mode, processing time field navigation`);
+                            if (line.editSubField === "hour") {
+                                // Move to previous time field
+                                if (line.editMode === "stopTime") {
+                                    // Stop time hour → Start time second
+                                    line.editMode = "startTime";
+                                    line.editSubField = "second";
+                                    console.log(`[AUTO RUN DOW] LEFT: Moved to start time second`);
+                                } else if (line.editMode === "startTime" && _state.autoRunDow.selectedIndex === 1) {
+                                    // Line 2 start time hour → Line 1 stop time second
+                                    const line1 = _state.autoRunDow.lines[0];
+                                    line1.editMode = "stopTime";
+                                    line1.editSubField = "second";
+                                    // Clear line 2 edit mode
+                                    line.editMode = null;
+                                    line.editSubField = null;
+                                    // Switch to line 1
+                                    _state.autoRunDow.selectedIndex = 0;
+                                    console.log(`[AUTO RUN DOW] LEFT: Moved to Line 1 stop time second`);
+                                } else {
+                                    // Line 1 start time hour → can't go backward, do nothing
+                                    console.log(`[AUTO RUN DOW] LEFT: At Line 1 start time hour, no action`);
+                                }
+                            } else if (line.editSubField === "minute") {
+                                // Minute → Hour
+                                line.editSubField = "hour";
+                                console.log(`[AUTO RUN DOW] LEFT: Moved to ${line.editMode} hour`);
+                            } else if (line.editSubField === "second") {
+                                // Second → Minute
+                                line.editSubField = "minute";
+                                console.log(`[AUTO RUN DOW] LEFT: Moved to ${line.editMode} minute`);
+                            }
+                            _emit();
+                        } else if (line.enabled && (line.startTime || line.stopTime)) {
+                            // Line has times showing - LEFT/RIGHT should cycle through time numbers
+                            // Enter edit mode at start time hour if not already editing
+                            if (!line.editMode) {
+                                line.editMode = "startTime";
+                                line.editSubField = "hour";
+                                console.log(`[AUTO RUN DOW] LEFT: Line ${_state.autoRunDow.selectedIndex + 1} has times, entered start time edit mode (hour)`);
+                                _emit();
+                            }
+                        } else {
+                            // Line selected but not enabled (no times) - LEFT/RIGHT wrap between Days → Line 1 → Line 2
+                            if (_state.autoRunDow.selectedIndex === 0) {
+                                // Line 1 - LEFT moves to Saturday (last day)
+                                const line1 = _state.autoRunDow.lines[0];
+                                line1.editMode = "days";
+                                line1.editDayIndex = 6; // Saturday (last day)
+                                _state.autoRunDow.selectedIndex = -1; // Move to Days
+                                console.log(`[AUTO RUN DOW] LEFT: Line 1, moved to Saturday (wrapping)`);
+                                _emit();
+                            } else if (_state.autoRunDow.selectedIndex === 1) {
+                                // Line 2 - LEFT moves to Line 1
+                                _state.autoRunDow.selectedIndex = 0;
+                                console.log(`[AUTO RUN DOW] LEFT: Line 2, moved to Line 1`);
+                                _emit();
+                            }
                         }
                     }
                 } else if (_state.viewId === "auto_run_date_params") {
@@ -1302,26 +1450,106 @@
                     console.log(`[AUTO RUN TIMED RUN] RIGHT: Moved to subfield ${_state.autoRunTimedRun.editSubField}`);
                     _emit();
                 } else if (_state.viewId === "auto_run_dow_params") {
-                    // RIGHT only works when a line is selected (not Days)
+                    // RIGHT works on Days (when in days edit mode) and on lines (when editing times or not editing)
                     if (_state.autoRunDow.selectedIndex === -1) {
-                        // Days selected - RIGHT does nothing
-                        console.log(`[AUTO RUN DOW] RIGHT: Days selected, no action`);
-                        // Do nothing
-                    } else {
-                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
-                        if (line.editMode === "startTime" || line.editMode === "stopTime") {
-                            // RIGHT arrow: move to next subfield (H → M → H)
-                            if (line.editSubField === "hour") {
-                                line.editSubField = "minute";
-                            } else if (line.editSubField === "minute") {
-                                line.editSubField = "hour";
+                        // Days selected - check if in days edit mode
+                        const line = _state.autoRunDow.lines[0];
+                        if (line.editMode === "days" && line.editDayIndex !== null && line.editDayIndex !== undefined) {
+                            // In days edit mode - RIGHT arrow: move to next day (same as ENTER)
+                            const currentDayIndex = line.editDayIndex;
+                            if (currentDayIndex === 6) {
+                                // At Saturday (last day) - move to line 1 (wrapping)
+                                line.editMode = null;
+                                line.editDayIndex = null;
+                                _state.autoRunDow.selectedIndex = 0; // Move to line 1
+                                console.log(`[AUTO RUN DOW] RIGHT: At Saturday, moved to Line 1 (wrapping)`);
+                            } else {
+                                // Move to next day
+                                const newDayIndex = currentDayIndex + 1;
+                                line.editDayIndex = newDayIndex;
+                                console.log(`[AUTO RUN DOW] RIGHT: Moved to day index ${newDayIndex} (${["S", "M", "T", "W", "T", "F", "S"][newDayIndex]})`);
                             }
-                            console.log(`[AUTO RUN DOW] RIGHT: Moved to ${line.editMode}.${line.editSubField}`);
                             _emit();
-                        } else if (line.editMode === "days") {
-                            // RIGHT arrow: move across day-of-week fields (left to right)
-                            console.log(`[AUTO RUN DOW] RIGHT: Day navigation`);
+                        } else {
+                            // Days selected but not in edit mode - RIGHT moves to first day (Sunday) and enters days edit mode
+                            line.editMode = "days";
+                            line.editDayIndex = 0; // Start at first day (Sunday)
+                            console.log(`[AUTO RUN DOW] RIGHT: Days selected, entered days edit mode (Sunday highlighted)`);
                             _emit();
+                        }
+                    } else if (_state.autoRunDow.selectedIndex === 0 || _state.autoRunDow.selectedIndex === 1) {
+                        // Line 1 or 2 selected - check if in time edit mode
+                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
+                        console.log(`[AUTO RUN DOW] RIGHT: Line ${_state.autoRunDow.selectedIndex + 1} selected, editMode=${line.editMode}, editSubField=${line.editSubField}, enabled=${line.enabled}`);
+                        if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                            // In time edit mode - RIGHT arrow: move forward through the flow (same as ENTER)
+                            console.log(`[AUTO RUN DOW] RIGHT: In time edit mode, processing time field navigation`);
+                            if (line.editSubField === "hour") {
+                                // Hour → Minute
+                                line.editSubField = "minute";
+                                console.log(`[AUTO RUN DOW] RIGHT: Moved to ${line.editMode} minute`);
+                            } else if (line.editSubField === "minute") {
+                                // Minute → Second
+                                line.editSubField = "second";
+                                console.log(`[AUTO RUN DOW] RIGHT: Moved to ${line.editMode} second`);
+                            } else if (line.editSubField === "second") {
+                                // Move to next time field, matching ENTER behavior
+                                if (line.editMode === "startTime") {
+                                    // Move to stop time hour (same line)
+                                    line.editMode = "stopTime";
+                                    line.editSubField = "hour";
+                                    console.log(`[AUTO RUN DOW] RIGHT: Line ${_state.autoRunDow.selectedIndex + 1} start time finished, moved to stop time hour`);
+                                } else if (line.editMode === "stopTime") {
+                                    // Move to next line or Days
+                                    if (_state.autoRunDow.selectedIndex === 0) {
+                                        // Line 1: Move to Line 2's start hour
+                                        _state.autoRunDow.selectedIndex = 1;
+                                        const line2 = _state.autoRunDow.lines[1];
+                                        // Enable line 2 if not enabled
+                                        if (!line2.enabled) {
+                                            line2.enabled = true;
+                                            line2.startTime = { hour: 0, minute: 0, second: 0 };
+                                            line2.stopTime = { hour: 0, minute: 0, second: 0 };
+                                        }
+                                        line2.editMode = "startTime";
+                                        line2.editSubField = "hour";
+                                        // Exit edit mode for line 1
+                                        line.editMode = null;
+                                        line.editSubField = null;
+                                        console.log(`[AUTO RUN DOW] RIGHT: Line 1 stop time finished, moved to Line 2 start hour`);
+                                    } else if (_state.autoRunDow.selectedIndex === 1) {
+                                        // Line 2: Exit edit mode and move to Days
+                                        line.editMode = null;
+                                        line.editSubField = null;
+                                        line.editDayIndex = null;
+                                        _state.autoRunDow.selectedIndex = -1; // Move to Days
+                                        console.log(`[AUTO RUN DOW] RIGHT: Line 2 stop time finished, moved to Days`);
+                                    }
+                                }
+                            }
+                            _emit();
+                        } else if (line.enabled && (line.startTime || line.stopTime)) {
+                            // Line has times showing - LEFT/RIGHT should cycle through time numbers
+                            // Enter edit mode at start time hour if not already editing
+                            if (!line.editMode) {
+                                line.editMode = "startTime";
+                                line.editSubField = "hour";
+                                console.log(`[AUTO RUN DOW] RIGHT: Line ${_state.autoRunDow.selectedIndex + 1} has times, entered start time edit mode (hour)`);
+                                _emit();
+                            }
+                        } else {
+                            // Line selected but not enabled (no times) - LEFT/RIGHT wrap between Days → Line 1 → Line 2
+                            if (_state.autoRunDow.selectedIndex === 0) {
+                                // Line 1 - RIGHT moves to Line 2
+                                _state.autoRunDow.selectedIndex = 1;
+                                console.log(`[AUTO RUN DOW] RIGHT: Line 1, moved to Line 2`);
+                                _emit();
+                            } else if (_state.autoRunDow.selectedIndex === 1) {
+                                // Line 2 - RIGHT moves to Days (wrapping)
+                                _state.autoRunDow.selectedIndex = -1;
+                                console.log(`[AUTO RUN DOW] RIGHT: Line 2, moved to Days (wrapping)`);
+                                _emit();
+                            }
                         }
                     }
                 } else if (_state.viewId === "auto_run_level_triggered_params") {
@@ -1651,37 +1879,107 @@
                     }
                 } else if (_state.viewId === "auto_run_dow_params") {
                     if (_state.autoRunDow.selectedIndex === -1) {
-                        // Days selected - ENTER does nothing (Days is not editable yet)
-                        console.log(`[AUTO RUN DOW] ENTER: Days selected, no action`);
-                        // Do nothing
-                    } else {
-                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
-                        // ENTER cycles through field groups: days → start time → stop time
+                        // Days selected - ENTER moves selection to first day (Sunday) and enters days edit mode
+                        const line = _state.autoRunDow.lines[0]; // Default to line 1 for days editing
                         if (!line.editMode || line.editMode === null) {
-                            // Enter days edit mode
+                            // Enter days edit mode - move selection to first day (Sunday)
                             line.editMode = "days";
-                            console.log(`[AUTO RUN DOW] ENTER: Entered days edit mode for line ${_state.autoRunDow.selectedIndex + 1}`);
+                            line.editDayIndex = 0; // Start at first day (Sunday)
+                            // Keep selectedIndex at -1 to show "Days" is selected, but editDayIndex tracks which day is highlighted
+                            console.log(`[AUTO RUN DOW] ENTER: Days selected, entered days edit mode (Sunday highlighted, day index: 0)`);
+                            _emit();
                         } else if (line.editMode === "days") {
-                        // Switch to start time edit mode
-                        line.editMode = "startTime";
-                        line.editSubField = "hour";
-                        console.log(`[AUTO RUN DOW] ENTER: Entered start time edit mode`);
-                    } else if (line.editMode === "startTime") {
-                        // Switch to stop time edit mode
-                        line.editMode = "stopTime";
-                        line.editSubField = "hour";
-                        console.log(`[AUTO RUN DOW] ENTER: Entered stop time edit mode`);
-                        } else if (line.editMode === "stopTime") {
-                            // Exit edit mode
-                            line.editMode = null;
-                            line.editSubField = null;
-                            console.log(`[AUTO RUN DOW] ENTER: Exited edit mode`);
+                            // In days edit mode - cycle to next day (S → M → T → W → T → F → S)
+                            // If on Saturday (index 6), exit days edit mode and move to line 1
+                            const currentDayIndex = line.editDayIndex !== null ? line.editDayIndex : 0;
+                            if (currentDayIndex === 6) {
+                                // On Saturday (last day) - exit days edit mode and move to line 1
+                                line.editMode = null;
+                                line.editDayIndex = null;
+                                _state.autoRunDow.selectedIndex = 0; // Move to line 1
+                                console.log(`[AUTO RUN DOW] ENTER: On Saturday, exited days edit mode and moved to line 1`);
+                            } else {
+                                // Not on Saturday - cycle to next day
+                                line.editDayIndex = currentDayIndex + 1;
+                                console.log(`[AUTO RUN DOW] ENTER: Moved to day index ${line.editDayIndex} (${["S", "M", "T", "W", "T", "F", "S"][line.editDayIndex]})`);
+                            }
+                            _emit();
                         }
+                        // Note: When Days is selected (selectedIndex === -1), we only handle days edit mode
+                        // Time editing is handled in the else block below when a line (0 or 1) is selected
+                    } else {
+                        // Line 1 or 2 is selected - ENTER does NOT enter days edit mode
+                        // ENTER enters start time edit mode (or cycles through start time → stop time)
+                        const line = _state.autoRunDow.lines[_state.autoRunDow.selectedIndex];
+                        if (!line.editMode || line.editMode === null) {
+                            // If line is disabled (---OFF---), enable it first and set default times
+                            if (!line.enabled) {
+                                line.enabled = true;
+                                line.startTime = { hour: 0, minute: 0, second: 0 };
+                                line.stopTime = { hour: 0, minute: 0, second: 0 };
+                                console.log(`[AUTO RUN DOW] ENTER: Line ${_state.autoRunDow.selectedIndex + 1} was OFF, enabled with default times 00:00:00 - 00:00:00`);
+                            }
+                            // Enter start time edit mode (hour selected)
+                            line.editMode = "startTime";
+                            line.editSubField = "hour";
+                            console.log(`[AUTO RUN DOW] ENTER: Line ${_state.autoRunDow.selectedIndex + 1} selected, entered start time edit mode (hour selected)`);
+                        } else if (line.editMode === "startTime") {
+                            // Cycle through start time subfields: hour → minute → second → stop time
+                            if (line.editSubField === "hour") {
+                                line.editSubField = "minute";
+                                console.log(`[AUTO RUN DOW] ENTER: Moved to start time minute`);
+                            } else if (line.editSubField === "minute") {
+                                line.editSubField = "second";
+                                console.log(`[AUTO RUN DOW] ENTER: Moved to start time second`);
+                            } else if (line.editSubField === "second") {
+                                // Move to stop time hour (same line)
+                                line.editMode = "stopTime";
+                                line.editSubField = "hour";
+                                console.log(`[AUTO RUN DOW] ENTER: Line ${_state.autoRunDow.selectedIndex + 1} start time finished, moved to stop time hour`);
+                            }
+                        } else if (line.editMode === "stopTime") {
+                            // Cycle through stop time subfields: hour → minute → second → next line or Days
+                            if (line.editSubField === "hour") {
+                                line.editSubField = "minute";
+                                console.log(`[AUTO RUN DOW] ENTER: Moved to stop time minute`);
+                            } else if (line.editSubField === "minute") {
+                                line.editSubField = "second";
+                                console.log(`[AUTO RUN DOW] ENTER: Moved to stop time second`);
+                            } else if (line.editSubField === "second") {
+                                // Move to next line or Days
+                                if (_state.autoRunDow.selectedIndex === 0) {
+                                    // Line 1: Move to Line 2's start hour
+                                    _state.autoRunDow.selectedIndex = 1;
+                                    const line2 = _state.autoRunDow.lines[1];
+                                    // Enable line 2 if not enabled
+                                    if (!line2.enabled) {
+                                        line2.enabled = true;
+                                        line2.startTime = { hour: 0, minute: 0, second: 0 };
+                                        line2.stopTime = { hour: 0, minute: 0, second: 0 };
+                                    }
+                                    line2.editMode = "startTime";
+                                    line2.editSubField = "hour";
+                                    // Exit edit mode for line 1
+                                    line.editMode = null;
+                                    line.editSubField = null;
+                                    console.log(`[AUTO RUN DOW] ENTER: Line 1 stop time finished, moved to Line 2 start hour`);
+                                } else if (_state.autoRunDow.selectedIndex === 1) {
+                                    // Line 2: Exit edit mode and move to Days
+                                    line.editMode = null;
+                                    line.editSubField = null;
+                                    line.editDayIndex = null;
+                                    _state.autoRunDow.selectedIndex = -1; // Move to Days
+                                    console.log(`[AUTO RUN DOW] ENTER: Line 2 stop time finished, moved to Days`);
+                                }
+                            }
+                        }
+                        // Note: Days edit mode can only be entered when "Days" is highlighted (selectedIndex === -1)
                         _emit();
                     }
                 } else if (_state.viewId === "auto_run_date_params") {
                     const line = _state.autoRunDate.lines[_state.autoRunDate.selectedIndex];
-                    // ENTER: Toggle OFF/ON or enter edit for date/time
+                    console.log(`[AUTO RUN DATE] ENTER: Line ${_state.autoRunDate.selectedIndex + 1}, enabled=${line.enabled}, editMode=${line.editMode}, date=${line.date ? 'set' : 'null'}, time=${line.time ? 'set' : 'null'}`);
+                    // ENTER: Enable line if OFF, or enter/edit date/time
                     if (!line.enabled) {
                         // Enable line and enter date edit mode
                         line.enabled = true;
@@ -1690,15 +1988,23 @@
                         if (!line.date) {
                             line.date = { year: 2024, month: 1, day: 1 };
                         }
-                        console.log(`[AUTO RUN DATE] ENTER: Enabled line ${_state.autoRunDate.selectedIndex + 1}, entered date edit mode`);
-                    } else if (line.editMode === null) {
-                        // Enter date edit mode
+                        if (!line.time) {
+                            line.time = { hour: 12, minute: 0, second: 0 };
+                        }
+                        console.log(`[AUTO RUN DATE] ENTER: Enabled line ${_state.autoRunDate.selectedIndex + 1}, entered date edit mode (year selected)`);
+                        _emit();
+                    } else if (!line.editMode || line.editMode === null) {
+                        // Line is enabled but not in edit mode - enter date edit mode
                         line.editMode = "date";
                         line.editSubField = "year";
                         if (!line.date) {
                             line.date = { year: 2024, month: 1, day: 1 };
                         }
-                        console.log(`[AUTO RUN DATE] ENTER: Entered date edit mode`);
+                        if (!line.time) {
+                            line.time = { hour: 12, minute: 0, second: 0 };
+                        }
+                        console.log(`[AUTO RUN DATE] ENTER: Entered date edit mode (year selected)`);
+                        _emit();
                     } else if (line.editMode === "date") {
                         // ENTER cycles between date subfields or switches to time mode
                         if (line.editSubField === "year") {
@@ -1838,6 +2144,7 @@
                             _state.autoRunDow.lines.forEach(line => {
                                 line.editMode = null;
                                 line.editSubField = null;
+                                line.editDayIndex = null;
                             });
                             console.log(`[AUTO RUN] Opening DOW parameters`);
                             _emit();
@@ -2211,6 +2518,7 @@
                             // Exit edit mode
                             line.editMode = null;
                             line.editSubField = null;
+                            line.editDayIndex = null;
                             console.log(`[AUTO RUN DOW] ESC: Exited edit mode`);
                             _emit();
                         } else {
@@ -2428,9 +2736,19 @@
                     console.log(`[AUTO RUN DOW] SOFT1: Line 1 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
                 } else if (_state.viewId === "auto_run_date_params") {
-                    // SOFT1 = -1 / +1: jump to line 1
-                    _state.autoRunDate.selectedIndex = 0;
-                    console.log(`[AUTO RUN DATE] SOFT1: Switched to line 1`);
+                    // SOFT1 = -1 / +1: enable/disable line 1 and select it
+                    const line = _state.autoRunDate.lines[0];
+                    const wasEnabled = line.enabled;
+                    line.enabled = !line.enabled;
+                    // If enabling (was disabled, now enabled) and date/time not set, set default values
+                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                        const now = new Date();
+                        line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
+                        console.log(`[AUTO RUN DATE] SOFT1: Line 1 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                    }
+                    _state.autoRunDate.selectedIndex = 0; // Select line 1
+                    console.log(`[AUTO RUN DATE] SOFT1: Line 1 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
                 }
                 break;
@@ -2449,9 +2767,19 @@
                     console.log(`[AUTO RUN DOW] SOFT2: Line 2 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
                 } else if (_state.viewId === "auto_run_date_params") {
-                    // SOFT2 = -2 / +2: jump to line 2
-                    _state.autoRunDate.selectedIndex = 1;
-                    console.log(`[AUTO RUN DATE] SOFT2: Switched to line 2`);
+                    // SOFT2 = -2 / +2: enable/disable line 2 and select it
+                    const line = _state.autoRunDate.lines[1];
+                    const wasEnabled = line.enabled;
+                    line.enabled = !line.enabled;
+                    // If enabling (was disabled, now enabled) and date/time not set, set default values
+                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                        const now = new Date();
+                        line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
+                        console.log(`[AUTO RUN DATE] SOFT2: Line 2 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                    }
+                    _state.autoRunDate.selectedIndex = 1; // Select line 2
+                    console.log(`[AUTO RUN DATE] SOFT2: Line 2 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
                 } else if (isSlm() || isHome()) {
                     // SOFT2 = CAL (Calibration) on SLM or Home screens
@@ -2472,9 +2800,19 @@
                     _state.menu.selectedIndex = 0;
                     _emit();
                 } else if (_state.viewId === "auto_run_date_params") {
-                    // SOFT3 = -3 / +3: jump to line 3
-                    _state.autoRunDate.selectedIndex = 2;
-                    console.log(`[AUTO RUN DATE] SOFT3: Switched to line 3`);
+                    // SOFT3 = -3 / +3: enable/disable line 3 and select it
+                    const line = _state.autoRunDate.lines[2];
+                    const wasEnabled = line.enabled;
+                    line.enabled = !line.enabled;
+                    // If enabling (was disabled, now enabled) and date/time not set, set default values
+                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                        const now = new Date();
+                        line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
+                        console.log(`[AUTO RUN DATE] SOFT3: Line 3 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                    }
+                    _state.autoRunDate.selectedIndex = 2; // Select line 3
+                    console.log(`[AUTO RUN DATE] SOFT3: Line 3 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
                 } else {
                     console.log('[FSM] SOFT3 pressed → Ignored (not on SLM, Home, or Date)');
@@ -2483,9 +2821,19 @@
 
             case "SOFT4":
                 if (_state.viewId === "auto_run_date_params") {
-                    // SOFT4 = -4 / +4: jump to line 4
-                    _state.autoRunDate.selectedIndex = 3;
-                    console.log(`[AUTO RUN DATE] SOFT4: Switched to line 4`);
+                    // SOFT4 = -4 / +4: enable/disable line 4 and select it
+                    const line = _state.autoRunDate.lines[3];
+                    const wasEnabled = line.enabled;
+                    line.enabled = !line.enabled;
+                    // If enabling (was disabled, now enabled) and date/time not set, set default values
+                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                        const now = new Date();
+                        line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
+                        console.log(`[AUTO RUN DATE] SOFT4: Line 4 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                    }
+                    _state.autoRunDate.selectedIndex = 3; // Select line 4
+                    console.log(`[AUTO RUN DATE] SOFT4: Line 4 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
                 } else if (_state.viewId === "logging_menu") {
                     // SOFT4 = Meter 1/2 toggle on logging menu
