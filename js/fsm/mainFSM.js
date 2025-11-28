@@ -379,13 +379,11 @@
             autoRunDate: {
                 selectedIndex: 0, // 0-3 for lines 1-4
                 lines: [
-                    { date: null, time: null, enabled: false }, // date: { year, month, day }, time: { hour, minute, second }
-                    { date: null, time: null, enabled: false },
-                    { date: null, time: null, enabled: false },
-                    { date: null, time: null, enabled: false }
-                ],
-                editMode: null, // "date" | "time" | null
-                editSubField: null // For date: "year" | "month" | "day". For time: "hour" | "minute" | "second"
+                    { date: null, startTime: { hour: 0, minute: 0, second: 0 }, stopTime: { hour: 0, minute: 0, second: 0 }, enabled: false, editMode: null, editSubField: null }, // date: { year, month, day }, editMode: "date" | "startTime" | "stopTime" | null, editSubField: "year" | "month" | "day" | "hour" | "minute" | "second"
+                    { date: null, startTime: { hour: 0, minute: 0, second: 0 }, stopTime: { hour: 0, minute: 0, second: 0 }, enabled: false, editMode: null, editSubField: null },
+                    { date: null, startTime: { hour: 0, minute: 0, second: 0 }, stopTime: { hour: 0, minute: 0, second: 0 }, enabled: false, editMode: null, editSubField: null },
+                    { date: null, startTime: { hour: 0, minute: 0, second: 0 }, stopTime: { hour: 0, minute: 0, second: 0 }, enabled: false, editMode: null, editSubField: null }
+                ]
             },
             autoRunLevelTriggered: {
                 selectedIndex: 0, // 0=MODE, 1=ACTION, 2=TRIGGER, 3=SOURCE, 4=LEVEL
@@ -396,7 +394,10 @@
                 sourceStop: "Meter1", // "Meter1" | "12.5Hz" | "EXT" | "Timed"
                 level: "OFF", // "OFF" | number (dB value)
                 editingLevel: false,
-                sourceSide: "run" // "run" | "stop" - which source is being edited
+                editingSource: false, // Whether SOURCE values are being edited (highlighted)
+                sourceFocus: "title", // "title" | "run" | "stop" - which part of SOURCE is focused
+                sourceSide: "run", // "run" | "stop" - which source side is being edited (legacy, kept for compatibility)
+                levelFocus: "title" // "title" | "upper" | "lower" - which part of LEVEL is focused
             },
             flags: { locked: false },
             measurement: { runtime: 0, state: "stopped", isRunning: false },
@@ -792,6 +793,82 @@
                         console.log(`[AUTO RUN DOW] UP: Selected Line 1`);
                         _emit();
                     }
+                    } else if (_state.viewId === "auto_run_date_params") {
+                    const line = _state.autoRunDate.lines[_state.autoRunDate.selectedIndex];
+                    if (line.editMode === "date") {
+                        // In date edit mode - UP arrow increases the current subfield value
+                        const date = line.date;
+                        const subField = line.editSubField;
+                        if (subField === "day") {
+                            date.day = date.day + 1;
+                            if (date.day > 31) date.day = 1; // Wrap from 31 to 1
+                            console.log(`[AUTO RUN DATE] UP: day = ${date.day}`);
+                        } else if (subField === "month") {
+                            date.month = Math.max(1, Math.min(12, (date.month % 12) + 1));
+                            console.log(`[AUTO RUN DATE] UP: month = ${date.month}`);
+                        } else if (subField === "year") {
+                            date.year = Math.max(2000, Math.min(2099, date.year + 1));
+                            console.log(`[AUTO RUN DATE] UP: year = ${date.year}`);
+                        }
+                        _emit();
+                    } else if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                        // In time edit mode - UP arrow increases the current subfield value
+                        const timeField = line.editMode === "startTime" ? line.startTime : line.stopTime;
+                        const subField = line.editSubField;
+                        if (subField === "hour") {
+                            timeField.hour = (timeField.hour + 1) % 24;
+                            console.log(`[AUTO RUN DATE] UP: ${line.editMode} hour = ${String(timeField.hour).padStart(2, '0')}`);
+                        } else if (subField === "minute") {
+                            timeField.minute = (timeField.minute + 1) % 60;
+                            console.log(`[AUTO RUN DATE] UP: ${line.editMode} minute = ${String(timeField.minute).padStart(2, '0')}`);
+                        } else if (subField === "second") {
+                            timeField.second = (timeField.second + 1) % 60;
+                            console.log(`[AUTO RUN DATE] UP: ${line.editMode} second = ${String(timeField.second).padStart(2, '0')}`);
+                        }
+                        _emit();
+                    }
+                } else if (_state.viewId === "auto_run_level_triggered_params") {
+                    // UP arrow: adjust LEVEL value by 0.1 when upper/lower columns are focused
+                    if (_state.autoRunLevelTriggered.selectedIndex === 4) { // LEVEL selected
+                        const currentLevelFocus = _state.autoRunLevelTriggered.levelFocus || "title";
+                        if (currentLevelFocus === "upper" || currentLevelFocus === "lower") {
+                            // Adjust level value by 0.1 (increase)
+                            if (_state.autoRunLevelTriggered.level === "OFF") {
+                                _state.autoRunLevelTriggered.level = 90.0;
+                            } else {
+                                const currentLevel = typeof _state.autoRunLevelTriggered.level === "number" ? _state.autoRunLevelTriggered.level : 90.0;
+                                _state.autoRunLevelTriggered.level = Math.min(120.0, Math.round((currentLevel + 0.1) * 10) / 10);
+                            }
+                            _state.autoRunLevelTriggered.editingLevel = true;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] UP: ${currentLevelFocus} = ${_state.autoRunLevelTriggered.level}`);
+                            _emit();
+                            return;
+                        }
+                    }
+                    // UP arrow: navigate to previous item, skipping TRIGGER (index 2)
+                    // Navigation order: MODE (0) → ACTION (1) → SOURCE (3) → LEVEL (4) → MODE (0)
+                    const LEVEL_TRIGGERED_ITEMS = ["MODE", "ACTION", "TRIGGER", "SOURCE", "LEVEL"];
+                    const SELECTABLE_INDICES = [0, 1, 3, 4]; // Skip index 2 (TRIGGER)
+                    let currentIdx = _state.autoRunLevelTriggered.selectedIndex;
+                    // If leaving SOURCE, reset focus to title
+                    if (currentIdx === 3) {
+                        _state.autoRunLevelTriggered.sourceFocus = "title";
+                        _state.autoRunLevelTriggered.editingSource = false;
+                    }
+                    // If leaving LEVEL, reset focus to title
+                    if (currentIdx === 4) {
+                        _state.autoRunLevelTriggered.levelFocus = "title";
+                        _state.autoRunLevelTriggered.editingLevel = false;
+                    }
+                    // If somehow on TRIGGER, move to previous selectable
+                    if (currentIdx === 2) {
+                        currentIdx = 1; // Move to ACTION
+                    }
+                    const currentPos = SELECTABLE_INDICES.indexOf(currentIdx);
+                    const prevPos = (currentPos + SELECTABLE_INDICES.length - 1) % SELECTABLE_INDICES.length;
+                    _state.autoRunLevelTriggered.selectedIndex = SELECTABLE_INDICES[prevPos];
+                    console.log(`[AUTO RUN LEVEL TRIGGERED] UP: Selected index ${_state.autoRunLevelTriggered.selectedIndex} → "${LEVEL_TRIGGERED_ITEMS[_state.autoRunLevelTriggered.selectedIndex]}"`);
+                    _emit();
                 } else if (_state.viewId === "comms_edit") {
                     // UP arrow: cycle baud rate up
                     _state.comms.baudRateIndex = (_state.comms.baudRateIndex + 1) % BAUD_RATE_OPTIONS.length;
@@ -1131,6 +1208,83 @@
                         console.log(`[AUTO RUN DOW] DOWN: Selected Days`);
                         _emit();
                     }
+                } else if (_state.viewId === "auto_run_date_params") {
+                    const line = _state.autoRunDate.lines[_state.autoRunDate.selectedIndex];
+                    if (line.editMode === "date") {
+                        // In date edit mode - DOWN arrow decreases the current subfield value
+                        const date = line.date;
+                        const subField = line.editSubField;
+                        if (subField === "day") {
+                            date.day = date.day - 1;
+                            if (date.day < 1) date.day = 31; // Wrap from 1 to 31
+                            console.log(`[AUTO RUN DATE] DOWN: day = ${date.day}`);
+                        } else if (subField === "month") {
+                            date.month = date.month - 1;
+                            if (date.month < 1) date.month = 12; // Wrap from 1 to 12
+                            console.log(`[AUTO RUN DATE] DOWN: month = ${date.month}`);
+                        } else if (subField === "year") {
+                            date.year = Math.max(2000, date.year - 1);
+                            console.log(`[AUTO RUN DATE] DOWN: year = ${date.year}`);
+                        }
+                        _emit();
+                    } else if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                        // In time edit mode - DOWN arrow decreases the current subfield value
+                        const timeField = line.editMode === "startTime" ? line.startTime : line.stopTime;
+                        const subField = line.editSubField;
+                        if (subField === "hour") {
+                            timeField.hour = (timeField.hour - 1 + 24) % 24;
+                            console.log(`[AUTO RUN DATE] DOWN: ${line.editMode} hour = ${String(timeField.hour).padStart(2, '0')}`);
+                        } else if (subField === "minute") {
+                            timeField.minute = (timeField.minute - 1 + 60) % 60;
+                            console.log(`[AUTO RUN DATE] DOWN: ${line.editMode} minute = ${String(timeField.minute).padStart(2, '0')}`);
+                        } else if (subField === "second") {
+                            timeField.second = (timeField.second - 1 + 60) % 60;
+                            console.log(`[AUTO RUN DATE] DOWN: ${line.editMode} second = ${String(timeField.second).padStart(2, '0')}`);
+                        }
+                        _emit();
+                    }
+                } else if (_state.viewId === "auto_run_level_triggered_params") {
+                    // DOWN arrow: adjust LEVEL value by 0.1 when upper/lower columns are focused
+                    if (_state.autoRunLevelTriggered.selectedIndex === 4) { // LEVEL selected
+                        const currentLevelFocus = _state.autoRunLevelTriggered.levelFocus || "title";
+                        if (currentLevelFocus === "upper" || currentLevelFocus === "lower") {
+                            // Adjust level value by 0.1 (decrease)
+                            if (_state.autoRunLevelTriggered.level === "OFF") {
+                                _state.autoRunLevelTriggered.level = 90.0;
+                            } else {
+                                const currentLevel = typeof _state.autoRunLevelTriggered.level === "number" ? _state.autoRunLevelTriggered.level : 90.0;
+                                _state.autoRunLevelTriggered.level = Math.max(0.0, Math.round((currentLevel - 0.1) * 10) / 10);
+                            }
+                            _state.autoRunLevelTriggered.editingLevel = true;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] DOWN: ${currentLevelFocus} = ${_state.autoRunLevelTriggered.level}`);
+                            _emit();
+                            return;
+                        }
+                    }
+                    // DOWN arrow: navigate to next item, skipping TRIGGER (index 2)
+                    // Navigation order: MODE (0) → ACTION (1) → SOURCE (3) → LEVEL (4) → MODE (0)
+                    const LEVEL_TRIGGERED_ITEMS = ["MODE", "ACTION", "TRIGGER", "SOURCE", "LEVEL"];
+                    const SELECTABLE_INDICES = [0, 1, 3, 4]; // Skip index 2 (TRIGGER)
+                    let currentIdx = _state.autoRunLevelTriggered.selectedIndex;
+                    // If leaving SOURCE, reset focus to title
+                    if (currentIdx === 3) {
+                        _state.autoRunLevelTriggered.sourceFocus = "title";
+                        _state.autoRunLevelTriggered.editingSource = false;
+                    }
+                    // If leaving LEVEL, reset focus to title
+                    if (currentIdx === 4) {
+                        _state.autoRunLevelTriggered.levelFocus = "title";
+                        _state.autoRunLevelTriggered.editingLevel = false;
+                    }
+                    // If somehow on TRIGGER, move to next selectable
+                    if (currentIdx === 2) {
+                        currentIdx = 3; // Move to SOURCE
+                    }
+                    const currentPos = SELECTABLE_INDICES.indexOf(currentIdx);
+                    const nextPos = (currentPos + 1) % SELECTABLE_INDICES.length;
+                    _state.autoRunLevelTriggered.selectedIndex = SELECTABLE_INDICES[nextPos];
+                    console.log(`[AUTO RUN LEVEL TRIGGERED] DOWN: Selected index ${_state.autoRunLevelTriggered.selectedIndex} → "${LEVEL_TRIGGERED_ITEMS[_state.autoRunLevelTriggered.selectedIndex]}"`);
+                    _emit();
                 } else if (_state.viewId === "comms_edit") {
                     // DOWN arrow: cycle baud rate down
                     _state.comms.baudRateIndex = (_state.comms.baudRateIndex + BAUD_RATE_OPTIONS.length - 1) % BAUD_RATE_OPTIONS.length;
@@ -1322,33 +1476,77 @@
                 } else if (_state.viewId === "auto_run_date_params") {
                     const line = _state.autoRunDate.lines[_state.autoRunDate.selectedIndex];
                     if (line.editMode === "date") {
-                        // LEFT arrow: move to previous subfield (Y → D → M → Y)
-                        if (line.editSubField === "year") {
-                            line.editSubField = "day";
+                        // LEFT arrow: move to previous subfield (D → Y → M → D)
+                        // Order is: day → month → year → startTime
+                        if (line.editSubField === "day") {
+                            line.editSubField = "year"; // Wrap back to year
                         } else if (line.editSubField === "month") {
-                            line.editSubField = "year";
-                        } else if (line.editSubField === "day") {
+                            line.editSubField = "day";
+                        } else if (line.editSubField === "year") {
                             line.editSubField = "month";
                         }
                         console.log(`[AUTO RUN DATE] LEFT: Moved to date.${line.editSubField}`);
                         _emit();
-                    } else if (line.editMode === "time") {
-                        // LEFT arrow: move to previous subfield (H → S → M → H)
+                    } else if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                        // LEFT arrow: move to previous subfield (H → S → M → H), or move to previous time field
                         if (line.editSubField === "hour") {
-                            line.editSubField = "second";
+                            // If at hour, move to previous time field or date
+                            if (line.editMode === "startTime") {
+                                // Move back to date (day)
+                                line.editMode = "date";
+                                line.editSubField = "day";
+                                console.log(`[AUTO RUN DATE] LEFT: Moved from startTime to date.day`);
+                            } else if (line.editMode === "stopTime") {
+                                // Move back to startTime (second)
+                                line.editMode = "startTime";
+                                line.editSubField = "second";
+                                console.log(`[AUTO RUN DATE] LEFT: Moved from stopTime to startTime.second`);
+                            }
                         } else if (line.editSubField === "minute") {
                             line.editSubField = "hour";
                         } else if (line.editSubField === "second") {
                             line.editSubField = "minute";
                         }
-                        console.log(`[AUTO RUN DATE] LEFT: Moved to time.${line.editSubField}`);
+                        if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                            console.log(`[AUTO RUN DATE] LEFT: Moved to ${line.editMode}.${line.editSubField}`);
+                        }
                         _emit();
                     }
                 } else if (_state.viewId === "auto_run_level_triggered_params") {
-                    // LEFT arrow: move within SOURCE "run side" vs "stop/pause side"
-                    if (_state.autoRunLevelTriggered.selectedIndex === 3) { // SOURCE selected
-                        _state.autoRunLevelTriggered.sourceSide = _state.autoRunLevelTriggered.sourceSide === "run" ? "stop" : "run";
-                        console.log(`[AUTO RUN LEVEL TRIGGERED] LEFT: Switched source side to ${_state.autoRunLevelTriggered.sourceSide}`);
+                    // LEFT arrow: navigate LEVEL backwards (lower → upper → title → stops at title, no wrap)
+                    if (_state.autoRunLevelTriggered.selectedIndex === 4) { // LEVEL selected
+                        const currentLevelFocus = _state.autoRunLevelTriggered.levelFocus || "title";
+                        if (currentLevelFocus === "lower") {
+                            // From lower → upper
+                            _state.autoRunLevelTriggered.levelFocus = "upper";
+                            _state.autoRunLevelTriggered.editingLevel = true;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEFT: Moved from lower to upper column`);
+                        } else if (currentLevelFocus === "upper") {
+                            // From upper → title
+                            _state.autoRunLevelTriggered.levelFocus = "title";
+                            _state.autoRunLevelTriggered.editingLevel = false;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEFT: Moved from upper to LEVEL title`);
+                        } else {
+                            // From title → nothing happens (stops here, no wrap)
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEFT: Already at LEVEL title, nothing happens`);
+                        }
+                    } else if (_state.autoRunLevelTriggered.selectedIndex === 3) { // SOURCE selected
+                        const currentFocus = _state.autoRunLevelTriggered.sourceFocus || "title";
+                        if (currentFocus === "stop") {
+                            // From stop → run
+                            _state.autoRunLevelTriggered.sourceFocus = "run";
+                            _state.autoRunLevelTriggered.editingSource = true;
+                            _state.autoRunLevelTriggered.sourceSide = "run";
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEFT: Moved from stop to run column`);
+                        } else if (currentFocus === "run") {
+                            // From run → SOURCE title
+                            _state.autoRunLevelTriggered.sourceFocus = "title";
+                            _state.autoRunLevelTriggered.editingSource = false;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEFT: Moved from run to SOURCE title`);
+                        } else {
+                            // From SOURCE title → nothing happens (stops here, no wrap)
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEFT: Already at SOURCE title, nothing happens`);
+                        }
                     }
                     _emit();
                 } else if (_state.viewId === "digital_out_menu") {
@@ -1552,11 +1750,87 @@
                             }
                         }
                     }
+                } else if (_state.viewId === "auto_run_date_params") {
+                    const line = _state.autoRunDate.lines[_state.autoRunDate.selectedIndex];
+                    if (line.editMode === "date") {
+                        // RIGHT arrow: move to next subfield (D → M → Y → startTime)
+                        // Order is: day → month → year → startTime
+                        if (line.editSubField === "day") {
+                            line.editSubField = "month";
+                        } else if (line.editSubField === "month") {
+                            line.editSubField = "year";
+                        } else if (line.editSubField === "year") {
+                            // Move to startTime edit mode
+                            line.editMode = "startTime";
+                            line.editSubField = "hour";
+                            console.log(`[AUTO RUN DATE] RIGHT: Moved from date.year to startTime.hour`);
+                        }
+                        console.log(`[AUTO RUN DATE] RIGHT: Moved to ${line.editMode}.${line.editSubField}`);
+                        _emit();
+                    } else if (line.editMode === "startTime" || line.editMode === "stopTime") {
+                        // RIGHT arrow: move to next subfield (H → M → S), or move to next time field
+                        if (line.editSubField === "hour") {
+                            line.editSubField = "minute";
+                            console.log(`[AUTO RUN DATE] RIGHT: Moved to ${line.editMode} minute`);
+                        } else if (line.editSubField === "minute") {
+                            line.editSubField = "second";
+                            console.log(`[AUTO RUN DATE] RIGHT: Moved to ${line.editMode} second`);
+                        } else if (line.editSubField === "second") {
+                            // Move to next time field
+                            if (line.editMode === "startTime") {
+                                // Move to stopTime hour
+                                line.editMode = "stopTime";
+                                line.editSubField = "hour";
+                                console.log(`[AUTO RUN DATE] RIGHT: Moved from startTime to stopTime hour`);
+                            } else if (line.editMode === "stopTime") {
+                                // At stopTime second - exit edit mode and disable line (show ---OFF---)
+                                line.editMode = null;
+                                line.editSubField = null;
+                                line.enabled = false;
+                                console.log(`[AUTO RUN DATE] RIGHT: Exited edit mode, line disabled`);
+                            }
+                        }
+                        _emit();
+                    }
                 } else if (_state.viewId === "auto_run_level_triggered_params") {
-                    // RIGHT arrow: move within SOURCE "run side" vs "stop/pause side"
-                    if (_state.autoRunLevelTriggered.selectedIndex === 3) { // SOURCE selected
-                        _state.autoRunLevelTriggered.sourceSide = _state.autoRunLevelTriggered.sourceSide === "run" ? "stop" : "run";
-                        console.log(`[AUTO RUN LEVEL TRIGGERED] RIGHT: Switched source side to ${_state.autoRunLevelTriggered.sourceSide}`);
+                    // RIGHT arrow: navigate LEVEL forward (title → upper → lower → title, wraps)
+                    if (_state.autoRunLevelTriggered.selectedIndex === 4) { // LEVEL selected
+                        const currentLevelFocus = _state.autoRunLevelTriggered.levelFocus || "title";
+                        if (currentLevelFocus === "title") {
+                            // From title → upper
+                            _state.autoRunLevelTriggered.levelFocus = "upper";
+                            _state.autoRunLevelTriggered.editingLevel = true;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] RIGHT: Moved to upper column`);
+                        } else if (currentLevelFocus === "upper") {
+                            // From upper → lower
+                            _state.autoRunLevelTriggered.levelFocus = "lower";
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] RIGHT: Moved to lower column`);
+                        } else {
+                            // From lower → title (wraps)
+                            _state.autoRunLevelTriggered.levelFocus = "title";
+                            _state.autoRunLevelTriggered.editingLevel = false;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] RIGHT: Wrapped to LEVEL title`);
+                        }
+                    } else if (_state.autoRunLevelTriggered.selectedIndex === 3) { // SOURCE selected
+                        const currentFocus = _state.autoRunLevelTriggered.sourceFocus || "title";
+                        if (currentFocus === "title") {
+                            // From title → run
+                            _state.autoRunLevelTriggered.sourceFocus = "run";
+                            _state.autoRunLevelTriggered.editingSource = true;
+                            _state.autoRunLevelTriggered.sourceSide = "run";
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] RIGHT: Moved to run column`);
+                        } else if (currentFocus === "run") {
+                            // From run → stop
+                            _state.autoRunLevelTriggered.sourceFocus = "stop";
+                            _state.autoRunLevelTriggered.editingSource = true;
+                            _state.autoRunLevelTriggered.sourceSide = "stop";
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] RIGHT: Moved to stop column`);
+                        } else {
+                            // From stop → title (wraps)
+                            _state.autoRunLevelTriggered.sourceFocus = "title";
+                            _state.autoRunLevelTriggered.editingSource = false;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] RIGHT: Wrapped to SOURCE title`);
+                        }
                     }
                     _emit();
                 } else if (_state.viewId === "digital_out_menu") {
@@ -1978,60 +2252,74 @@
                     }
                 } else if (_state.viewId === "auto_run_date_params") {
                     const line = _state.autoRunDate.lines[_state.autoRunDate.selectedIndex];
-                    console.log(`[AUTO RUN DATE] ENTER: Line ${_state.autoRunDate.selectedIndex + 1}, enabled=${line.enabled}, editMode=${line.editMode}, date=${line.date ? 'set' : 'null'}, time=${line.time ? 'set' : 'null'}`);
-                    // ENTER: Enable line if OFF, or enter/edit date/time
+                    console.log(`[AUTO RUN DATE] ENTER: Line ${_state.autoRunDate.selectedIndex + 1}, enabled=${line.enabled}, editMode=${line.editMode}, date=${line.date ? 'set' : 'null'}`);
+                    // ENTER: Enable line if OFF, or enter/edit date/startTime/stopTime
                     if (!line.enabled) {
                         // Enable line and enter date edit mode
                         line.enabled = true;
                         line.editMode = "date";
-                        line.editSubField = "year";
+                        line.editSubField = "day";
                         if (!line.date) {
-                            line.date = { year: 2024, month: 1, day: 1 };
+                            const now = new Date();
+                            line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
                         }
-                        if (!line.time) {
-                            line.time = { hour: 12, minute: 0, second: 0 };
+                        if (!line.startTime) {
+                            line.startTime = { hour: 0, minute: 0, second: 0 };
                         }
-                        console.log(`[AUTO RUN DATE] ENTER: Enabled line ${_state.autoRunDate.selectedIndex + 1}, entered date edit mode (year selected)`);
+                        if (!line.stopTime) {
+                            line.stopTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        console.log(`[AUTO RUN DATE] ENTER: Enabled line ${_state.autoRunDate.selectedIndex + 1}, entered date edit mode (day selected)`);
                         _emit();
                     } else if (!line.editMode || line.editMode === null) {
                         // Line is enabled but not in edit mode - enter date edit mode
                         line.editMode = "date";
-                        line.editSubField = "year";
+                        line.editSubField = "day";
                         if (!line.date) {
-                            line.date = { year: 2024, month: 1, day: 1 };
+                            const now = new Date();
+                            line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
                         }
-                        if (!line.time) {
-                            line.time = { hour: 12, minute: 0, second: 0 };
-                        }
-                        console.log(`[AUTO RUN DATE] ENTER: Entered date edit mode (year selected)`);
+                        console.log(`[AUTO RUN DATE] ENTER: Entered date edit mode (day selected)`);
                         _emit();
                     } else if (line.editMode === "date") {
-                        // ENTER cycles between date subfields or switches to time mode
-                        if (line.editSubField === "year") {
+                        // ENTER cycles between date subfields or switches to startTime mode
+                        // Order: day → month → year → startTime
+                        if (line.editSubField === "day") {
                             line.editSubField = "month";
                         } else if (line.editSubField === "month") {
-                            line.editSubField = "day";
-                        } else if (line.editSubField === "day") {
-                            // Switch to time edit mode
-                            line.editMode = "time";
+                            line.editSubField = "year";
+                        } else if (line.editSubField === "year") {
+                            // Switch to startTime edit mode
+                            line.editMode = "startTime";
                             line.editSubField = "hour";
-                            if (!line.time) {
-                                line.time = { hour: 12, minute: 0, second: 0 };
-                            }
-                            console.log(`[AUTO RUN DATE] ENTER: Switched to time edit mode`);
+                            console.log(`[AUTO RUN DATE] ENTER: Switched to startTime edit mode`);
                         }
                         _emit();
-                    } else if (line.editMode === "time") {
-                        // ENTER cycles between time subfields or exits edit mode
+                    } else if (line.editMode === "startTime") {
+                        // ENTER cycles between startTime subfields or switches to stopTime
                         if (line.editSubField === "hour") {
                             line.editSubField = "minute";
                         } else if (line.editSubField === "minute") {
                             line.editSubField = "second";
                         } else if (line.editSubField === "second") {
-                            // Exit edit mode
+                            // Switch to stopTime edit mode
+                            line.editMode = "stopTime";
+                            line.editSubField = "hour";
+                            console.log(`[AUTO RUN DATE] ENTER: Switched to stopTime edit mode`);
+                        }
+                        _emit();
+                    } else if (line.editMode === "stopTime") {
+                        // ENTER cycles between stopTime subfields or exits edit mode
+                        if (line.editSubField === "hour") {
+                            line.editSubField = "minute";
+                        } else if (line.editSubField === "minute") {
+                            line.editSubField = "second";
+                        } else if (line.editSubField === "second") {
+                            // Exit edit mode and disable line (show ---OFF---)
                             line.editMode = null;
                             line.editSubField = null;
-                            console.log(`[AUTO RUN DATE] ENTER: Exited edit mode`);
+                            line.enabled = false;
+                            console.log(`[AUTO RUN DATE] ENTER: Exited edit mode, line disabled`);
                         }
                         _emit();
                     }
@@ -2046,35 +2334,70 @@
                     } else if (selectedIdx === 1) {
                         // ACTION: Cycle RUN/STOP ↔ RUN/PSE
                         _state.autoRunLevelTriggered.action = _state.autoRunLevelTriggered.action === "RUN/STOP" ? "RUN/PSE" : "RUN/STOP";
-                        _updateLevelTriggeredTrigger();
+                        // Don't update trigger - TRIGGER only changes based on MODE, not ACTION
                         console.log(`[AUTO RUN LEVEL TRIGGERED] ACTION: ${_state.autoRunLevelTriggered.action}`);
                     } else if (selectedIdx === 3) {
-                        // SOURCE: Cycle source for current side
+                        // SOURCE: Cycle source value for current focus (run or stop)
+                        const currentFocus = _state.autoRunLevelTriggered.sourceFocus || "title";
                         const SOURCE_RUN_OPTIONS = ["Meter1", "12.5Hz", "EXT", "Delay"];
                         const SOURCE_STOP_OPTIONS = ["Meter1", "12.5Hz", "EXT", "Timed"];
-                        if (_state.autoRunLevelTriggered.sourceSide === "run") {
+                        
+                        if (currentFocus === "run") {
+                            // Cycle run side options
+                            const currentIdx = SOURCE_RUN_OPTIONS.indexOf(_state.autoRunLevelTriggered.sourceRun);
+                            const nextIdx = (currentIdx + 1) % SOURCE_RUN_OPTIONS.length;
+                            _state.autoRunLevelTriggered.sourceRun = SOURCE_RUN_OPTIONS[nextIdx];
+                            _state.autoRunLevelTriggered.editingSource = true;
+                            _state.autoRunLevelTriggered.sourceSide = "run";
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] SOURCE RUN: ${_state.autoRunLevelTriggered.sourceRun}`);
+                        } else if (currentFocus === "stop") {
+                            // Cycle stop side options
+                            const currentIdx = SOURCE_STOP_OPTIONS.indexOf(_state.autoRunLevelTriggered.sourceStop);
+                            const nextIdx = (currentIdx + 1) % SOURCE_STOP_OPTIONS.length;
+                            _state.autoRunLevelTriggered.sourceStop = SOURCE_STOP_OPTIONS[nextIdx];
+                            _state.autoRunLevelTriggered.editingSource = true;
+                            _state.autoRunLevelTriggered.sourceSide = "stop";
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] SOURCE STOP: ${_state.autoRunLevelTriggered.sourceStop}`);
+                        } else {
+                            // If focus is on title, move to run side and cycle
+                            _state.autoRunLevelTriggered.sourceFocus = "run";
+                            _state.autoRunLevelTriggered.editingSource = true;
+                            _state.autoRunLevelTriggered.sourceSide = "run";
                             const currentIdx = SOURCE_RUN_OPTIONS.indexOf(_state.autoRunLevelTriggered.sourceRun);
                             const nextIdx = (currentIdx + 1) % SOURCE_RUN_OPTIONS.length;
                             _state.autoRunLevelTriggered.sourceRun = SOURCE_RUN_OPTIONS[nextIdx];
                             console.log(`[AUTO RUN LEVEL TRIGGERED] SOURCE RUN: ${_state.autoRunLevelTriggered.sourceRun}`);
-                        } else {
-                            const currentIdx = SOURCE_STOP_OPTIONS.indexOf(_state.autoRunLevelTriggered.sourceStop);
-                            const nextIdx = (currentIdx + 1) % SOURCE_STOP_OPTIONS.length;
-                            _state.autoRunLevelTriggered.sourceStop = SOURCE_STOP_OPTIONS[nextIdx];
-                            console.log(`[AUTO RUN LEVEL TRIGGERED] SOURCE STOP: ${_state.autoRunLevelTriggered.sourceStop}`);
                         }
                     } else if (selectedIdx === 4) {
-                        // LEVEL: Toggle OFF ↔ 90.0 or enter edit
-                        if (_state.autoRunLevelTriggered.level === "OFF") {
-                            _state.autoRunLevelTriggered.level = 90.0;
+                        // LEVEL: Toggle OFF ↔ numbers (same pattern as SOURCE cycles values)
+                        const currentLevelFocus = _state.autoRunLevelTriggered.levelFocus || "title";
+                        if (currentLevelFocus === "title") {
+                            // From title → move to upper column
+                            _state.autoRunLevelTriggered.levelFocus = "upper";
                             _state.autoRunLevelTriggered.editingLevel = true;
-                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEVEL: OFF → 90.0 (entered edit mode)`);
-                        } else if (_state.autoRunLevelTriggered.editingLevel) {
-                            _state.autoRunLevelTriggered.editingLevel = false;
-                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEVEL: Exited edit mode`);
+                            // If OFF, set to default number; if number, keep it
+                            if (_state.autoRunLevelTriggered.level === "OFF") {
+                                _state.autoRunLevelTriggered.level = 90.0;
+                            }
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEVEL: Moved to upper column, value: ${_state.autoRunLevelTriggered.level}`);
+                        } else if (currentLevelFocus === "upper") {
+                            // From upper → toggle OFF ↔ numbers
+                            if (_state.autoRunLevelTriggered.level === "OFF") {
+                                _state.autoRunLevelTriggered.level = 90.0;
+                            } else {
+                                _state.autoRunLevelTriggered.level = "OFF";
+                            }
+                            _state.autoRunLevelTriggered.editingLevel = true;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEVEL UPPER: ${_state.autoRunLevelTriggered.level}`);
                         } else {
-                            _state.autoRunLevelTriggered.level = "OFF";
-                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEVEL: ${_state.autoRunLevelTriggered.level}`);
+                            // From lower → toggle OFF ↔ numbers
+                            if (_state.autoRunLevelTriggered.level === "OFF") {
+                                _state.autoRunLevelTriggered.level = 90.0;
+                            } else {
+                                _state.autoRunLevelTriggered.level = "OFF";
+                            }
+                            _state.autoRunLevelTriggered.editingLevel = true;
+                            console.log(`[AUTO RUN LEVEL TRIGGERED] LEVEL LOWER: ${_state.autoRunLevelTriggered.level}`);
                         }
                     }
                     _emit();
@@ -2532,10 +2855,11 @@
                 } else if (_state.viewId === "auto_run_date_params") {
                     const line = _state.autoRunDate.lines[_state.autoRunDate.selectedIndex];
                     if (line.editMode !== null) {
-                        // Exit edit mode
+                        // Exit edit mode and disable line (show ---OFF---)
                         line.editMode = null;
                         line.editSubField = null;
-                        console.log(`[AUTO RUN DATE] ESC: Exited edit mode`);
+                        line.enabled = false;
+                        console.log(`[AUTO RUN DATE] ESC: Exited edit mode, line disabled`);
                         _emit();
                     } else {
                         // Return to auto_run_menu
@@ -2549,6 +2873,11 @@
                         // Exit LEVEL edit mode
                         _state.autoRunLevelTriggered.editingLevel = false;
                         console.log(`[AUTO RUN LEVEL TRIGGERED] ESC: Exited LEVEL edit mode`);
+                        _emit();
+                    } else if (_state.autoRunLevelTriggered.editingSource) {
+                        // Exit SOURCE edit mode
+                        _state.autoRunLevelTriggered.editingSource = false;
+                        console.log(`[AUTO RUN LEVEL TRIGGERED] ESC: Exited SOURCE edit mode`);
                         _emit();
                     } else {
                         // Return to auto_run_menu
@@ -2740,12 +3069,17 @@
                     const line = _state.autoRunDate.lines[0];
                     const wasEnabled = line.enabled;
                     line.enabled = !line.enabled;
-                    // If enabling (was disabled, now enabled) and date/time not set, set default values
-                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                    // If enabling (was disabled, now enabled) and date not set, set default values
+                    if (!wasEnabled && line.enabled && !line.date) {
                         const now = new Date();
                         line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
-                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
-                        console.log(`[AUTO RUN DATE] SOFT1: Line 1 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                        if (!line.startTime) {
+                            line.startTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        if (!line.stopTime) {
+                            line.stopTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        console.log(`[AUTO RUN DATE] SOFT1: Line 1 enabled with default date: ${line.date.day} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][line.date.month - 1]} ${line.date.year}`);
                     }
                     _state.autoRunDate.selectedIndex = 0; // Select line 1
                     console.log(`[AUTO RUN DATE] SOFT1: Line 1 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
@@ -2771,12 +3105,17 @@
                     const line = _state.autoRunDate.lines[1];
                     const wasEnabled = line.enabled;
                     line.enabled = !line.enabled;
-                    // If enabling (was disabled, now enabled) and date/time not set, set default values
-                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                    // If enabling (was disabled, now enabled) and date not set, set default values
+                    if (!wasEnabled && line.enabled && !line.date) {
                         const now = new Date();
                         line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
-                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
-                        console.log(`[AUTO RUN DATE] SOFT2: Line 2 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                        if (!line.startTime) {
+                            line.startTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        if (!line.stopTime) {
+                            line.stopTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        console.log(`[AUTO RUN DATE] SOFT2: Line 2 enabled with default date: ${line.date.day} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][line.date.month - 1]} ${line.date.year}`);
                     }
                     _state.autoRunDate.selectedIndex = 1; // Select line 2
                     console.log(`[AUTO RUN DATE] SOFT2: Line 2 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
@@ -2804,12 +3143,17 @@
                     const line = _state.autoRunDate.lines[2];
                     const wasEnabled = line.enabled;
                     line.enabled = !line.enabled;
-                    // If enabling (was disabled, now enabled) and date/time not set, set default values
-                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                    // If enabling (was disabled, now enabled) and date not set, set default values
+                    if (!wasEnabled && line.enabled && !line.date) {
                         const now = new Date();
                         line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
-                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
-                        console.log(`[AUTO RUN DATE] SOFT3: Line 3 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                        if (!line.startTime) {
+                            line.startTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        if (!line.stopTime) {
+                            line.stopTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        console.log(`[AUTO RUN DATE] SOFT3: Line 3 enabled with default date: ${line.date.day} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][line.date.month - 1]} ${line.date.year}`);
                     }
                     _state.autoRunDate.selectedIndex = 2; // Select line 3
                     console.log(`[AUTO RUN DATE] SOFT3: Line 3 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
@@ -2825,12 +3169,17 @@
                     const line = _state.autoRunDate.lines[3];
                     const wasEnabled = line.enabled;
                     line.enabled = !line.enabled;
-                    // If enabling (was disabled, now enabled) and date/time not set, set default values
-                    if (!wasEnabled && line.enabled && (!line.date || !line.time)) {
+                    // If enabling (was disabled, now enabled) and date not set, set default values
+                    if (!wasEnabled && line.enabled && !line.date) {
                         const now = new Date();
                         line.date = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
-                        line.time = { hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds() };
-                        console.log(`[AUTO RUN DATE] SOFT4: Line 4 enabled with default date/time: ${line.date.month}/${line.date.day}/${line.date.year} ${line.time.hour}:${line.time.minute}:${line.time.second}`);
+                        if (!line.startTime) {
+                            line.startTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        if (!line.stopTime) {
+                            line.stopTime = { hour: 0, minute: 0, second: 0 };
+                        }
+                        console.log(`[AUTO RUN DATE] SOFT4: Line 4 enabled with default date: ${line.date.day} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][line.date.month - 1]} ${line.date.year}`);
                     }
                     _state.autoRunDate.selectedIndex = 3; // Select line 4
                     console.log(`[AUTO RUN DATE] SOFT4: Line 4 ${line.enabled ? 'enabled' : 'disabled'}, selected`);

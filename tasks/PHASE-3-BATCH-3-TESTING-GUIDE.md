@@ -414,7 +414,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Default date: 01/01/2024
 - Console log: `[AUTO RUN DATE] ENTER: Enabled line 1, entered date edit mode`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.5 Date Edit Mode - Adjust Year
 **Test:** In date edit mode (year highlighted), press UP arrow
@@ -426,7 +426,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - Year decreases (2099 → 2000, stops at min)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.6 Date Edit Mode - Adjust Month
 **Test:** In date edit mode, press RIGHT arrow (or ENTER) to move to month
@@ -442,7 +442,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - Month decreases: 12 → 11 → ... → 01 → 12 (wraps)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 4.7 Date Edit Mode - Adjust Day
 **Test:** In date edit mode, press RIGHT arrow (or ENTER) to move to day
@@ -454,7 +454,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Day increases/decreases: 01 → 31 → 01 (wraps)
 - Note: No validation for month-specific day limits (acceptable for now)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.8 Switch to Time Edit Mode
 **Test:** In date edit mode, with day highlighted, press ENTER
@@ -464,7 +464,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Default time: 12:00:00
 - Console log: `[AUTO RUN DATE] ENTER: Switched to time edit mode`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.9 Time Edit Mode - Adjust Hour
 **Test:** In time edit mode (hour highlighted), press UP arrow
@@ -476,7 +476,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - Hour decreases: 00 → 23 → ... → 01 → 00 (wraps)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.10 Time Edit Mode - Adjust Minute
 **Test:** In time edit mode, press RIGHT arrow (or ENTER) to move to minute
@@ -487,7 +487,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - Minute increases/decreases: 00 → 59 → 00 (wraps)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.11 Time Edit Mode - Adjust Second
 **Test:** In time edit mode, press RIGHT arrow (or ENTER) to move to second
@@ -498,7 +498,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - Second increases/decreases: 00 → 59 → 00 (wraps)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.12 LEFT/RIGHT Navigation
 **Test:** In date edit mode, use LEFT/RIGHT arrows
@@ -513,7 +513,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - RIGHT: Moves between H/M/S (H → M → S → H)
 - Console logs confirm subfield changes
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.13 ENTER Navigation
 **Test:** In date edit mode, press ENTER multiple times
@@ -522,7 +522,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - In time edit mode: hour → minute → second → exit edit mode
 - Console logs confirm transitions
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.14 Exit Edit Mode
 **Test:** In time edit mode, with second highlighted, press ENTER
@@ -531,7 +531,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Console log: `[AUTO RUN DATE] ENTER: Exited edit mode`
 - No fields are highlighted
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.15 ESC Behavior
 **Test:** In any edit mode (date or time), press ESC
@@ -545,7 +545,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Returns to AUTO RUN menu
 - Console log: `[AUTO RUN DATE] ESC: Returned to auto_run_menu`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.16 Value Persistence
 **Test:** Set AUTO-RUN #1 to date 03/15/2024, time 14:30:00. Exit, return to Date parameters.
@@ -556,7 +556,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - On main AUTO RUN menu, softkey shows "+1" (line is enabled)
 - Pressing SOFT1 returns to AUTO-RUN #1 and shows the saved date/time
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.17 All Lines Independent
 **Test:** Configure all 4 lines with different dates/times using softkeys to switch between them.
@@ -567,7 +567,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Each line can be ON (with date/time) or OFF (shows "---OFF---")
 - On main AUTO RUN menu, softkeys show "+X" for enabled lines and "-X" for disabled lines
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ---
 
@@ -587,7 +587,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - All softkeys empty
 - MODE is selected (highlighted)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.2 Navigate Between Items
 **Test:** Press UP/DOWN arrows
@@ -596,7 +596,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Selected item is highlighted
 - Console log shows: `[AUTO RUN LEVEL TRIGGERED] UP/DOWN: Selected index X`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.3 MODE Cycling
 **Test:** With MODE selected, press ENTER
@@ -609,7 +609,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - TRIGGER shows "Upper & Lower" (regardless of ACTION)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.4 ACTION Cycling
 **Test:** Select ACTION, press ENTER
@@ -626,7 +626,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - TRIGGER shows "Run/Stop"
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.5 TRIGGER Display
 **Test:** TRIGGER should not be editable (no ENTER action)
@@ -635,7 +635,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Pressing ENTER on TRIGGER does nothing (or logs "read-only")
 - TRIGGER updates when MODE or ACTION changes
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.6 SOURCE - Run Side
 **Test:** Select SOURCE (should show "Meter1"), press ENTER
@@ -644,7 +644,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Console log: `[AUTO RUN LEVEL TRIGGERED] SOURCE RUN: [value]`
 - Display shows current SOURCE value
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.7 SOURCE - Stop Side
 **Test:** Select SOURCE, press LEFT arrow (or RIGHT) to switch to stop side
@@ -659,7 +659,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Console log: `[AUTO RUN LEVEL TRIGGERED] SOURCE STOP: [value]`
 - Note: "Timed" is available for stop side, "Delay" is for run side
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.8 SOURCE LEFT/RIGHT Navigation
 **Test:** Select SOURCE, press LEFT arrow
@@ -672,7 +672,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 **Expected:**
 - Also switches between run side and stop side (same as LEFT)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.9 LEVEL - Toggle OFF/ON
 **Test:** Select LEVEL (should show "OFF"), press ENTER
@@ -692,7 +692,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - LEVEL changes back to "OFF"
 - Console log: `[AUTO RUN LEVEL TRIGGERED] LEVEL: OFF`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.10 LEVEL - Adjust dB Value
 **Test:** With LEVEL in edit mode (showing "90.0 dB"), press UP arrow
@@ -705,7 +705,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - dB value decreases: 90 → 89 → 88 → ... → 0 (stops at min)
 - Console log: `[AUTO RUN LEVEL TRIGGERED] DOWN: LEVEL = X dB`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.11 LEVEL - Edit Mode Navigation
 **Test:** In LEVEL edit mode, press UP/DOWN
@@ -720,7 +720,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Stays on Level-Triggered parameters screen
 - LEVEL value remains at current setting
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.12 ESC Behavior
 **Test:** Not in LEVEL edit mode, press ESC
@@ -728,7 +728,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Returns to AUTO RUN menu
 - Console log: `[AUTO RUN LEVEL TRIGGERED] ESC: Returned to auto_run_menu`
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.13 Value Persistence
 **Test:** Set MODE = WINDOWED, ACTION = RUN/PSE, SOURCE = EXT (run side), LEVEL = 95.0 dB. Exit, return to Level-Triggered parameters.
@@ -738,7 +738,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - SOURCE shows "EXT"
 - LEVEL shows "95.0 dB"
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.14 TRIGGER Auto-Update
 **Test:** Set MODE = LEVEL ON/OFF, ACTION = RUN/STOP. Verify TRIGGER = "Run/Stop"
@@ -754,7 +754,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - TRIGGER automatically updates to "Upper & Lower"
 - ACTION value remains unchanged
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -767,7 +767,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - History stack maintains correct order
 - No navigation errors
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 6.2 Mode Change Persistence
 **Test:** Set AUTO-RUN = "Timed Run", configure Timed Run parameters. Change AUTO-RUN to "DOW", configure DOW parameters. Change back to "Timed Run".
@@ -776,7 +776,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - DOW parameters retain previous values
 - Each mode's parameters are independent
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 6.3 Parameter Screen Access
 **Test:** Change AUTO-RUN mode while on a parameter screen (e.g., on Timed Run parameters, change AUTO-RUN to DOW)
@@ -784,7 +784,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Should not be able to change AUTO-RUN mode from parameter screen
 - Must return to AUTO RUN menu to change mode
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -799,7 +799,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Level-Triggered: `\setup\LVL-TRG-Run`
 - All titles display correctly with proper backslash formatting
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 7.2 Editing Highlight
 **Test:** Enter edit mode on any parameter screen
@@ -808,7 +808,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Non-editing fields are dimmed/grayed out
 - Highlight moves correctly with LEFT/RIGHT navigation
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 7.3 Value Formatting
 **Test:** Verify all value displays
@@ -820,7 +820,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - Date OFF: "---OFF---" (centered)
 - Level-Triggered: All values visible (MODE, ACTION, TRIGGER, SOURCE, LEVEL) with " = " separator
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 7.4 Softkey Labels
 **Test:** Check softkey labels on AUTO RUN menu when different modes are selected
@@ -837,7 +837,7 @@ This testing guide covers the AUTO RUN parameter screens implemented in Phase 3 
 - DOW params screen: SOFT1-2 show "-1"/"-2" or "+1"/"+2"
 - Date params screen: SOFT1-4 show "-1"/"-2"/"-3"/"-4" or "+1"/"+2"/"+3"/"+4" (for switching between lines)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 

@@ -182,41 +182,65 @@
                     const editSubField = line?.editSubField;
                     let html;
                     
-                    // Show AUTO-RUN #X (always highlighted, centered)
-                    html = `<div class="menu-item menu-item--selected screen-element--centered-label"><span class="menu-item__title menu-item__title--selected">AUTO-RUN #${lineIdx + 1}</span></div>`;
-                    html += `<div class="menu-item--spacer-line"></div>`;
+                    // Month abbreviations
+                    const monthAbbr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                     
-                    // If line is not enabled or no date/time set, show "---OFF---" (centered)
-                    if (!enabled || !line.date || !line.time) {
-                        html += `<div class="menu-item screen-element--centered-label">---OFF---</div>`;
+                    // Show AUTO-RUN #X (always highlighted, centered)
+                    html = `<div class="menu-item menu-item--selected screen-element--centered-label menu-item--date-tight"><span class="menu-item__title menu-item__title--selected">AUTO-RUN #${lineIdx + 1}</span></div>`;
+                    
+                    // If line is not enabled or no date set, show "---OFF---" (centered)
+                    if (!enabled || !line.date) {
+                        html += `<div class="menu-item screen-element--centered-label menu-item--date-tight">---OFF---</div>`;
                     } else {
                         const date = line.date;
-                        const time = line.time;
-                        const dateStr = `${String(date.month).padStart(2, '0')}/${String(date.day).padStart(2, '0')}/${date.year}`;
-                        const timeStr = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}:${String(time.second).padStart(2, '0')}`;
-                        let valueText = `${dateStr} ${timeStr}`;
+                        const startTime = line.startTime || { hour: 0, minute: 0, second: 0 };
+                        const stopTime = line.stopTime || { hour: 0, minute: 0, second: 0 };
                         
-                        // Highlight editing fields
+                        // Format date: "day month year" with month abbreviated (e.g., "15 Jan 2024")
+                        let dateText = `${date.day} ${monthAbbr[date.month - 1]} ${date.year}`;
+                        
+                        // Highlight editing fields for date
                         if (editMode === "date") {
-                            if (editSubField === "year") {
-                                valueText = `${String(date.month).padStart(2, '0')}/${String(date.day).padStart(2, '0')}/<span class="menu-item__value--editing">${date.year}</span> ${timeStr}`;
+                            if (editSubField === "day") {
+                                dateText = `<span class="menu-item__value--editing">${date.day}</span> ${monthAbbr[date.month - 1]} ${date.year}`;
                             } else if (editSubField === "month") {
-                                valueText = `<span class="menu-item__value--editing">${String(date.month).padStart(2, '0')}</span>/${String(date.day).padStart(2, '0')}/${date.year} ${timeStr}`;
-                            } else if (editSubField === "day") {
-                                valueText = `${String(date.month).padStart(2, '0')}/<span class="menu-item__value--editing">${String(date.day).padStart(2, '0')}</span>/${date.year} ${timeStr}`;
-                            }
-                        } else if (editMode === "time") {
-                            if (editSubField === "hour") {
-                                valueText = `${dateStr} <span class="menu-item__value--editing">${String(time.hour).padStart(2, '0')}</span>:${String(time.minute).padStart(2, '0')}:${String(time.second).padStart(2, '0')}`;
-                            } else if (editSubField === "minute") {
-                                valueText = `${dateStr} ${String(time.hour).padStart(2, '0')}:<span class="menu-item__value--editing">${String(time.minute).padStart(2, '0')}</span>:${String(time.second).padStart(2, '0')}`;
-                            } else if (editSubField === "second") {
-                                valueText = `${dateStr} ${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}:<span class="menu-item__value--editing">${String(time.second).padStart(2, '0')}</span>`;
+                                dateText = `${date.day} <span class="menu-item__value--editing">${monthAbbr[date.month - 1]}</span> ${date.year}`;
+                            } else if (editSubField === "year") {
+                                dateText = `${date.day} ${monthAbbr[date.month - 1]} <span class="menu-item__value--editing">${date.year}</span>`;
                             }
                         }
-                        html += `<div class="menu-item screen-element--centered-label"><span class="menu-item__value">${valueText}</span></div>`;
+                        
+                        // First line: Date
+                        html += `<div class="menu-item screen-element--centered-label menu-item--date-tight"><span class="menu-item__value">${dateText}</span></div>`;
+                        
+                        // Format start time
+                        let startTimeStr = `S ${String(startTime.hour).padStart(2, '0')}:${String(startTime.minute).padStart(2, '0')}:${String(startTime.second).padStart(2, '0')}`;
+                        if (editMode === "startTime") {
+                            if (editSubField === "hour") {
+                                startTimeStr = `S <span class="menu-item__value--editing">${String(startTime.hour).padStart(2, '0')}</span>:${String(startTime.minute).padStart(2, '0')}:${String(startTime.second).padStart(2, '0')}`;
+                            } else if (editSubField === "minute") {
+                                startTimeStr = `S ${String(startTime.hour).padStart(2, '0')}:<span class="menu-item__value--editing">${String(startTime.minute).padStart(2, '0')}</span>:${String(startTime.second).padStart(2, '0')}`;
+                            } else if (editSubField === "second") {
+                                startTimeStr = `S ${String(startTime.hour).padStart(2, '0')}:${String(startTime.minute).padStart(2, '0')}:<span class="menu-item__value--editing">${String(startTime.second).padStart(2, '0')}</span>`;
+                            }
+                        }
+                        
+                        // Format stop time
+                        let stopTimeStr = `D ${String(stopTime.hour).padStart(2, '0')}:${String(stopTime.minute).padStart(2, '0')}:${String(stopTime.second).padStart(2, '0')}`;
+                        if (editMode === "stopTime") {
+                            if (editSubField === "hour") {
+                                stopTimeStr = `D <span class="menu-item__value--editing">${String(stopTime.hour).padStart(2, '0')}</span>:${String(stopTime.minute).padStart(2, '0')}:${String(stopTime.second).padStart(2, '0')}`;
+                            } else if (editSubField === "minute") {
+                                stopTimeStr = `D ${String(stopTime.hour).padStart(2, '0')}:<span class="menu-item__value--editing">${String(stopTime.minute).padStart(2, '0')}</span>:${String(stopTime.second).padStart(2, '0')}`;
+                            } else if (editSubField === "second") {
+                                stopTimeStr = `D ${String(stopTime.hour).padStart(2, '0')}:${String(stopTime.minute).padStart(2, '0')}:<span class="menu-item__value--editing">${String(stopTime.second).padStart(2, '0')}</span>`;
+                            }
+                        }
+                        
+                        // Second line: Time line with S (start) and D (done)
+                        html += `<div class="menu-item screen-element--centered-label menu-item--dow-time menu-item--date-tight"><span class="menu-item__value">${startTimeStr} ${stopTimeStr}</span></div>`;
                     }
-                    return `<div id="${element.id}" class="screen-element screen-element--label">${html}</div>`;
+                    return `<div id="${element.id}" class="screen-element screen-element--label screen-element--date-display">${html}</div>`;
                 }
                 return `<div id="${element.id}" class="screen-element screen-element--label">${element.text || ''}</div>`;
             
@@ -224,6 +248,9 @@
                 // Special handling for AUTO RUN Timed Run title - smaller font to fit
                 if (element.id === "screen_title" && state?.viewId === "auto_run_timed_run_params") {
                     return `<div id="${element.id}" class="screen-element screen-element--title screen-element--title-small">${element.text || ''}</div>`;
+                // Special handling for AUTO RUN Level-Triggered title - smaller font to fit all 5 lines
+                } else if (element.id === "screen_title" && state?.viewId === "auto_run_level_triggered_params") {
+                    return `<div id="${element.id}" class="screen-element screen-element--title screen-element--title-level-triggered">${element.text || ''}</div>`;
                 // Special handling for AUTO RUN Date title - add spacer after title
                 } else if (element.id === "screen_title" && state?.viewId === "auto_run_date_params") {
                     return `<div id="${element.id}" class="screen-element screen-element--title">${element.text || ''}</div><div class="menu-item--spacer-line"></div>`;
@@ -239,37 +266,102 @@
                     // Render as textList with dynamic values
                     const mode = state?.autoRunLevelTriggered?.mode || "LEVEL ON/OFF";
                     const action = state?.autoRunLevelTriggered?.action || "RUN/STOP";
-                    const trigger = state?.autoRunLevelTriggered?.trigger || "Run/Stop";
-                    const source = state?.autoRunLevelTriggered?.sourceSide === "run" 
-                        ? (state?.autoRunLevelTriggered?.sourceRun || "Meter1")
-                        : (state?.autoRunLevelTriggered?.sourceStop || "Meter1");
+                    
+                    // Parse trigger based on MODE only (not ACTION)
+                    let triggerUpper = "", triggerLower = "";
+                    
+                    if (mode === "WINDOWED") {
+                        // WINDOWED mode: always show "UPPER LOWER"
+                        triggerUpper = "UPPER";
+                        triggerLower = "LOWER";
+                    } else {
+                        // LEVEL ON/OFF mode: always show "RUN STOP" (regardless of ACTION)
+                        triggerUpper = "RUN";
+                        triggerLower = "STOP";
+                    }
+                    
+                    // SOURCE: show both run and stop side by side
+                    const sourceRun = state?.autoRunLevelTriggered?.sourceRun || "Meter1";
+                    const sourceStop = state?.autoRunLevelTriggered?.sourceStop || "Meter1";
+                    
+                    // LEVEL: for now show same value twice (upper and lower), or "OFF" twice
                     const level = state?.autoRunLevelTriggered?.level === "OFF" 
                         ? "OFF" 
                         : `${state?.autoRunLevelTriggered?.level || 90} dB`;
-                    
-                    const items = [
-                        { title: "MODE", value: mode },
-                        { title: "ACTION", value: action },
-                        { title: "TRIGGER", value: trigger },
-                        { title: "SOURCE", value: source },
-                        { title: "LEVEL", value: level }
-                    ];
-                    
-                    console.log('[SCREEN-RENDERER] Level-Triggered items:', items.map(i => `${i.title}=${i.value}`));
+                    const levelUpper = level;
+                    const levelLower = level;
                     
                     const selectedIndex = state?.autoRunLevelTriggered?.selectedIndex || 0;
                     let html = `<div id="${element.id}" class="screen-element screen-element--textList">`;
-                    items.forEach((item, index) => {
-                        const isSelected = index === selectedIndex;
-                        const isEditing = index === 4 && state?.autoRunLevelTriggered?.editingLevel; // LEVEL editing
-                        html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                        const titleClass = (!isEditing && isSelected) ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
-                        html += `<span class="${titleClass}">${item.title}</span>`;
-                        html += `<span class="menu-item__equals"> = </span>`;
-                        const valueClass = isEditing ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
-                        html += `<span class="${valueClass}" style="color: #888888;">${item.value}</span>`;
-                        html += `</div>`;
-                    });
+                    
+                    // MODE
+                    const isModeSelected = selectedIndex === 0;
+                    html += `<div class="menu-item menu-item--display ${isModeSelected ? 'menu-item--selected' : ''}">`;
+                    const modeTitleClass = isModeSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                    html += `<span class="${modeTitleClass}">MODE</span>`;
+                    html += `<span class="menu-item__spacer"> </span>`;
+                    html += `<span class="menu-item__value" style="color: #888888;">${mode}</span>`;
+                    html += `</div>`;
+                    
+                    // ACTION
+                    const isActionSelected = selectedIndex === 1;
+                    html += `<div class="menu-item menu-item--display ${isActionSelected ? 'menu-item--selected' : ''}">`;
+                    const actionTitleClass = isActionSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                    html += `<span class="${actionTitleClass}">ACTION</span>`;
+                    html += `<span class="menu-item__spacer"> </span>`;
+                    html += `<span class="menu-item__value" style="color: #888888;">${action}</span>`;
+                    html += `</div>`;
+                    
+                    // TRIGGER: UPPER and Lower on same line (UPPER closer to TRIGGER) - both underlined
+                    const isTriggerSelected = selectedIndex === 2;
+                    html += `<div class="menu-item menu-item--display ${isTriggerSelected ? 'menu-item--selected' : ''}" style="display: flex; align-items: center; white-space: nowrap;">`;
+                    const triggerTitleClass = isTriggerSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                    html += `<span class="${triggerTitleClass}">TRIGGER</span>`;
+                    html += `<span class="menu-item__spacer"> </span>`;
+                    html += `<span class="menu-item__value" style="color: #888888; text-decoration: underline;">${triggerUpper}</span>`;
+                    html += `<span class="menu-item__spacer"> </span>`;
+                    html += `<span class="menu-item__value" style="color: #888888; text-decoration: underline;">${triggerLower}</span>`;
+                    html += `</div>`;
+                    
+                    // SOURCE: Two values side by side (run and stop)
+                    const isSourceSelected = selectedIndex === 3;
+                    const sourceFocus = state?.autoRunLevelTriggered?.sourceFocus || "title";
+                    // Only add menu-item--selected class when focus is on title (prevents title highlighting when run/stop are focused)
+                    const sourceMenuClass = (isSourceSelected && sourceFocus === "title") ? 'menu-item menu-item--display menu-item--selected' : 'menu-item menu-item--display';
+                    html += `<div class="${sourceMenuClass}">`;
+                    // When focus is on title, highlight the title; when on run/stop, don't highlight title (highlight value instead)
+                    const sourceTitleClass = (isSourceSelected && sourceFocus === "title") ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                    html += `<span class="${sourceTitleClass}">SOURCE</span>`;
+                    html += `<span class="menu-item__spacer"> </span>`;
+                    html += `<span class="menu-item__value menu-item__value--two-column" style="color: #888888;">`;
+                    // Highlight the focused source value (run or stop)
+                    const leftValueClass = (isSourceSelected && sourceFocus === "run") ? 'menu-item__value--left menu-item__value--editing' : 'menu-item__value--left';
+                    const rightValueClass = (isSourceSelected && sourceFocus === "stop") ? 'menu-item__value--right menu-item__value--editing' : 'menu-item__value--right';
+                    html += `<span class="${leftValueClass}">${sourceRun}</span>`;
+                    html += `<span class="${rightValueClass}">${sourceStop}</span>`;
+                    html += `</span>`;
+                    html += `</div>`;
+                    
+                    // LEVEL: Two columns (upper/lower side by side) - individually selectable
+                    const isLevelSelected = selectedIndex === 4;
+                    const levelFocus = state?.autoRunLevelTriggered?.levelFocus || "title";
+                    const isLevelEditing = state?.autoRunLevelTriggered?.editingLevel;
+                    // Only add menu-item--selected class when focus is on title (prevents title highlighting when upper/lower are focused)
+                    const levelMenuClass = (isLevelSelected && levelFocus === "title") ? 'menu-item menu-item--display menu-item--level-trigger menu-item--selected' : 'menu-item menu-item--display menu-item--level-trigger';
+                    html += `<div class="${levelMenuClass}">`;
+                    // When focus is on title, highlight the title; when on upper/lower, highlight the value
+                    const levelTitleClass = (isLevelSelected && levelFocus === "title") ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                    html += `<span class="${levelTitleClass}">LEVEL</span>`;
+                    html += `<span class="menu-item__spacer"> </span>`;
+                    html += `<span class="menu-item__value menu-item__value--two-column" style="color: #888888;">`;
+                    // Highlight the focused level value (upper or lower)
+                    const levelUpperClass = (isLevelSelected && levelFocus === "upper") ? 'menu-item__value--left menu-item__value--editing' : 'menu-item__value--left';
+                    const levelLowerClass = (isLevelSelected && levelFocus === "lower") ? 'menu-item__value--right menu-item__value--editing' : 'menu-item__value--right';
+                    html += `<span class="${levelUpperClass}">${levelUpper}</span>`;
+                    html += `<span class="${levelLowerClass}">${levelLower}</span>`;
+                    html += `</span>`;
+                    html += `</div>`;
+                    
                     html += '</div>';
                     console.log('[SCREEN-RENDERER] Level-Triggered HTML:', html);
                     return html;
@@ -722,10 +814,9 @@
                     items.forEach((item, index) => {
                         const isSelected = index === selectedIndex;
                         
-                        // Special handling for AUTO RUN menu: add spacing before second item (VIEW/SET PARAMETERS)
+                        // Special handling for AUTO RUN menu: add minimal spacing before second item (VIEW/SET PARAMETERS)
                         if (element.id === "auto_run_list" && index === 1) {
-                            // Add 2 empty spacer lines before VIEW/SET PARAMETERS
-                            html += `<div class="menu-item menu-item--spacer-line"></div>`;
+                            // Add 1 small spacer line before VIEW/SET PARAMETERS to position it just above softkey bar
                             html += `<div class="menu-item menu-item--spacer-line"></div>`;
                         }
                         const isEditing = state?.meterSet?.editing && isSelected;

@@ -111,7 +111,7 @@ body {
     overflow-y: auto; /* Allow scrolling if content exceeds visible area */
     overflow-x: hidden; /* Prevent horizontal scrolling */
     position: relative;
-    padding: 1.5em; /* Scale relative to LCD base font size */
+    padding: 1.5em 1.5em 1.5em 0.5em; /* Scale relative to LCD base font size - reduced left padding */
 }
 .lcd__softkeys { 
     background: var(--lcd-softkeys-bg);
@@ -441,6 +441,43 @@ body {
     max-width: 100%; /* Ensure it doesn't exceed container width */
 }
 
+/* Smaller title font for AUTO RUN Level-Triggered to fit all 5 lines */
+.screen-element--title-level-triggered {
+    font-size: 1.1em; /* Reduced from 1.3em by ~2 points to make room for LEVEL line */
+    font-weight: 600;
+    color: #e6e6e6;
+    margin-bottom: 0.15em !important; /* Reduced from 0.5em to move content up */
+    white-space: nowrap;
+    padding-left: 0;
+}
+
+/* Reduce divider spacing for Level-Triggered screen */
+#auto_run_level_triggered_params #title_rule {
+    margin-top: 0.05em !important;
+    margin-bottom: 0.05em !important;
+    height: 1px !important; /* Minimal divider height */
+}
+
+/* Minimal divider styling for Level-Triggered */
+#auto_run_level_triggered_params .screen-element--divider {
+    border-top: 1px solid #2a3340;
+    margin: 0.05em 0 !important;
+    height: 1px !important;
+}
+
+/* Reduce spacing for Level-Triggered list container */
+#auto_run_level_triggered_params #level_triggered_list {
+    margin-top: 0.02em !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Reduce LCD container padding for Level-Triggered screen to move content up */
+#auto_run_level_triggered_params .lcd__main {
+    padding-top: 0.5em !important; /* Reduced top padding to move content up */
+}
+
 .screen-element--label {
     font-size: 1em; /* Scale relative to LCD base font size */
     white-space: nowrap; /* Prevent wrapping - text should scale instead */
@@ -452,6 +489,13 @@ body {
 .screen-element--centered {
     text-align: center;
     width: 100%;
+}
+
+/* Centered label for AUTO RUN Date display */
+.screen-element--centered-label {
+    text-align: center;
+    width: 100%;
+    justify-content: center;
 }
 
 /* Highlighted label for AUTO RUN Timed Run */
@@ -468,13 +512,25 @@ body {
     gap: 0.05em; /* Scale relative to LCD base font size - minimal spacing */
 }
 
+/* Even tighter spacing for Level-Triggered list */
+#level_triggered_list {
+    gap: 0.02em !important; /* Very minimal gap to fit all 5 lines */
+}
+
 /* Spacer line for AUTO RUN menu */
 .menu-item--spacer-line {
-    height: 1em; /* Height of one line */
-    min-height: 1em;
+    height: 0.3em; /* Minimal spacing - just enough to position second item above softkey bar */
+    min-height: 0.3em;
     padding: 0;
     margin: 0;
     visibility: hidden; /* Invisible but takes up space */
+}
+
+/* Ensure second AUTO RUN menu item (VIEW/SET PARAMETERS) is visible and positioned correctly */
+#auto_run_list .menu-item:nth-child(2),
+#auto_run_list .menu-item:nth-child(3) {
+    visibility: visible !important;
+    display: block !important;
 }
 
 /* Highlighted text for DOW "Days" label */
@@ -514,13 +570,14 @@ body {
 .menu-item {
     font-size: 1em; /* Scale relative to LCD base font size */
     color: #888888;
-    padding: 0.02em 0.6em; /* Minimal vertical padding to reduce line spacing */
+    padding: 0.02em 0.6em 0.02em 0; /* Minimal vertical padding to reduce line spacing - no left padding */
     margin-bottom: 0.05em; /* Minimal margin to reduce line spacing */
     cursor: default;
     transition: background-color 0.15s ease, color 0.15s ease;
     display: flex;
     align-items: center;
     white-space: nowrap; /* Prevent wrapping - text should scale instead */
+    min-height: 1.5em; /* Consistent height to prevent vertical shifting */
 }
 
 .menu-item--meter-set {
@@ -537,6 +594,19 @@ body {
 .menu-item__title {
     flex: 1;
     text-align: left;
+}
+
+/* Center title and value when used in date display */
+.screen-element--centered-label .menu-item__title,
+.menu-item--date-tight .menu-item__title {
+    text-align: center;
+    flex: none;
+}
+
+.screen-element--centered-label .menu-item__value,
+.menu-item--date-tight .menu-item__value {
+    text-align: center;
+    margin: 0;
 }
 
 .menu-item__value {
@@ -574,17 +644,35 @@ body {
     border-radius: 0.2em; /* Scale relative to LCD base font size */
 }
 
+/* Center selected title when used in date display */
+.menu-item--date-tight.menu-item--selected .menu-item__title--selected {
+    margin: 0 auto;
+}
+
 /* Ensure AUTO-RUN menu items align with title (no left padding) */
 #auto_run_list .menu-item {
     padding-left: 0; /* Remove left padding to align with title */
+    visibility: visible !important; /* Ensure all items are visible */
+    display: block !important; /* Ensure items are displayed */
 }
 
 #auto_run_list .menu-item .menu-item__title {
-    padding-left: 0; /* No padding on title */
+    padding: 0.15em 0.2em 0.15em 0; /* Reduced left padding (0.2em instead of 0.45em) */
+    background-color: transparent;
+    display: inline-block;
 }
 
 #auto_run_list .menu-item--selected .menu-item__title {
-    padding: 0.15em 0.45em; /* Padding for selected highlight, but starts from left edge */
+    padding: 0.15em 0.2em 0.15em 0; /* Same reduced padding to prevent position shift */
+    background-color: #2a3340; /* Background color for highlight */
+}
+
+/* Prevent text truncation for AUTO-RUN menu values */
+#auto_run_list .menu-item__value {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip; /* Don't truncate, allow overflow */
+    font-size: 0.95em; /* Slightly smaller font if needed */
 }
 
 /* When value is being edited, don't highlight the title and gray it out like non-selected items */
@@ -598,6 +686,59 @@ body {
 
 .menu-item--selected .menu-item__value {
     color: #888888; /* Keep value dimmed when title is selected */
+}
+
+/* Reduce font size and spacing for Level-Triggered menu to fit all 5 lines */
+#level_triggered_list .menu-item {
+    font-size: 0.85em; /* Smaller font size to fit all lines */
+    padding: 0 !important; /* Remove all padding to minimize space */
+    margin-bottom: 0 !important; /* Remove margin between lines */
+    min-height: auto !important; /* Allow natural height */
+    line-height: 1.1; /* Tighter line height */
+}
+
+/* Ensure Level-Triggered menu-item__title has consistent padding to prevent position shift */
+#level_triggered_list .menu-item .menu-item__title {
+    padding: 0.05em 0.2em 0.05em 0; /* Consistent padding for non-selected state */
+    background-color: transparent;
+    display: inline-block;
+}
+
+#level_triggered_list .menu-item--selected .menu-item__title {
+    padding: 0.05em 0.2em 0.05em 0; /* Same padding to prevent position shift */
+    background-color: #2a3340; /* Background color for highlight */
+}
+
+/* Two-row layout for TRIGGER and LEVEL (upper/lower) */
+.menu-item__value--two-row {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    gap: 0.05em;
+}
+
+.menu-item__value--upper {
+    display: inline;
+}
+
+.menu-item__value--lower {
+    display: inline;
+    text-decoration: underline; /* Lower value is underlined */
+}
+
+/* Two-column layout for SOURCE (run and stop side by side) */
+.menu-item__value--two-column {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5em;
+}
+
+.menu-item__value--left {
+    display: inline-block;
+}
+
+.menu-item__value--right {
+    display: inline-block;
 }
 
 /* Ensure Level-Triggered values are visible */
@@ -695,7 +836,7 @@ body {
 /* Smaller font for two-column setup menu */
 .screen-element--twoColumns .menu-item {
     font-size: 0.85em; /* Scale relative to LCD base font size */
-    padding: 0.08em 0.5em;
+    padding: 0.08em 0.5em 0.08em 0; /* No left padding for consistency */
     white-space: nowrap; /* Prevent wrapping */
 }
 
@@ -705,6 +846,27 @@ body {
     white-space: nowrap; /* Prevent wrapping - text should scale instead */
     overflow: hidden;
     text-overflow: ellipsis; /* Show ellipsis if still too long */
+}
+
+/* Tight spacing for AUTO RUN Date display items */
+.menu-item--date-tight {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: auto !important;
+    height: auto !important;
+    justify-content: center !important;
+    width: 100%;
+    text-align: center;
+}
+
+/* Remove gaps in AUTO RUN Date display container */
+.screen-element--date-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0 !important;
+    line-height: 1.2;
+    align-items: center;
+    width: 100%;
 }
 
 
