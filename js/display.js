@@ -82,7 +82,8 @@
 
         for (let i = 0; i < 4; i++) {
             if (softKeyLabelElements[i]) {
-                softKeyLabelElements[i].textContent = labels[i] || '';
+                // Use innerHTML to support HTML content (e.g., underlines for F/S/I, R/C/Z/F)
+                softKeyLabelElements[i].innerHTML = labels[i] || '';
             }
         }
     }

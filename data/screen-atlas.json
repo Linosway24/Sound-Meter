@@ -71,8 +71,8 @@
           "format": "hh:mm:ss"
         }
       ],
-      "softkeys": ["VIEW", "", "", ""],
-      "keys": ["runpause", "stop", "esc", "soft2"],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
     {
@@ -90,8 +90,8 @@
           "format": "hh:mm:ss"
         }
       ],
-      "softkeys": ["VIEW", "", "", ""],
-      "keys": ["runpause", "stop", "esc", "soft2"],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
     {
@@ -111,6 +111,120 @@
       ],
       "softkeys": ["VIEW", "", "", ""],
       "keys": ["runpause", "esc", "soft2"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_page2_running",
+      "title": "SLM Page 2 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_page2_paused",
+      "title": "SLM Page 2 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_page3_running",
+      "title": "SLM Page 3 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_page3_paused",
+      "title": "SLM Page 3 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_page4_running",
+      "title": "SLM Page 4 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_home_page4_paused",
+      "title": "SLM Page 4 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "SLM" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
     {
@@ -134,6 +248,326 @@
       ],
       "softkeys": ["OK", "Cancel", "", ""],
       "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page1_running",
+      "title": "SLM 1/1 Graph Page 1 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page1_paused",
+      "title": "SLM 1/1 Graph Page 1 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page2_running",
+      "title": "SLM 1/1 Graph Page 2 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page2_paused",
+      "title": "SLM 1/1 Graph Page 2 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page3_running",
+      "title": "SLM 1/1 Graph Page 3 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page3_paused",
+      "title": "SLM 1/1 Graph Page 3 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page4_running",
+      "title": "SLM 1/1 Graph Page 4 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of1_page4_paused",
+      "title": "SLM 1/1 Graph Page 4 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/1" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/1 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page1_running",
+      "title": "SLM 1/3 Graph Page 1 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page1_paused",
+      "title": "SLM 1/3 Graph Page 1 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page2_running",
+      "title": "SLM 1/3 Graph Page 2 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page2_paused",
+      "title": "SLM 1/3 Graph Page 2 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page3_running",
+      "title": "SLM 1/3 Graph Page 3 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page3_paused",
+      "title": "SLM 1/3 Graph Page 3 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page4_running",
+      "title": "SLM 1/3 Graph Page 4 Running",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "RUNNING" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_graph_1of3_page4_paused",
+      "title": "SLM 1/3 Graph Page 4 Paused",
+      "mode": "SLM",
+      "referenceImage": "capture/operational/slm_home_paused.jpeg",
+      "elements": [
+        { "type": "title", "id": "screen_title", "text": "1/3" },
+        { "type": "label", "id": "status", "text": "PAUSED" },
+        {
+          "type": "timer",
+          "id": "runtime",
+          "bind": "measurement.runtime",
+          "format": "hh:mm:ss"
+        },
+        { "type": "label", "id": "graph_placeholder", "text": "Graph will be rendered here (1/3 Octave)" }
+      ],
+      "softkeys": ["VIEW", "F S I", "R C Z F", "Meter 1"],
+      "keys": ["runpause", "stop", "esc", "up", "down", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
     {

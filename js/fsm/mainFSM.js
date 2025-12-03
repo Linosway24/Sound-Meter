@@ -236,7 +236,15 @@
         flags: { locked: false },
         measurement: { runtime: 0, state: "stopped", isRunning: false },
         history: [],
-        previousViewId: null // For navigation back from cal/files/etc
+        previousViewId: null, // For navigation back from cal/files/etc
+        slm: {
+            page: 1,                    // Current page (1-4)
+            mode: "numeric",            // "numeric", "1of1", "1of3"
+            timeConstant: "F",          // "F", "S", "I" (Fast, Slow, Impulse)
+            weighting: "R",             // "R", "C", "Z", "F" (Rapid, C, Z, Flat)
+            activeMeter: 1,             // 1 or 2
+            viewLayout: "SPL"           // Selected from slm_view_menu
+        }
     };
 
     const _subs = new Set();
@@ -310,7 +318,10 @@
     }
 
     function isSlm() {
-        return _state.viewId === "slm_home" || _state.viewId === "slm_home_paused" || _state.viewId === "slm_home_stopped";
+        // Check if viewId is any SLM view (numeric, 1/1, or 1/3, any page, running/paused/stopped)
+        return _state.viewId.startsWith("slm_home") || 
+               _state.viewId.startsWith("slm_graph_1of1") || 
+               _state.viewId.startsWith("slm_graph_1of3");
     }
 
     function isInSetup() {
@@ -356,6 +367,14 @@
             logging: { editing: false, focus: "title", selectedIndex: 0, meter: "meter1", items: LOGGING_MENU_ITEMS.map(item => ({ ...item })) },
             comms: { editing: false, selectedIndex: 0, usbMode: "Mass Storage", usbModeIndex: 0, rs232Mode: "Serial", rs232ModeIndex: 0, baudRate: 9600, baudRateIndex: 1 }, // baudRateIndex 1 = 9600 (second option in BAUD_RATE_OPTIONS)
             battery: { type: "ALK" },
+            slm: {
+                page: 1,
+                mode: "numeric",
+                timeConstant: "F",
+                weighting: "R",
+                activeMeter: 1,
+                viewLayout: "SPL"
+            },
             digitalOut: { 
                 editing: false, 
                 focus: "title", 
@@ -402,7 +421,15 @@
             flags: { locked: false },
             measurement: { runtime: 0, state: "stopped", isRunning: false },
             history: [],
-            previousViewId: null
+            previousViewId: null,
+            slm: {
+                page: 1,
+                mode: "numeric",
+                timeConstant: "F",
+                weighting: "R",
+                activeMeter: 1,
+                viewLayout: "SPL"
+            }
         };
         _clearAllTimers();
         _emit();
@@ -433,6 +460,31 @@
             }
             _emit();
         }, 3000);
+    }
+
+    /**
+     * Get the current SLM view ID based on state
+     * @returns {string} View ID for current SLM screen
+     */
+    function _getSlmViewId() {
+        const isRunning = _state.measurement.state === "running";
+        const page = _state.slm.page || 1;
+        const mode = _state.slm.mode || "numeric";
+        
+        if (mode === "numeric") {
+            if (page === 1) {
+                return isRunning ? "slm_home" : "slm_home_paused";
+            } else {
+                return isRunning ? `slm_home_page${page}_running` : `slm_home_page${page}_paused`;
+            }
+        } else if (mode === "1of1") {
+            return isRunning ? `slm_graph_1of1_page${page}_running` : `slm_graph_1of1_page${page}_paused`;
+        } else if (mode === "1of3") {
+            return isRunning ? `slm_graph_1of3_page${page}_running` : `slm_graph_1of3_page${page}_paused`;
+        }
+        
+        // Fallback
+        return isRunning ? "slm_home" : "slm_home_paused";
     }
 
     function dispatch(evt) {
@@ -468,7 +520,21 @@
                 break;
 
             case "UP":
-                if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
+            case "DOWN":
+                if (isSlm()) {
+                    // Cycle pages 1-4
+                    if (evt.type === "UP") {
+                        _state.slm.page = _state.slm.page > 1 ? _state.slm.page - 1 : 4;
+                    } else {
+                        _state.slm.page = _state.slm.page < 4 ? _state.slm.page + 1 : 1;
+                    }
+                    _state.viewId = _getSlmViewId();
+                    _emit();
+                    return;
+                }
+                // Continue with existing UP handler logic
+                if (evt.type === "UP") {
+                    if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
                     const item = _state.meterSet.items[_state.meterSet.selectedIndex];
                     // Only adjust value if focus is "value" AND item is enabled (not showing "off")
                     if (_state.meterSet.focus === "value" && item.enabled !== false) {
@@ -883,10 +949,9 @@
                     _state.files.cursor = Math.max(0, _state.files.cursor - 1);
                     _emit();
                 }
-                break;
-
-            case "DOWN":
-                if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
+                } else if (evt.type === "DOWN") {
+                    // DOWN-specific logic
+                    if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
                     const item = _state.meterSet.items[_state.meterSet.selectedIndex];
                     // Only adjust value if focus is "value" AND item is enabled (not showing "off")
                     if (_state.meterSet.focus === "value" && item.enabled !== false) {
@@ -1298,6 +1363,7 @@
                 } else if (isInFiles() && (_state.viewId === "files_session_dir" || _state.viewId === "files_config_dir")) {
                     _state.files.cursor++;
                     _emit();
+                }
                 }
                 break;
 
@@ -2722,7 +2788,15 @@
                     } else if (item === "VIEW SESSION") {
                         _state.measurement.state = "running";
                         _state.measurement.isRunning = true;
-                        _state.viewId = "slm_home";
+                        // Set mode based on slmLabelIndex
+                        if (_state.slmLabelIndex === 0) {
+                            _state.slm.mode = "numeric";
+                        } else if (_state.slmLabelIndex === 1) {
+                            _state.slm.mode = "1of1";
+                        } else if (_state.slmLabelIndex === 2) {
+                            _state.slm.mode = "1of3";
+                        }
+                        _state.viewId = _getSlmViewId();
                         _emit();
                     } else if (item === "SETUP") {
                         _pushHistory("setup_menu");
@@ -2735,17 +2809,17 @@
                         _emit();
                     }
                 } else if (_state.viewId === "home_screen_running") {
-                    _state.viewId = "slm_home";
+                    _state.viewId = _getSlmViewId();
                     _emit();
-                } else if (_state.viewId === "slm_home" && _state.measurement.state === "running") {
+                } else if (isSlm() && _state.measurement.state === "running") {
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
-                    _state.viewId = "slm_home_paused";
+                    _state.viewId = _getSlmViewId();
                     _emit();
-                } else if (_state.viewId === "slm_home_paused") {
+                } else if (isSlm() && _state.measurement.state === "paused") {
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
-                    _state.viewId = "slm_home";
+                    _state.viewId = _getSlmViewId();
                     _emit();
                 }
                 break;
@@ -2754,7 +2828,11 @@
                 console.log(`[FSM] ESC pressed - viewId: ${_state.viewId}, sigInput.editing: ${_state.sigInput?.editing}, sigInput.focus: ${_state.sigInput?.focus}`);
                 if (_state.viewId === "stop_confirm") {
                     _clearTimer('stopHold');
-                    _state.viewId = _state.measurement.state === "running" ? "slm_home" : "slm_home_paused";
+                    if (_state.measurement.state === "stopped") {
+                        _state.viewId = "slm_home_stopped";
+                    } else {
+                        _state.viewId = _getSlmViewId();
+                    }
                     _emit();
                 } else if (_state.viewId === "cal_running") {
                     _clearTimer('cal');
@@ -2787,12 +2865,10 @@
                     break; // Prevent falling through to isInSetup() handler
                 } else if (_state.viewId === "slm_view_menu") {
                     // Return to SLM screen (running, paused, or stopped)
-                    if (_state.measurement.state === "running") {
-                        _state.viewId = "slm_home";
-                    } else if (_state.measurement.state === "paused") {
-                        _state.viewId = "slm_home_paused";
-                    } else {
+                    if (_state.measurement.state === "stopped") {
                         _state.viewId = "slm_home_stopped";
+                    } else {
+                        _state.viewId = _getSlmViewId();
                     }
                     _emit();
                 } else if (_state.viewId === "sig_input_menu") {
@@ -2999,6 +3075,7 @@
                 } else if (isSlm()) {
                     _state.measurement.state = "stopped";
                     _state.measurement.isRunning = false;
+                    _state.slm.page = 1; // Reset page to 1 when exiting SLM
                     _state.viewId = "home_screen";
                     _emit();
                 }
@@ -3009,21 +3086,29 @@
                 if (isHome() || _state.viewId === "slm_home_stopped") {
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
-                    _state.viewId = "slm_home";
+                    // Set mode based on slmLabelIndex when entering SLM
+                    if (_state.slmLabelIndex === 0) {
+                        _state.slm.mode = "numeric";
+                    } else if (_state.slmLabelIndex === 1) {
+                        _state.slm.mode = "1of1";
+                    } else if (_state.slmLabelIndex === 2) {
+                        _state.slm.mode = "1of3";
+                    }
+                    _state.viewId = _getSlmViewId();
                     _emit();
-                } else if (_state.viewId === "slm_home_paused") {
+                } else if (isSlm() && _state.measurement.state === "paused") {
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
-                    _state.viewId = "slm_home";
+                    _state.viewId = _getSlmViewId();
                     _emit();
                 }
                 break;
 
             case "PAUSE":
-                if (_state.viewId === "slm_home" && _state.measurement.state === "running") {
+                if (isSlm() && _state.measurement.state === "running") {
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
-                    _state.viewId = "slm_home_paused";
+                    _state.viewId = _getSlmViewId();
                     _emit();
                 }
                 break;
@@ -3037,7 +3122,11 @@
             case "STOP_UP":
                 if (_state.viewId === "stop_confirm") {
                     _clearTimer('stopHold');
-                    _state.viewId = _state.measurement.state === "running" ? "slm_home" : "slm_home_paused";
+                    if (_state.measurement.state === "stopped") {
+                        _state.viewId = "slm_home_stopped";
+                    } else {
+                        _state.viewId = _getSlmViewId();
+                    }
                     _emit();
                 }
                 break;
@@ -3046,7 +3135,15 @@
                 if (isHome()) {
                     // Cycle SLM label: SLM (0) → 1/1 (1) → 1/3 (2) → SLM (0)
                     _state.slmLabelIndex = (_state.slmLabelIndex + 1) % 3;
-                    console.log('[FSM] SOFT1 pressed on home → Cycling SLM label, index:', _state.slmLabelIndex);
+                    // Map slmLabelIndex to mode
+                    if (_state.slmLabelIndex === 0) {
+                        _state.slm.mode = "numeric";
+                    } else if (_state.slmLabelIndex === 1) {
+                        _state.slm.mode = "1of1";
+                    } else if (_state.slmLabelIndex === 2) {
+                        _state.slm.mode = "1of3";
+                    }
+                    console.log('[FSM] SOFT1 pressed on home → Cycling SLM label, index:', _state.slmLabelIndex, 'mode:', _state.slm.mode);
                     _emit();
                 } else if (isSlm()) {
                     _state.viewId = "slm_view_menu";
@@ -3088,7 +3185,16 @@
                 break;
 
             case "SOFT2":
-                if (_state.viewId === "battery_menu") {
+                if (isSlm()) {
+                    // Cycle: F → S → I → F
+                    const cycle = ["F", "S", "I"];
+                    const currentIndex = cycle.indexOf(_state.slm.timeConstant);
+                    const nextIndex = (currentIndex + 1) % cycle.length;
+                    _state.slm.timeConstant = cycle[nextIndex];
+                    console.log('[FSM] SOFT2 pressed on SLM → Time constant:', _state.slm.timeConstant);
+                    _emit();
+                    return;
+                } else if (_state.viewId === "battery_menu") {
                     // SOFT2 = NiMH on battery menu
                     _state.battery.type = "NiMH";
                     console.log('[BATTERY] Selected: NiMH');
@@ -3132,7 +3238,16 @@
                 break;
 
             case "SOFT3":
-                if (isSlm() || isHome()) {
+                if (isSlm()) {
+                    // Cycle: R → C → Z → F → R
+                    const cycle = ["R", "C", "Z", "F"];
+                    const currentIndex = cycle.indexOf(_state.slm.weighting);
+                    const nextIndex = (currentIndex + 1) % cycle.length;
+                    _state.slm.weighting = cycle[nextIndex];
+                    console.log('[FSM] SOFT3 pressed on SLM → Weighting:', _state.slm.weighting);
+                    _emit();
+                    return;
+                } else if (isHome()) {
                     // SOFT3 = FILE (Files menu)
                     console.log('[FSM] SOFT3 pressed → Navigating to files_menu');
                     _state.viewId = "files_menu";
@@ -3164,7 +3279,13 @@
                 break;
 
             case "SOFT4":
-                if (_state.viewId === "auto_run_date_params") {
+                if (isSlm()) {
+                    // Toggle: 1 ↔ 2
+                    _state.slm.activeMeter = _state.slm.activeMeter === 1 ? 2 : 1;
+                    console.log('[FSM] SOFT4 pressed on SLM → Active meter:', _state.slm.activeMeter);
+                    _emit();
+                    return;
+                } else if (_state.viewId === "auto_run_date_params") {
                     // SOFT4 = -4 / +4: enable/disable line 4 and select it
                     const line = _state.autoRunDate.lines[3];
                     const wasEnabled = line.enabled;

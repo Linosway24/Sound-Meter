@@ -32,6 +32,33 @@
     }
 
     /**
+     * Check if viewId is an SLM view
+     * @param {string} viewId - View ID
+     * @returns {boolean}
+     */
+    function isSlmView(viewId) {
+        return viewId && (
+            viewId.startsWith("slm_home") || 
+            viewId.startsWith("slm_graph_1of1") || 
+            viewId.startsWith("slm_graph_1of3")
+        );
+    }
+
+    /**
+     * Render softkey label with underline on active value
+     * @param {Array<string>} values - Array of values to display
+     * @param {string} activeValue - Currently active value
+     * @returns {string} HTML string with underline on active
+     */
+    function renderSoftkeyWithUnderline(values, activeValue) {
+        return values.map(val => {
+            const isActive = val === activeValue;
+            const underlineClass = isActive ? 'softkey-underline-target active' : 'softkey-underline-target';
+            return `<span class="${underlineClass}" data-value="${val}">${val}</span>`;
+        }).join(' ');
+    }
+
+    /**
      * Get screen definition from atlas
      * @param {string} screenId - Screen ID
      * @returns {Object|null} Screen definition
@@ -1059,6 +1086,23 @@
         const labels = [];
         for (let i = 0; i < 4; i++) {
             let label = softkeys[i] || '';
+            
+            // Special handling for SLM screens: render softkeys with state-based values
+            if (isSlmView(state?.viewId)) {
+                if (i === 1 && (label === "F S I" || label === "")) {
+                    // SOFT2: F S I with underline on active
+                    const timeConstant = state?.slm?.timeConstant || "F";
+                    label = renderSoftkeyWithUnderline(["F", "S", "I"], timeConstant);
+                } else if (i === 2 && (label === "R C Z F" || label === "")) {
+                    // SOFT3: R C Z F with underline on active
+                    const weighting = state?.slm?.weighting || "R";
+                    label = renderSoftkeyWithUnderline(["R", "C", "Z", "F"], weighting);
+                } else if (i === 3 && (label.startsWith("Meter") || label === "")) {
+                    // SOFT4: Meter 1 or Meter 2
+                    const activeMeter = state?.slm?.activeMeter || 1;
+                    label = `Meter ${activeMeter}`;
+                }
+            }
             
             // Special handling for AUTO RUN menu: show softkeys based on mode (DOW or Date)
             if (state?.viewId === "auto_run_menu") {

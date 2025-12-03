@@ -133,6 +133,19 @@ body {
     text-overflow: ellipsis;
 }
 
+/* Softkey underline targets for F/S/I and R/C/Z/F */
+.soft-key-label .softkey-underline-target {
+    display: inline-block;
+    padding: 0 0.1em;
+    transition: text-decoration 0.15s ease;
+}
+
+.soft-key-label .softkey-underline-target.active {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
 .lcd--powered-off .lcd__status,
 .lcd--powered-off .lcd__main,
 .lcd--powered-off .lcd__softkeys {
