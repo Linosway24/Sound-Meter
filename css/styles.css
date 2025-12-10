@@ -93,7 +93,7 @@ body {
     border: 2px solid var(--lcd-border);
     background: var(--lcd-bg);
     display: grid;
-    grid-template-rows: 14% 1fr 16%; /* status, main, softkey labels */
+    grid-template-rows: 14% minmax(0, 1fr) 16%; /* status, main (scrollable), softkey labels */
     pointer-events: none;
     /* Base font size scales with viewport height - LCD scales with device photo which scales with vh */
     font-size: clamp(0.6rem, 1.2vh, 1rem); /* Scales between 0.6rem and 1rem based on viewport height */
@@ -112,6 +112,29 @@ body {
     overflow-x: hidden; /* Prevent horizontal scrolling */
     position: relative;
     padding: 1.5em 1.5em 1.5em 0.5em; /* Scale relative to LCD base font size - reduced left padding */
+    min-height: 0; /* Critical: Allow grid item to shrink below content size, enabling scrolling */
+    box-sizing: border-box;
+    /* Force scrollbar to be visible when needed */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Webkit scrollbar styling for better visibility */
+.lcd__main::-webkit-scrollbar {
+    width: 4px;
+}
+
+.lcd__main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.lcd__main::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.lcd__main::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 .lcd__softkeys { 
     background: var(--lcd-softkeys-bg);
@@ -136,7 +159,7 @@ body {
 /* Softkey underline targets for F/S/I and R/C/Z/F */
 .soft-key-label .softkey-underline-target {
     display: inline-block;
-    padding: 0 0.1em;
+    padding: 0 0.05em; /* Reduced padding to bring letters closer together */
     transition: text-decoration 0.15s ease;
 }
 
@@ -431,6 +454,122 @@ body {
 /* Screen element styles */
 .screen-element {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Icon and timer positioning in status area */
+.screen-element--icon,
+.screen-element--timer {
+    position: absolute;
+    font-size: 1.2em;
+    color: #00ff00; /* Bright green for visibility on LCD */
+    font-weight: bold;
+}
+
+.screen-element--icon {
+    color: #00ff00; /* Bright green play icon */
+}
+
+.screen-element--timer {
+    color: #e6e6e6; /* Light gray for timer text */
+    font-weight: normal;
+}
+
+.screen-element--top-left {
+    top: 0.3em;
+    left: 0.6em;
+}
+
+.screen-element--top-right {
+    top: 0.3em;
+    right: 0.6em;
+}
+
+/* Ensure status area can contain absolutely positioned elements */
+.lcd__status {
+    position: relative;
+}
+
+/* SLM Measurement Display Elements */
+.screen-element--main-readout {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #e6e6e6;
+    text-align: center;
+    margin: 0.5em 0;
+    line-height: 1.2;
+}
+
+/* Left and right values positioned at top, above bar graph */
+.screen-element--left-top {
+    position: absolute;
+    left: 0.5em;
+    top: 1em;
+    font-size: 1.2em;
+    color: #e6e6e6;
+}
+
+.screen-element--right-top {
+    position: absolute;
+    right: 0.5em;
+    top: 1em;
+    font-size: 1.2em;
+    color: #e6e6e6;
+}
+
+.screen-element--left {
+    position: absolute;
+    left: 0.5em;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5em;
+    color: #e6e6e6;
+}
+
+.screen-element--right {
+    position: absolute;
+    right: 0.5em;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5em;
+    color: #e6e6e6;
+}
+
+.screen-element--center {
+    text-align: center;
+    width: 100%;
+}
+
+/* Center-bottom for main readout (below bar graph) */
+.screen-element--center-bottom {
+    text-align: center;
+    width: 100%;
+    margin-top: 1em;
+}
+
+.screen-element--bar-graph {
+    margin: 2.5em 0 0.5em 0;
+    width: 100%;
+    position: relative;
+}
+
+.bar-graph-container {
+    width: 100%;
+    height: 0.8em;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.bar-graph-fill {
+    height: 100%;
+    background-color: #00ff00;
+    transition: width 0.3s ease;
+}
+
+/* Ensure main area can contain absolutely positioned elements */
+.lcd__main {
+    position: relative;
 }
 
 .screen-element--title {

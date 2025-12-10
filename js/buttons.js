@@ -167,12 +167,23 @@
                 const fsmState = window.getMainFSMState?.();
                 const viewId = fsmState?.viewId;
                 
-                if (viewId === "logging_menu" || viewId === "auto_run_date_params") {
+                // Check if in SLM mode (numeric, 1/1, or 1/3)
+                const isSlm = viewId && (
+                    viewId.startsWith("slm_home") || 
+                    viewId.startsWith("slm_graph_1of1") || 
+                    viewId.startsWith("slm_graph_1of3")
+                );
+                
+                if (isSlm) {
+                    // On SLM screens, send SOFT4 for Meter/GPS cycling
+                    console.log(`[BUTTON] Soft Key 4: SLM mode (via mainFSM)`);
+                    window.dispatch({ type: 'SOFT4' });
+                } else if (viewId === "logging_menu" || viewId === "auto_run_date_params") {
                     // On logging menu or date params screen, send SOFT4
                     console.log(`[BUTTON] Soft Key 4: (via mainFSM)`);
                     window.dispatch({ type: 'SOFT4' });
                 } else {
-                    // On home or SLM screens, send LOCK_SOFTKEY
+                    // On home or other screens, send LOCK_SOFTKEY
                     console.log('[BUTTON] Soft Key 4: Lock menu (via mainFSM)');
                     window.dispatch({ type: 'LOCK_SOFTKEY' });
                 }

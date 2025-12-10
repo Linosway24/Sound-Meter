@@ -1,254 +1,172 @@
-// SPL Data Simulator - Deterministic data generation
+// /js/simulator.js
+// SPL Data Generator Module - Deterministic SPL data generation for Quest SoundPro SE-DL
+// Task 5.0: Sub-tasks 5.1-5.3
 
-const Simulator = {
-    // Simulation state
-    state: {
-        running: false,
-        paused: false,
-        startTime: null,
-        elapsedTime: 0,
-        seed: 12345, // Deterministic seed
-        baseSPL: 75, // Base sound level in dB
-        variation: 5, // Variation range in dB
-        currentSPL: 75,
-        samples: [],
-        maxSPL: -Infinity,
-        minSPL: Infinity,
-        peakSPL: -Infinity
-    },
-    
-    // Measurement results
-    results: {
-        leq: null,      // Equivalent continuous sound level
-        lmax: null,     // Maximum sound level
-        lmin: null,     // Minimum sound level
-        sel: null,      // Sound exposure level
-        peak: null,     // Peak sound level
-        dose: null,     // Noise dose percentage
-        twa: null       // Time-weighted average
-    },
-    
+(() => {
+    'use strict';
+
     /**
-     * Initialize simulator
+     * Deterministic Random Number Generator using Linear Congruential Generator (LCG)
+     * Task 5.2: Implement deterministic random number generator using seed value
+     * 
+     * LCG formula: X(n+1) = (a * X(n) + c) mod m
+     * Using parameters from Numerical Recipes (a=1664525, c=1013904223, m=2^32)
+     * 
+     * @param {number} seed - Initial seed value
+     * @returns {Function} Generator function that returns next random number [0, 1)
      */
-    init() {
-        this.reset();
-    },
-    
-    /**
-     * Reset simulator to initial state
-     */
-    reset() {
-        this.state.running = false;
-        this.state.paused = false;
-        this.state.startTime = null;
-        this.state.elapsedTime = 0;
-        this.state.seed = 12345;
-        this.state.currentSPL = this.state.baseSPL;
-        this.state.samples = [];
-        this.state.maxSPL = -Infinity;
-        this.state.minSPL = Infinity;
-        this.state.peakSPL = -Infinity;
+    function createRNG(seed) {
+        // LCG parameters (Numerical Recipes)
+        const a = 1664525;
+        const c = 1013904223;
+        const m = Math.pow(2, 32);
         
-        this.results.leq = null;
-        this.results.lmax = null;
-        this.results.lmin = null;
-        this.results.sel = null;
-        this.results.peak = null;
-        this.results.dose = null;
-        this.results.twa = null;
-    },
-    
-    /**
-     * Start measurement
-     */
-    start() {
-        if (this.state.running && !this.state.paused) {
-            return; // Already running
-        }
+        let state = seed || 12345;
         
-        if (this.state.paused) {
-            this.state.paused = false;
-            return; // Resume
-        }
-        
-        this.reset();
-        this.state.running = true;
-        this.state.startTime = Date.now();
-    },
-    
-    /**
-     * Pause measurement
-     */
-    pause() {
-        if (this.state.running && !this.state.paused) {
-            this.state.paused = true;
-        }
-    },
-    
-    /**
-     * Stop measurement
-     */
-    stop() {
-        this.state.running = false;
-        this.state.paused = false;
-    },
-    
-    /**
-     * Generate next SPL sample
-     * @returns {number} SPL value in dB
-     */
-    generateSample() {
-        if (!this.state.running || this.state.paused) {
-            return this.state.currentSPL;
-        }
-        
-        // Update elapsed time
-        const now = Date.now();
-        if (this.state.startTime) {
-            this.state.elapsedTime = (now - this.state.startTime) / 1000;
-        }
-        
-        // Generate deterministic variation
-        this.state.seed += 0.1;
-        const random = seededRandom(this.state.seed);
-        
-        // Create realistic variation (simulates real sound level changes)
-        const variation = (random - 0.5) * this.state.variation * 2;
-        const trend = Math.sin(this.state.elapsedTime * 0.1) * 2; // Slow trend
-        const noise = (random - 0.5) * 1.5; // Fast noise
-        
-        this.state.currentSPL = this.state.baseSPL + variation + trend + noise;
-        
-        // Apply weighting adjustment (simplified)
-        let adjustedSPL = this.state.currentSPL;
-        if (Config.current.weighting === 'A') {
-            // A-weighting reduces low frequencies (simplified approximation)
-            adjustedSPL = this.state.currentSPL; // In real device, frequency-dependent
-        }
-        
-        // Check range limits
-        if (adjustedSPL > Config.current.range) {
-            // Over-range warning would be triggered in display
-            adjustedSPL = Config.current.range + 1; // Indicate over-range
-        }
-        
-        // Track statistics
-        if (adjustedSPL > this.state.maxSPL) {
-            this.state.maxSPL = adjustedSPL;
-        }
-        if (adjustedSPL < this.state.minSPL || this.state.samples.length === 0) {
-            this.state.minSPL = adjustedSPL;
-        } else if (adjustedSPL < this.state.minSPL) {
-            this.state.minSPL = adjustedSPL;
-        }
-        if (adjustedSPL > this.state.peakSPL) {
-            this.state.peakSPL = adjustedSPL;
-        }
-        
-        // Store sample
-        this.state.samples.push({
-            time: this.state.elapsedTime,
-            spl: adjustedSPL
-        });
-        
-        // Update results based on time constant
-        this.updateResults();
-        
-        return adjustedSPL;
-    },
-    
-    /**
-     * Update measurement results based on current samples
-     */
-    updateResults() {
-        if (this.state.samples.length === 0) {
-            return;
-        }
-        
-        const samples = this.state.samples;
-        const n = samples.length;
-        
-        // Lmax and Lmin
-        this.results.lmax = this.state.maxSPL;
-        this.results.lmin = this.state.minSPL;
-        this.results.peak = this.state.peakSPL;
-        
-        // Leq (Equivalent continuous sound level)
-        // Leq = 10 * log10(1/T * sum(10^(Li/10)))
-        let sum = 0;
-        for (let i = 0; i < samples.length; i++) {
-            sum += Math.pow(10, samples[i].spl / 10);
-        }
-        const avgPower = sum / n;
-        this.results.leq = 10 * Math.log10(avgPower);
-        
-        // SEL (Sound Exposure Level) - for impulse time constant
-        if (Config.current.timeConstant === 'Impulse') {
-            // SEL = Leq + 10*log10(T) where T is measurement time
-            const T = this.state.elapsedTime || 1;
-            this.results.sel = this.results.leq + 10 * Math.log10(T);
-        } else {
-            this.results.sel = this.results.leq;
-        }
-        
-        // Dose calculation (if enabled)
-        if (Config.current.doseEnabled) {
-            this.updateDose();
-        } else {
-            this.results.dose = null;
-            this.results.twa = null;
-        }
-    },
-    
-    /**
-     * Update noise dose calculation
-     */
-    updateDose() {
-        if (!Config.current.doseEnabled || this.state.samples.length === 0) {
-            return;
-        }
-        
-        const exchangeRate = Config.DOSE.EXCHANGE_RATE;
-        const threshold = Config.DOSE.THRESHOLD;
-        const criterion = Config.DOSE.CRITERION_LEVEL;
-        
-        // Calculate dose: D = 100 * sum(ti / Ti)
-        // where Ti = 8 * 2^((C-Li)/Q) and ti is time at level Li
-        let dose = 0;
-        const timeStep = this.state.elapsedTime / this.state.samples.length;
-        
-        for (let i = 0; i < this.state.samples.length; i++) {
-            const spl = this.state.samples[i].spl;
-            if (spl >= threshold) {
-                const Ti = 8 * Math.pow(2, (criterion - spl) / exchangeRate);
-                dose += (timeStep / Ti) * 100;
-            }
-        }
-        
-        this.results.dose = Math.min(999.9, dose); // Cap at 999.9%
-        
-        // TWA (Time-Weighted Average)
-        // TWA = Q * log2(D/100) + C
-        if (dose > 0) {
-            this.results.twa = exchangeRate * Math.log2(dose / 100) + criterion;
-        } else {
-            this.results.twa = null;
-        }
-    },
-    
-    /**
-     * Get current measurement results
-     * @returns {Object} Results object
-     */
-    getResults() {
-        return {
-            ...this.results,
-            elapsedTime: this.state.elapsedTime,
-            running: this.state.running,
-            paused: this.state.paused,
-            currentSPL: this.state.currentSPL
+        return function() {
+            state = (a * state + c) % m;
+            return state / m; // Normalize to [0, 1)
         };
     }
-};
 
+    /**
+     * Simulator Module - Generates deterministic SPL data
+     * Task 5.1: Create js/simulator.js module structure
+     */
+    const Simulator = {
+        /**
+         * Internal state
+         */
+        _state: {
+            seed: 12345,              // Deterministic seed for reproducible readings
+            rng: null,                // Random number generator function
+            baseLevel: 70,            // Base SPL level (dB)
+            variation: 5,             // Variation range (±dB)
+            trend: 0,                // Slow trend direction (-1 to 1)
+            lastUpdate: null,         // Timestamp of last update
+            sampleCount: 0           // Number of samples generated
+        },
+
+        /**
+         * Initialize simulator with seed
+         * Task 5.2: Seed-based initialization for reproducibility
+         * 
+         * @param {number} seed - Seed value for deterministic generation
+         * @param {Object} options - Configuration options
+         * @param {number} options.baseLevel - Base SPL level in dB (default: 70)
+         * @param {number} options.variation - Variation range in dB (default: 5)
+         */
+        init(seed = 12345, options = {}) {
+            this._state.seed = seed;
+            this._state.rng = createRNG(seed);
+            this._state.baseLevel = options.baseLevel || 70;
+            this._state.variation = options.variation || 5;
+            this._state.trend = 0;
+            this._state.lastUpdate = null;
+            this._state.sampleCount = 0;
+        },
+
+        /**
+         * Generate next SPL sample
+         * Task 5.3: Create SPL data generator function that produces realistic sound level readings
+         * 
+         * Generates realistic sound level readings with:
+         * - Deterministic variation (based on seed)
+         * - Slow trend (simulates gradual changes)
+         * - Fast noise (simulates rapid fluctuations)
+         * 
+         * @returns {number} SPL value in dB (typically 30-130 dB range)
+         */
+        generateSample() {
+            if (!this._state.rng) {
+                this.init(); // Initialize if not already done
+            }
+
+            const now = Date.now();
+            const elapsed = this._state.lastUpdate 
+                ? (now - this._state.lastUpdate) / 1000 
+                : 0;
+            this._state.lastUpdate = now;
+            this._state.sampleCount++;
+
+            // Generate deterministic variation using RNG
+            const random1 = this._state.rng();
+            const random2 = this._state.rng();
+            const random3 = this._state.rng();
+
+            // Variation component: random variation within specified range
+            const variation = (random1 - 0.5) * this._state.variation * 2;
+
+            // Slow trend: sinusoidal variation over time (simulates gradual level changes)
+            // Frequency ~0.1 Hz (10 second period)
+            const trendFrequency = 0.1;
+            const trendAmplitude = 2; // ±2 dB
+            const trend = Math.sin(this._state.sampleCount * 0.01 * trendFrequency * 2 * Math.PI) * trendAmplitude;
+
+            // Fast noise: high-frequency fluctuations (simulates rapid variations)
+            const noiseAmplitude = 1.5; // ±1.5 dB
+            const noise = (random2 - 0.5) * noiseAmplitude * 2;
+
+            // Additional slow drift (very slow changes over minutes)
+            const drift = Math.sin(this._state.sampleCount * 0.0001) * 1; // ±1 dB over ~1000 samples
+
+            // Calculate final SPL
+            let spl = this._state.baseLevel + variation + trend + noise + drift;
+
+            // Clamp to realistic range (30-130 dB typical for sound level meters)
+            spl = Math.max(30, Math.min(130, spl));
+
+            return spl;
+        },
+
+        /**
+         * Set base level for SPL generation
+         * @param {number} level - Base SPL level in dB
+         */
+        setBaseLevel(level) {
+            if (level >= 30 && level <= 130) {
+                this._state.baseLevel = level;
+            }
+        },
+
+        /**
+         * Set variation range
+         * @param {number} variation - Variation range in dB
+         */
+        setVariation(variation) {
+            if (variation >= 0 && variation <= 20) {
+                this._state.variation = variation;
+            }
+        },
+
+        /**
+         * Reset simulator (reinitialize with current seed)
+         */
+        reset() {
+            const seed = this._state.seed;
+            const baseLevel = this._state.baseLevel;
+            const variation = this._state.variation;
+            this.init(seed, { baseLevel, variation });
+        },
+
+        /**
+         * Get current state (for debugging)
+         * @returns {Object} Current simulator state
+         */
+        getState() {
+            return {
+                seed: this._state.seed,
+                baseLevel: this._state.baseLevel,
+                variation: this._state.variation,
+                sampleCount: this._state.sampleCount
+            };
+        }
+    };
+
+    // Export for use in other modules
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = Simulator;
+    } else {
+        window.Simulator = Simulator;
+    }
+})();

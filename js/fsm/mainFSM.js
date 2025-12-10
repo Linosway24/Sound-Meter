@@ -234,7 +234,22 @@
             comms: { editing: false, selectedIndex: 0, usbMode: "Mass Storage", usbModeIndex: 0, rs232Mode: "Serial", rs232ModeIndex: 0, baudRate: 9600, baudRateIndex: 1 }, // baudRateIndex 1 = 9600 (second option in BAUD_RATE_OPTIONS)
         battery: { type: "ALK" }, // "ALK" or "NiMH"
         flags: { locked: false },
-        measurement: { runtime: 0, state: "stopped", isRunning: false },
+        measurement: { 
+            runtime: 0, 
+            state: "stopped", 
+            isRunning: false,
+            seed: 12345,
+            // Measurement values (populated by measurement engine)
+            currentSPL: 0,
+            leq: 0,
+            lmax: 0,
+            lmin: 0,
+            sel: 0,
+            peak: 0,
+            dose: 0,
+            overRange: false,
+            overRangeWarning: false
+        },
         history: [],
         previousViewId: null, // For navigation back from cal/files/etc
         slm: {
@@ -242,13 +257,108 @@
             mode: "numeric",            // "numeric", "1of1", "1of3"
             timeConstant: "F",          // "F", "S", "I" (Fast, Slow, Impulse)
             weighting: "R",             // "R", "C", "Z", "F" (Rapid, C, Z, Flat)
-            activeMeter: 1,             // 1 or 2
+            activeMeter: 1,             // 1, 2, "GPS-1", or "GPS-2"
             viewLayout: "SPL"           // Selected from slm_view_menu
         }
     };
 
     const _subs = new Set();
     function _emit() { _subs.forEach(cb => cb(getState())); }
+
+    // Measurement engine integration
+    // Task 5.18: Integrate measurement engine with FSM
+    let _measurementUpdateInterval = null;
+    
+    /**
+     * Initialize measurement engine
+     */
+    function _initMeasurementEngine() {
+        if (typeof Simulator === 'undefined' || typeof Measurement === 'undefined') {
+            console.warn('[FSM] Simulator or Measurement modules not loaded');
+            return;
+        }
+        
+        // Initialize simulator with seed
+        Simulator.init(_state.measurement.seed || 12345, {
+            baseLevel: 70,
+            variation: 5
+        });
+        
+        // Initialize measurement module with current config
+        Measurement.init({
+            weighting: _state.slm.weighting === 'R' ? 'A' : (_state.slm.weighting === 'C' ? 'C' : 'Z'),
+            timeConstant: _state.slm.timeConstant === 'F' ? 'F' : (_state.slm.timeConstant === 'S' ? 'S' : 'I'),
+            range: 80, // TODO: Get from config
+            dose: {
+                exchangeRate: 3,
+                threshold: 50,
+                criterionLevel: 70
+            }
+        });
+    }
+    
+    /**
+     * Start measurement engine update loop
+     * Task 5.18: Real-time display updates during active measurement
+     */
+    function _startMeasurementEngine() {
+        _stopMeasurementEngine();
+        
+        if (typeof Simulator === 'undefined' || typeof Measurement === 'undefined') {
+            return;
+        }
+        
+        // Start measurement module
+        Measurement.start((results) => {
+            // Update FSM measurement state with results
+            _state.measurement.leq = results.leq;
+            _state.measurement.lmax = results.lmax;
+            _state.measurement.lmin = results.lmin;
+            _state.measurement.sel = results.sel;
+            _state.measurement.peak = results.peak;
+            _state.measurement.dose = results.dose;
+            _state.measurement.currentSPL = results.currentSPL;
+            _state.measurement.overRange = results.overRange;
+            _state.measurement.overRangeWarning = results.overRangeWarning;
+            _emit(); // Trigger display update
+        });
+        
+        // Generate samples at 10Hz (100ms intervals)
+        _measurementUpdateInterval = setInterval(() => {
+            if (_state.measurement.state === "running" && _state.measurement.isRunning) {
+                // Generate SPL sample
+                const rawSPL = Simulator.generateSample();
+                // Process sample (applies weighting, time-constant, updates calculations)
+                Measurement.processSample(rawSPL);
+            }
+        }, 100); // 10Hz update rate
+    }
+    
+    /**
+     * Stop measurement engine update loop
+     */
+    function _stopMeasurementEngine() {
+        if (_measurementUpdateInterval) {
+            clearInterval(_measurementUpdateInterval);
+            _measurementUpdateInterval = null;
+        }
+        if (typeof Measurement !== 'undefined') {
+            Measurement.stop();
+        }
+    }
+    
+    /**
+     * Pause measurement engine
+     */
+    function _pauseMeasurementEngine() {
+        if (typeof Measurement !== 'undefined') {
+            Measurement.pause();
+        }
+        if (_measurementUpdateInterval) {
+            clearInterval(_measurementUpdateInterval);
+            _measurementUpdateInterval = null;
+        }
+    }
 
     // Navigation history management
     function _pushHistory(viewId) {
@@ -314,7 +424,7 @@
 
     // Helper functions
     function isHome() {
-        return _state.viewId === "home_screen" || _state.viewId === "home_screen_dim";
+        return _state.viewId === "home_screen" || _state.viewId === "home_screen_dim" || _state.viewId === "home_screen_running";
     }
 
     function isSlm() {
@@ -341,6 +451,10 @@
 
     function initMainFSM() {
         const startAtHome = window.Config && window.Config.START_AT_HOME;
+        
+        // Initialize measurement engine
+        _initMeasurementEngine();
+        
         _state = {
             viewId: startAtHome ? "home_screen_dim" : "OFF",
             backlight: false,
@@ -419,7 +533,22 @@
                 levelFocus: "title" // "title" | "upper" | "lower" - which part of LEVEL is focused
             },
             flags: { locked: false },
-            measurement: { runtime: 0, state: "stopped", isRunning: false },
+            measurement: { 
+                runtime: 0, 
+                state: "stopped", 
+                isRunning: false,
+                seed: 12345,
+                // Measurement values (populated by measurement engine)
+                currentSPL: 0,
+                leq: 0,
+                lmax: 0,
+                lmin: 0,
+                sel: 0,
+                peak: 0,
+                dose: 0,
+                overRange: false,
+                overRangeWarning: false
+            },
             history: [],
             previousViewId: null,
             slm: {
@@ -453,6 +582,10 @@
         _state.timers.stopHold = setTimeout(() => {
             _state.measurement.state = "stopped";
             _state.measurement.isRunning = false;
+            // Stop the measurement timer
+            _stopMeasurementTimer();
+            // Stop measurement engine
+            _stopMeasurementEngine();
             _state.viewId = "slm_home_stopped";
             _clearTimer('stopHold');
             if (window.Config && window.Config.ENABLE_TOASTS) {
@@ -460,6 +593,27 @@
             }
             _emit();
         }, 3000);
+    }
+
+    /**
+     * Normalize SLM viewId to always use "running" version
+     * This allows the icon to update dynamically without changing screens
+     * @param {string} viewId - Current viewId (may be paused version)
+     * @returns {string} Normalized viewId (always running version)
+     */
+    function _normalizeSlmViewId(viewId) {
+        if (!viewId) return viewId;
+        
+        // Replace _paused with _running, or remove _paused suffix
+        if (viewId === "slm_home_paused") {
+            return "slm_home";
+        }
+        if (viewId.endsWith("_paused")) {
+            return viewId.replace("_paused", "_running");
+        }
+        
+        // If already running version or doesn't match pattern, return as-is
+        return viewId;
     }
 
     /**
@@ -521,18 +675,8 @@
 
             case "UP":
             case "DOWN":
-                if (isSlm()) {
-                    // Cycle pages 1-4
-                    if (evt.type === "UP") {
-                        _state.slm.page = _state.slm.page > 1 ? _state.slm.page - 1 : 4;
-                    } else {
-                        _state.slm.page = _state.slm.page < 4 ? _state.slm.page + 1 : 1;
-                    }
-                    _state.viewId = _getSlmViewId();
-                    _emit();
-                    return;
-                }
-                // Continue with existing UP handler logic
+                // UP/DOWN arrows do NOT navigate pages in SLM - LEFT/RIGHT do
+                // Continue with existing UP/DOWN handler logic
                 if (evt.type === "UP") {
                     if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
                     const item = _state.meterSet.items[_state.meterSet.selectedIndex];
@@ -1368,6 +1512,18 @@
                 break;
 
             case "LEFT":
+                if (isSlm()) {
+                    // LEFT arrow: navigate to previous page (4 → 3 → 2 → 1 → 4)
+                    console.log('[FSM] LEFT: Navigating SLM pages, current page:', _state.slm.page);
+                    _state.slm.page = _state.slm.page > 1 ? _state.slm.page - 1 : 4;
+                    console.log('[FSM] LEFT: New page:', _state.slm.page);
+                    // Always use running version of viewId - icon will show correct state dynamically
+                    let viewId = _getSlmViewId();
+                    _state.viewId = _normalizeSlmViewId(viewId);
+                    console.log('[FSM] LEFT: New viewId:', _state.viewId);
+                    _emit();
+                    return;
+                }
                 if (_state.viewId === "display_menu" && _state.display.editing && _state.menu.selectedIndex === 2 && _state.display.focus === "value") {
                     // LEFT arrow: decrease contrast by one segment (remove one filled box)
                     // Each segment represents 100/15 ≈ 6.67 contrast units
@@ -1634,6 +1790,18 @@
                 break;
 
             case "RIGHT":
+                if (isSlm()) {
+                    // RIGHT arrow: navigate to next page (1 → 2 → 3 → 4 → 1)
+                    console.log('[FSM] RIGHT: Navigating SLM pages, current page:', _state.slm.page);
+                    _state.slm.page = _state.slm.page < 4 ? _state.slm.page + 1 : 1;
+                    console.log('[FSM] RIGHT: New page:', _state.slm.page);
+                    // Always use running version of viewId - icon will show correct state dynamically
+                    let viewId = _getSlmViewId();
+                    _state.viewId = _normalizeSlmViewId(viewId);
+                    console.log('[FSM] RIGHT: New viewId:', _state.viewId);
+                    _emit();
+                    return;
+                }
                 if (_state.viewId === "display_menu" && _state.display.editing && _state.menu.selectedIndex === 2 && _state.display.focus === "value") {
                     // RIGHT arrow: increase contrast by one segment (add one filled box)
                     // Each segment represents 100/15 ≈ 6.67 contrast units
@@ -1935,10 +2103,19 @@
                         // _showToast("No studies yet");
                         return; // Explicitly do nothing
                     } else if (item === "VIEW CURRENT STUDY") {
-                        _state.viewId = "home_screen_running";
+                        // Preserve measurement state when returning to home
+                        // Only show home_screen_running if measurement is running or paused
+                        if (_state.measurement.state === "running" || _state.measurement.state === "paused") {
+                            _state.viewId = "home_screen_running";
+                        } else {
+                            _state.viewId = _state.backlight ? "home_screen" : "home_screen_dim";
+                        }
                         _emit();
                     } else if (item === "VIEW SESSION") {
-                        _state.viewId = "slm_home";
+                        // Preserve measurement state when entering SLM from view menu
+                        // Always use running version of viewId - icon will show correct state dynamically
+                        let viewId = _getSlmViewId();
+                        _state.viewId = _normalizeSlmViewId(viewId);
                         _emit();
                     }
                 } else if (_state.viewId === "setup_menu") {
@@ -2781,13 +2958,40 @@
                         // _showToast("No studies yet");
                         return; // Explicitly do nothing
                     } else if (item === "VIEW CURRENT STUDY") {
-                        _state.measurement.state = "running";
-                        _state.measurement.isRunning = true;
+                        // Preserve measurement state - only start if stopped
+                        if (_state.measurement.state === "stopped") {
+                            _state.measurement.state = "running";
+                            _state.measurement.isRunning = true;
+                            _startMeasurementTimer();
+                            _startMeasurementEngine();
+                        } else if (_state.measurement.state === "running") {
+                            // Already running - ensure timer is running
+                            _state.measurement.isRunning = true;
+                            _startMeasurementTimer();
+                            _startMeasurementEngine();
+                        } else if (_state.measurement.state === "paused") {
+                            // Preserve paused state - don't start timer
+                            _state.measurement.isRunning = false;
+                        }
                         _state.viewId = "home_screen_running";
                         _emit();
                     } else if (item === "VIEW SESSION") {
-                        _state.measurement.state = "running";
-                        _state.measurement.isRunning = true;
+                        // Preserve measurement state when entering SLM
+                        // Only start if stopped, otherwise preserve running/paused state
+                        if (_state.measurement.state === "stopped") {
+                            _state.measurement.state = "running";
+                            _state.measurement.isRunning = true;
+                            _startMeasurementTimer();
+                            _startMeasurementEngine();
+                        } else if (_state.measurement.state === "running") {
+                            // Already running - ensure timer is running
+                            _state.measurement.isRunning = true;
+                            _startMeasurementTimer();
+                            _startMeasurementEngine();
+                        } else if (_state.measurement.state === "paused") {
+                            // Preserve paused state - don't start timer
+                            _state.measurement.isRunning = false;
+                        }
                         // Set mode based on slmLabelIndex
                         if (_state.slmLabelIndex === 0) {
                             _state.slm.mode = "numeric";
@@ -2796,7 +3000,9 @@
                         } else if (_state.slmLabelIndex === 2) {
                             _state.slm.mode = "1of3";
                         }
-                        _state.viewId = _getSlmViewId();
+                        // Always use running version of viewId - icon will show correct state dynamically
+                        let viewId = _getSlmViewId();
+                        _state.viewId = _normalizeSlmViewId(viewId);
                         _emit();
                     } else if (item === "SETUP") {
                         _pushHistory("setup_menu");
@@ -3075,6 +3281,8 @@
                 } else if (isSlm()) {
                     _state.measurement.state = "stopped";
                     _state.measurement.isRunning = false;
+                    // Stop the measurement timer
+                    _stopMeasurementTimer();
                     _state.slm.page = 1; // Reset page to 1 when exiting SLM
                     _state.viewId = "home_screen";
                     _emit();
@@ -3083,9 +3291,39 @@
 
             case "RUN":
             case "RUNPAUSE":
-                if (isHome() || _state.viewId === "slm_home_stopped") {
+                // Handle RUN/PAUSE on home screen - show play symbol and timer but stay on home screen
+                if (isHome() || _state.viewId === "home_screen_running") {
+                    if (_state.measurement.state === "stopped" || _state.measurement.state === "paused") {
+                        // Start or resume measurement on home screen
+                        _state.measurement.state = "running";
+                        _state.measurement.isRunning = true;
+                        // Start the timer to increment runtime
+                        _startMeasurementTimer();
+                        // Start measurement engine
+                        _startMeasurementEngine();
+                        // Stay on home screen but show running state (play symbol and timer)
+                        _state.viewId = "home_screen_running";
+                        _emit();
+                    } else if (_state.measurement.state === "running") {
+                        // Pause measurement on home screen
+                        _state.measurement.state = "paused";
+                        _state.measurement.isRunning = false;
+                        // Stop the timer
+                        _stopMeasurementTimer();
+                        // Pause measurement engine
+                        _pauseMeasurementEngine();
+                        // Stay on home_screen_running to show pause icon (icon will update dynamically)
+                        _state.viewId = "home_screen_running";
+                        _emit();
+                    }
+                } else if (_state.viewId === "slm_home_stopped") {
+                    // From stopped SLM screen, start measurement and enter SLM
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
+                    // Start the timer
+                    _startMeasurementTimer();
+                    // Start measurement engine
+                    _startMeasurementEngine();
                     // Set mode based on slmLabelIndex when entering SLM
                     if (_state.slmLabelIndex === 0) {
                         _state.slm.mode = "numeric";
@@ -3096,25 +3334,58 @@
                     }
                     _state.viewId = _getSlmViewId();
                     _emit();
+                } else if (isSlm() && _state.measurement.state === "running") {
+                    // Pause measurement in SLM - keep same screen, icon will update dynamically
+                    console.log('[FSM] RUN/PAUSE: Pausing measurement in SLM');
+                    _state.measurement.state = "paused";
+                    _state.measurement.isRunning = false;
+                    // Stop the timer
+                    _stopMeasurementTimer();
+                    // Pause measurement engine
+                    _pauseMeasurementEngine();
+                    // Normalize viewId to running version and keep it (don't change screen)
+                    _state.viewId = _normalizeSlmViewId(_state.viewId);
+                    _emit();
                 } else if (isSlm() && _state.measurement.state === "paused") {
+                    // Resume measurement in SLM - keep same screen, icon will update dynamically
+                    console.log('[FSM] RUN/PAUSE: Resuming measurement in SLM');
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
-                    _state.viewId = _getSlmViewId();
+                    // Start the timer
+                    _startMeasurementTimer();
+                    // Normalize viewId to running version and keep it (don't change screen)
+                    _state.viewId = _normalizeSlmViewId(_state.viewId);
                     _emit();
                 }
                 break;
 
             case "PAUSE":
                 if (isSlm() && _state.measurement.state === "running") {
+                    // Pause measurement in SLM - keep same screen, icon will update dynamically
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
-                    _state.viewId = _getSlmViewId();
+                    // Stop the timer
+                    _stopMeasurementTimer();
+                    // Normalize viewId to running version and keep it (don't change screen)
+                    _state.viewId = _normalizeSlmViewId(_state.viewId);
+                    _emit();
+                } else if (_state.viewId === "home_screen_running" && _state.measurement.state === "running") {
+                    // Pause measurement on home screen
+                    console.log('[FSM] PAUSE: Pausing measurement on home screen');
+                    _state.measurement.state = "paused";
+                    _state.measurement.isRunning = false;
+                    // Stop the timer
+                    _stopMeasurementTimer();
+                    // Stay on home_screen_running to show pause icon (icon will update dynamically)
+                    _state.viewId = "home_screen_running";
                     _emit();
                 }
                 break;
 
             case "STOP_DOWN":
-                if (_state.viewId === "slm_home" || _state.viewId === "slm_home_paused") {
+                // Stop button only works when paused (not when running)
+                // Must pause first, then hold stop for 3 seconds
+                if (isSlm() && _state.measurement.state === "paused") {
                     _startStopHoldTimer();
                 }
                 break;
@@ -3123,6 +3394,8 @@
                 if (_state.viewId === "stop_confirm") {
                     _clearTimer('stopHold');
                     if (_state.measurement.state === "stopped") {
+                        // Stop measurement engine
+                        _stopMeasurementEngine();
                         _state.viewId = "slm_home_stopped";
                     } else {
                         _state.viewId = _getSlmViewId();
@@ -3280,9 +3553,19 @@
 
             case "SOFT4":
                 if (isSlm()) {
-                    // Toggle: 1 ↔ 2
-                    _state.slm.activeMeter = _state.slm.activeMeter === 1 ? 2 : 1;
-                    console.log('[FSM] SOFT4 pressed on SLM → Active meter:', _state.slm.activeMeter);
+                    // Cycle: Meter 1 → Meter 2 → GPS - 1 → GPS - 2 → Meter 1
+                    const cycle = [1, 2, "GPS-1", "GPS-2"];
+                    const currentValue = _state.slm.activeMeter || 1;
+                    console.log('[FSM] SOFT4: Current activeMeter value:', currentValue, 'Type:', typeof currentValue);
+                    let currentIndex = cycle.indexOf(currentValue);
+                    // If not found, default to 0 (Meter 1)
+                    if (currentIndex === -1) {
+                        console.log('[FSM] SOFT4: Current value not found in cycle, defaulting to index 0');
+                        currentIndex = 0;
+                    }
+                    const nextIndex = (currentIndex + 1) % cycle.length;
+                    _state.slm.activeMeter = cycle[nextIndex];
+                    console.log('[FSM] SOFT4 pressed on SLM → Active meter changed from', currentValue, 'to', _state.slm.activeMeter);
                     _emit();
                     return;
                 } else if (_state.viewId === "auto_run_date_params") {

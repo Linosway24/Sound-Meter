@@ -33,7 +33,45 @@ This testing guide covers Phase 4 implementation:
 
 **Pass/Fail:** [x ]
 
+### P1: Home Screen RUN/PAUSE Behavior
+**Test:** 
+1. Power on device (if needed, press Power button)
+2. Ensure you're on the home screen (viewId should be `"home_screen"` or `"home_screen_dim"`)
+3. Press RUN/PAUSE button
+4. Check viewId: In console, run `window.getMainFSMState().viewId`
+5. Check measurement state: In console, run `window.getMainFSMState().measurement`
+6. Visually verify the screen display
 
+**Expected:**
+- ✅ ViewId is `"home_screen_running"` (NOT `"slm_home"` or any SLM view)
+- ✅ `measurement.state` is `"running"`
+- ✅ `measurement.isRunning` is `true`
+- ✅ Screen still shows home screen menu (VIEW PAST STUDIES, VIEW CURRENT STUDY, etc.)
+- ✅ Play symbol/icon visible at top-left of screen
+- ✅ Timer visible at top-right of screen and counting up
+- ✅ Softkeys still show: SLM (or 1/1 or 1/3), CAL, FILE, LOCK
+- ✅ Screen does NOT navigate to SLM screen
+
+**Pass/Fail:** [x ]
+
+### P2: Home Screen RUN/PAUSE Toggle (Start/Pause)
+**Test:**
+1. On home screen, press RUN/PAUSE (should start measurement)
+2. Check viewId: Should be `"home_screen_running"`
+3. Press RUN/PAUSE again (should pause measurement)
+4. Check viewId: In console, run `window.getMainFSMState().viewId`
+5. Check measurement state: In console, run `window.getMainFSMState().measurement`
+6. Visually verify the screen display
+
+**Expected:**
+- ✅ After first press: viewId is `"home_screen_running"`, measurement.state is `"running"`
+- ✅ After second press: viewId is `"home_screen"` or `"home_screen_dim"`, measurement.state is `"paused"`
+- ✅ Play symbol and timer disappear when paused
+- ✅ Screen remains on home screen (does not navigate to SLM)
+
+**Pass/Fail:** [ x]
+
+---
 
 ## Test 1: SLM State Initialization
 
@@ -54,12 +92,11 @@ This testing guide covers Phase 4 implementation:
 **Test:** 
 1. Check initial state: In browser console, run `window.getMainFSMState().slm`
    - Note the values (page, mode, timeConstant, weighting, activeMeter)
-2. Navigate to SLM using one of these methods:
-   - **Method A:** Press the RUN/PAUSE button (physical button on device photo)
-   - **Method B:** On home screen, use DOWN arrow to select "VIEW SESSION", then press ENTER
-3. Verify you're in SLM: Check `window.getMainFSMState().viewId` should be `"slm_home"` or `"slm_home_paused"`
-4. Exit SLM: Press ESC key
-5. Check state again: Run `window.getMainFSMState().slm` in console
+2. **Note:** Pressing RUN/PAUSE on the home screen does NOT navigate to SLM - it only shows a play symbol and running timer while staying on the home screen.
+3. Navigate to SLM: On home screen, use DOWN arrow to select "VIEW SESSION", then press ENTER
+4. Verify you're in SLM: Check `window.getMainFSMState().viewId` should be `"slm_home"` or `"slm_home_paused"`
+5. Exit SLM: Press ESC key
+6. Check state again: Run `window.getMainFSMState().slm` in console
 
 **Expected:**
 - ✅ State persists (same values for mode, timeConstant, weighting, activeMeter)
@@ -75,11 +112,11 @@ This testing guide covers Phase 4 implementation:
 **Test:**
 1. Power on device (if needed, press Power button)
 2. Ensure home screen shows "SLM" (softkey 1 at bottom left)
-3. Enter SLM using one of these methods:
-   - **Method A:** Click the RUN/PAUSE button on the device photo (or press keyboard shortcut)
-   - **Method B:** Use DOWN arrow to navigate to "VIEW SESSION" in the home menu, then press ENTER
-4. Check viewId: In console, run `window.getMainFSMState().viewId`
-5. Check SLM state: In console, run `window.getMainFSMState().slm`
+3. **Note:** Pressing RUN/PAUSE on the home screen does NOT navigate to SLM - it only shows a play symbol (top left) and running timer (top right) while staying on the home screen.
+4. Enter SLM using this method:
+   - Use DOWN arrow to navigate to "VIEW SESSION" in the home menu, then press ENTER
+5. Check viewId: In console, run `window.getMainFSMState().viewId`
+6. Check SLM state: In console, run `window.getMainFSMState().slm`
 
 **Expected:**
 - ✅ ViewId is `"slm_home"` (if running) or `"slm_home_paused"` (if paused)
@@ -88,52 +125,52 @@ This testing guide covers Phase 4 implementation:
 - ✅ Screen shows "SLM" title
 - ✅ Status shows "RUNNING" or "PAUSED"
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
-### 2.2 Page Navigation - DOWN Arrow
+### 2.2 Page Navigation - RIGHT Arrow
 **Test:**
 1. Enter SLM (numeric mode, page 1)
-2. Press DOWN arrow
+2. Press RIGHT arrow
 3. Check viewId: `window.getMainFSMState().viewId`
 4. Check page: `window.getMainFSMState().slm.page`
-5. Press DOWN arrow 2 more times
+5. Press RIGHT arrow 2 more times
 6. Check page after each press
 
 **Expected:**
-- ✅ First DOWN: viewId becomes `"slm_home_page2_running"` (or `_paused`), page = 2
-- ✅ Second DOWN: viewId becomes `"slm_home_page3_running"`, page = 3
-- ✅ Third DOWN: viewId becomes `"slm_home_page4_running"`, page = 4
+- ✅ First RIGHT: viewId becomes `"slm_home_page2_running"` (or `_paused`), page = 2
+- ✅ Second RIGHT: viewId becomes `"slm_home_page3_running"`, page = 3
+- ✅ Third RIGHT: viewId becomes `"slm_home_page4_running"`, page = 4
 - ✅ Screen title still shows "SLM"
 - ✅ Status persists (RUNNING/PAUSED)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
-### 2.3 Page Navigation - UP Arrow
+### 2.3 Page Navigation - LEFT Arrow
 **Test:**
-1. Navigate to page 4 (using DOWN arrows)
-2. Press UP arrow
+1. Navigate to page 4 (using RIGHT arrows)
+2. Press LEFT arrow
 3. Check page: `window.getMainFSMState().slm.page`
-4. Press UP arrow 2 more times
+4. Press LEFT arrow 2 more times
 5. Check page after each press
 
 **Expected:**
-- ✅ From page 4: UP → page 3
-- ✅ From page 3: UP → page 2
-- ✅ From page 2: UP → page 1
-- ✅ From page 1: UP → page 4 (wraps)
+- ✅ From page 4: LEFT → page 3
+- ✅ From page 3: LEFT → page 2
+- ✅ From page 2: LEFT → page 1
+- ✅ From page 1: LEFT → page 4 (wraps)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 2.4 Page Wrap-Around
 **Test:**
 1. Start at page 1
-2. Press UP arrow (should wrap to page 4)
-3. Press DOWN arrow (should wrap to page 1)
+2. Press LEFT arrow (should wrap to page 4)
+3. Press RIGHT arrow (should wrap to page 1)
 4. Verify wrap works in both directions
 
 **Expected:**
-- ✅ Page 1 → UP → Page 4 (wraps)
-- ✅ Page 4 → DOWN → Page 1 (wraps)
+- ✅ Page 1 → LEFT → Page 4 (wraps)
+- ✅ Page 4 → RIGHT → Page 1 (wraps)
 - ✅ Console logs show page changes
 
 **Pass/Fail:** [ ]
@@ -168,21 +205,22 @@ This testing guide covers Phase 4 implementation:
 - ✅ Page remains 2 when exiting VIEW menu
 - ✅ ViewId returns to correct page view (`slm_home_page2_running` or `_paused`)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 2.7 Page Reset on Exit
 **Test:**
 1. Navigate to page 4
 2. Press ESC (exit SLM to home)
 3. Check page: `window.getMainFSMState().slm.page`
-4. Re-enter SLM (press RUN/PAUSE)
-5. Check page: `window.getMainFSMState().slm.page`
+4. **Note:** Pressing RUN/PAUSE on the home screen does NOT navigate to SLM - it only shows a play symbol and running timer while staying on the home screen.
+5. Re-enter SLM: Use DOWN arrow to navigate to "VIEW SESSION" in the home menu, then press ENTER
+6. Check page: `window.getMainFSMState().slm.page`
 
 **Expected:**
 - ✅ Page resets to 1 when exiting SLM completely
 - ✅ Re-entering SLM shows page 1
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -194,34 +232,37 @@ This testing guide covers Phase 4 implementation:
 2. Cycle until label shows "1/1"
 3. Check slmLabelIndex: `window.getMainFSMState().slmLabelIndex`
 4. Check slm.mode: `window.getMainFSMState().slm.mode`
-5. Press RUN/PAUSE to enter SLM
-6. Check viewId: `window.getMainFSMState().viewId`
+5. **Note:** Pressing RUN/PAUSE on the home screen does NOT navigate to SLM - it only shows a play symbol and running timer while staying on the home screen.
+6. Enter SLM: Use DOWN arrow to navigate to "VIEW SESSION" in the home menu, then press ENTER
+7. Check viewId: `window.getMainFSMState().viewId`
 
 **Expected:**
 - ✅ `slmLabelIndex` is `1`
 - ✅ `slm.mode` is `"1of1"`
 - ✅ ViewId is `"slm_graph_1of1_page1_running"` (or `_paused`)
 - ✅ Screen title shows "1/1"
+- ✅ Play/pause icon (▶ or ⏸) visible at top-left (matches measurement state)
+- ✅ Runtime timer visible at top-right (matches measurement state)
 - ✅ Graph placeholder visible: "Graph will be rendered here (1/1 Octave)"
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.2 1/1 Mode - Page Navigation
 **Test:**
 1. Enter SLM in 1/1 mode (page 1)
-2. Press DOWN arrow 3 times
+2. Press RIGHT arrow 3 times
 3. Check viewId after each press
-4. Press UP arrow 2 times
+4. Press LEFT arrow 2 times
 5. Check viewId after each press
 
 **Expected:**
-- ✅ DOWN: page 1 → 2 → 3 → 4
+- ✅ RIGHT: page 1 → 2 → 3 → 4
 - ✅ ViewIds: `slm_graph_1of1_page1_running` → `_page2_running` → `_page3_running` → `_page4_running`
-- ✅ UP: page 4 → 3 → 2
+- ✅ LEFT: page 4 → 3 → 2
 - ✅ Screen title always shows "1/1"
 - ✅ Graph placeholder visible on all pages
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.3 1/1 Mode - Run/Pause Toggle
 **Test:**
@@ -235,7 +276,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Page remains 2
 - ✅ Mode remains "1of1"
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 3.4 1/1 Mode - ESC Navigation
 **Test:**
@@ -249,7 +290,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Page resets to 1
 - ✅ Mode persists (remains "1of1" in state, but not visible until re-entering SLM)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ---
 
@@ -260,8 +301,9 @@ This testing guide covers Phase 4 implementation:
 1. On home screen, press SOFT1 twice (or until label shows "1/3")
 2. Check slmLabelIndex: `window.getMainFSMState().slmLabelIndex`
 3. Check slm.mode: `window.getMainFSMState().slm.mode`
-4. Press RUN/PAUSE to enter SLM
-5. Check viewId: `window.getMainFSMState().viewId`
+4. **Note:** Pressing RUN/PAUSE on the home screen does NOT navigate to SLM - it only shows a play symbol and running timer while staying on the home screen.
+5. Enter SLM: Use DOWN arrow to navigate to "VIEW SESSION" in the home menu, then press ENTER
+6. Check viewId: `window.getMainFSMState().viewId`
 
 **Expected:**
 - ✅ `slmLabelIndex` is `2`
@@ -270,24 +312,24 @@ This testing guide covers Phase 4 implementation:
 - ✅ Screen title shows "1/3"
 - ✅ Graph placeholder visible: "Graph will be rendered here (1/3 Octave)"
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.2 1/3 Mode - Page Navigation
 **Test:**
 1. Enter SLM in 1/3 mode (page 1)
-2. Press DOWN arrow 3 times
+2. Press RIGHT arrow 3 times
 3. Check viewId after each press
-4. Press UP arrow 2 times
+4. Press LEFT arrow 2 times
 5. Check viewId after each press
 
 **Expected:**
-- ✅ DOWN: page 1 → 2 → 3 → 4
+- ✅ RIGHT: page 1 → 2 → 3 → 4
 - ✅ ViewIds: `slm_graph_1of3_page1_running` → `_page2_running` → `_page3_running` → `_page4_running`
-- ✅ UP: page 4 → 3 → 2
+- ✅ LEFT: page 4 → 3 → 2
 - ✅ Screen title always shows "1/3"
 - ✅ Graph placeholder visible on all pages
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.3 1/3 Mode - Run/Pause Toggle
 **Test:**
@@ -301,7 +343,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Page remains 2
 - ✅ Mode remains "1of3"
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 4.4 Mode Cycling - All Modes
 **Test:**
@@ -316,7 +358,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Entering SLM with "1/3" → 1/3 graph mode (page 1)
 - ✅ Mode persists when re-entering SLM
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -340,7 +382,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey label shows "F S I" with underline on active letter
 - ✅ Underline moves: F → S → I → F
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.2 SOFT2 - Visual Feedback (Underline)
 **Test:**
@@ -357,7 +399,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Underline is visible and moves smoothly
 - ✅ CSS class `active` applied to correct span
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.3 SOFT3 - R/C/Z/F Cycling
 **Test:**
@@ -378,7 +420,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey label shows "R C Z F" with underline on active letter
 - ✅ Underline moves: R → C → Z → F → R
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.4 SOFT3 - Visual Feedback (Underline)
 **Test:**
@@ -395,7 +437,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ After fourth press: Underline under "R" (wraps)
 - ✅ Underline is visible and moves smoothly
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.5 SOFT4 - Meter 1/2 Toggle
 **Test:**
@@ -414,7 +456,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey label shows "Meter 1" or "Meter 2"
 - ✅ Label updates immediately
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.6 SOFT4 - Visual Feedback (Label Update)
 **Test:**
@@ -431,7 +473,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ After second press: "Meter 1"
 - ✅ Label updates immediately (no delay)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.7 Softkey State Persistence - Page Navigation
 **Test:**
@@ -439,7 +481,7 @@ This testing guide covers Phase 4 implementation:
 2. Press SOFT2 (set to "S")
 3. Press SOFT3 (set to "C")
 4. Press SOFT4 (set to "Meter 2")
-5. Navigate to page 3 (DOWN arrow twice)
+5. Navigate to page 3 (RIGHT arrow twice)
 6. Check all softkey states
 
 **Expected:**
@@ -449,7 +491,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey labels show correct values with underlines
 - ✅ Underlines in correct positions
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.8 Softkey State Persistence - Run/Pause Toggle
 **Test:**
@@ -462,7 +504,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey labels show correct values
 - ✅ Underlines in correct positions
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 5.9 Softkey State Persistence - Mode Switch
 **Test:**
@@ -479,7 +521,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Underlines in correct positions
 - ✅ Mode is "1of1" but softkey states unchanged
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 5.10 Softkeys Only Active in SLM
 **Test:**
@@ -494,7 +536,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ In SLM: SOFT2/SOFT3/SOFT4 work correctly
 - ✅ Console logs only appear when in SLM
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -521,7 +563,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ All softkey labels correct
 - ✅ ViewId is correct for page 4
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 6.2 Full Workflow - 1/1 Mode with All Features
 **Test:**
@@ -540,7 +582,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ ViewId is `slm_graph_1of1_page1_running` or `_paused`
 - ✅ Graph placeholder visible
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 6.3 Full Workflow - 1/3 Mode with All Features
 **Test:**
@@ -558,7 +600,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey states persist
 - ✅ All pages accessible
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 6.4 Mode Switching - All Modes, All Pages
 **Test:**
@@ -575,7 +617,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey states persist across mode changes
 - ✅ No console errors
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -584,7 +626,7 @@ This testing guide covers Phase 4 implementation:
 ### 7.1 Rapid Page Navigation
 **Test:**
 1. Enter SLM
-2. Rapidly press DOWN arrow 10 times
+2. Rapidly press RIGHT arrow 10 times
 3. Check page: `window.getMainFSMState().slm.page`
 4. Check viewId: `window.getMainFSMState().viewId`
 
@@ -608,12 +650,12 @@ This testing guide covers Phase 4 implementation:
 - ✅ Labels update correctly
 - ✅ No console errors
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 7.3 Navigation During Run/Pause Toggle
 **Test:**
 1. Enter SLM, page 2
-2. Press DOWN arrow while toggling run/pause
+2. Press RIGHT arrow while toggling run/pause
 3. Check page and state
 
 **Expected:**
@@ -621,7 +663,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ State updates correctly
 - ✅ ViewId is correct
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 7.4 Multiple Mode Switches
 **Test:**
@@ -637,7 +679,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Softkey states persist
 - ✅ Correct views displayed
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -662,7 +704,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Status and timer visible
 - ✅ All softkeys visible and labeled correctly
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 8.3 Screen Display - 1/3 Graph Pages
 **Test:** Navigate through all 4 pages in 1/3 mode
@@ -672,7 +714,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Status and timer visible
 - ✅ All softkeys visible and labeled correctly
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ### 8.4 Softkey Label Rendering
 **Test:** Observe all softkey labels in SLM
@@ -684,7 +726,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Labels update immediately when pressed
 - ✅ Underlines move smoothly (CSS transition)
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -697,7 +739,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ No error messages
 - ✅ State updates logged correctly
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [ x]
 
 ### 9.2 Softkey Handler Logging
 **Test:** Press SOFT2, SOFT3, SOFT4 and check console
@@ -707,7 +749,7 @@ This testing guide covers Phase 4 implementation:
 - ✅ Console shows: `[FSM] SOFT4 pressed on SLM → Active meter: X`
 - ✅ No error messages
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
@@ -724,14 +766,19 @@ This testing guide covers Phase 4 implementation:
 - ✅ `slm.viewLayout`: "SPL" (default)
 - ✅ All values persist correctly
 
-**Pass/Fail:** [ ]
+**Pass/Fail:** [x ]
 
 ---
 
 ## Summary Checklist
 
+### Prerequisites
+- [ ] Home screen RUN/PAUSE shows play symbol and timer (stays on home screen)
+- [ ] Home screen RUN/PAUSE toggle works (start/pause)
+- [ ] RUN/PAUSE on home screen does NOT navigate to SLM
+
 ### Core Functionality
-- [ ] Page navigation works (UP/DOWN, wraps correctly)
+- [ ] Page navigation works (LEFT/RIGHT, wraps correctly)
 - [ ] Page persistence across run/pause toggle
 - [ ] Page persistence across VIEW menu entry/exit
 - [ ] Page resets to 1 on SLM exit

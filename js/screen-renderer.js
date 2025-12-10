@@ -55,7 +55,7 @@
             const isActive = val === activeValue;
             const underlineClass = isActive ? 'softkey-underline-target active' : 'softkey-underline-target';
             return `<span class="${underlineClass}" data-value="${val}">${val}</span>`;
-        }).join(' ');
+        }).join(''); // No space between letters - they should be close together
     }
 
     /**
@@ -269,7 +269,14 @@
                     }
                     return `<div id="${element.id}" class="screen-element screen-element--label screen-element--date-display">${html}</div>`;
                 }
-                return `<div id="${element.id}" class="screen-element screen-element--label">${element.text || ''}</div>`;
+                // Handle positioned labels for SLM measurement display
+                const labelPosition = element.position || '';
+                const labelPositionClass = labelPosition ? `screen-element--${labelPosition}` : '';
+                // Special styling for main readout (center, large)
+                if (element.id === "main_readout") {
+                    return `<div id="${element.id}" class="screen-element screen-element--label screen-element--main-readout ${labelPositionClass}">${element.text || ''}</div>`;
+                }
+                return `<div id="${element.id}" class="screen-element screen-element--label ${labelPositionClass}">${element.text || ''}</div>`;
             
             case 'title':
                 // Special handling for AUTO RUN Timed Run title - smaller font to fit
@@ -1061,7 +1068,59 @@
                     .replace('hh', String(hours).padStart(2, '0'))
                     .replace('mm', String(minutes).padStart(2, '0'))
                     .replace('ss', String(seconds).padStart(2, '0'));
-                return `<div id="${element.id}" class="screen-element screen-element--timer">${formatted}</div>`;
+                const timerPosition = element.position || '';
+                const timerPositionClass = timerPosition ? `screen-element--${timerPosition}` : '';
+                return `<div id="${element.id}" class="screen-element screen-element--timer ${timerPositionClass}">${formatted}</div>`;
+            
+            case 'icon':
+                const iconName = element.icon || '';
+                const iconPosition = element.position || '';
+                const iconPositionClass = iconPosition ? `screen-element--${iconPosition}` : '';
+                // Play icon: ▶ (Unicode play symbol)
+                // Pause icon: ⏸ (Unicode pause symbol)
+                // Stop icon: ■ (Unicode stop symbol)
+                let iconSymbol = '';
+                
+                // If this is a status icon, determine icon based on measurement state
+                if (element.id === "status_icon" && state?.measurement) {
+                    const measurementState = state.measurement.state || "stopped";
+                    console.log('[SCREEN-RENDERER] Rendering status icon, measurement state:', measurementState);
+                    if (measurementState === "running") {
+                        iconSymbol = '▶'; // Play when running
+                    } else if (measurementState === "paused") {
+                        iconSymbol = '⏸'; // Pause when paused
+                    } else if (measurementState === "stopped") {
+                        iconSymbol = '■'; // Stop when stopped
+                    } else {
+                        iconSymbol = '■'; // Default to stop
+                    }
+                } else {
+                    // Use static icon from element definition
+                    if (iconName === 'play') {
+                        iconSymbol = '▶';
+                    } else if (iconName === 'pause') {
+                        iconSymbol = '⏸';
+                    } else if (iconName === 'stop') {
+                        iconSymbol = '■';
+                    } else {
+                        iconSymbol = iconName; // Use as-is if not recognized
+                    }
+                }
+                return `<div id="${element.id}" class="screen-element screen-element--icon ${iconPositionClass}">${iconSymbol}</div>`;
+            
+            case 'barGraph':
+                // Horizontal bar graph for measurement level
+                const level = state?.measurement?.level || 0;
+                const min = element.min || -20;
+                const max = element.max || 70;
+                // Calculate bar width as percentage (0-100%)
+                const range = max - min;
+                const normalizedLevel = Math.max(0, Math.min(100, ((level - min) / range) * 100));
+                return `<div id="${element.id}" class="screen-element screen-element--bar-graph">
+                    <div class="bar-graph-container">
+                        <div class="bar-graph-fill" style="width: ${normalizedLevel}%"></div>
+                    </div>
+                </div>`;
             
             case 'softKeyRow':
                 // Metadata element, not rendered (soft keys rendered separately)
@@ -1089,18 +1148,30 @@
             
             // Special handling for SLM screens: render softkeys with state-based values
             if (isSlmView(state?.viewId)) {
-                if (i === 1 && (label === "F S I" || label === "")) {
+                if (i === 1 && (label === "F S I" || label === "F-S-I" || label === "")) {
                     // SOFT2: F S I with underline on active
                     const timeConstant = state?.slm?.timeConstant || "F";
                     label = renderSoftkeyWithUnderline(["F", "S", "I"], timeConstant);
-                } else if (i === 2 && (label === "R C Z F" || label === "")) {
+                } else if (i === 2 && (label === "R C Z F" || label === "R-C-Z-F" || label === "")) {
                     // SOFT3: R C Z F with underline on active
                     const weighting = state?.slm?.weighting || "R";
                     label = renderSoftkeyWithUnderline(["R", "C", "Z", "F"], weighting);
-                } else if (i === 3 && (label.startsWith("Meter") || label === "")) {
-                    // SOFT4: Meter 1 or Meter 2
+                } else if (i === 3 && (label.startsWith("Meter") || label === "METER 1" || label === "METER 2" || label.startsWith("GPS") || label === "")) {
+                    // SOFT4: Meter 1, Meter 2, GPS - 1, or GPS - 2
                     const activeMeter = state?.slm?.activeMeter || 1;
-                    label = `Meter ${activeMeter}`;
+                    console.log('[SCREEN-RENDERER] SOFT4 label rendering, activeMeter:', activeMeter, 'Type:', typeof activeMeter);
+                    if (activeMeter === 1 || activeMeter === "1") {
+                        label = "Meter 1";
+                    } else if (activeMeter === 2 || activeMeter === "2") {
+                        label = "Meter 2";
+                    } else if (activeMeter === "GPS-1" || activeMeter === "GPS - 1") {
+                        label = "GPS - 1";
+                    } else if (activeMeter === "GPS-2" || activeMeter === "GPS - 2") {
+                        label = "GPS - 2";
+                    } else {
+                        label = `Meter ${activeMeter}`; // Fallback
+                    }
+                    console.log('[SCREEN-RENDERER] SOFT4 rendered label:', label);
                 }
             }
             
@@ -1200,8 +1271,9 @@
             }
         }
 
-        // Render main area
+        // Render main area and status area
         let mainHTML = '';
+        let statusHTML = '';
         if (elements) {
             elements.forEach(element => {
                 // Skip softKeyRow - it's metadata, not rendered content
@@ -1221,7 +1293,15 @@
                         }
                     }
                 }
-                mainHTML += renderElement(element, state);
+                
+                // Render icons and timers with position="top-left" or "top-right" into status area
+                // All other elements go into main area
+                const rendered = renderElement(element, state);
+                if ((element.type === 'icon' || element.type === 'timer') && element.position && (element.position === 'top-left' || element.position === 'top-right')) {
+                    statusHTML += rendered;
+                } else {
+                    mainHTML += rendered;
+                }
             });
         }
 
@@ -1230,7 +1310,7 @@
 
         return {
             mainHTML,
-            statusHTML: '', // Status area can be added later if needed
+            statusHTML,
             softkeys
         };
     }
