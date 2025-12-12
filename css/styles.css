@@ -96,7 +96,10 @@ body {
     grid-template-rows: 14% 1fr 16%; /* status, main, softkey labels */
     pointer-events: none;
     /* Base font size scales with viewport height - LCD scales with device photo which scales with vh */
-    font-size: clamp(0.6rem, 1.2vh, 1rem); /* Scales between 0.6rem and 1rem based on viewport height */
+    /* Conservative scaling: keep text small and consistent, prevent growth at larger sizes */
+    /* Cap maximum at 0.85rem to keep text small, scale down to 0.4rem for very small windows */
+    /* Use the smaller of vh or vw scaling, but cap at 0.85rem maximum */
+    font-size: clamp(0.4rem, min(1.0vh, 1.5vw), 0.85rem); /* Stays small, doesn't grow beyond 0.85rem */
 }
 
 .lcd__status { 
@@ -111,7 +114,14 @@ body {
     overflow-y: auto; /* Allow scrolling if content exceeds visible area */
     overflow-x: hidden; /* Prevent horizontal scrolling */
     position: relative;
-    padding: 1.5em 1.5em 1.5em 0.5em; /* Scale relative to LCD base font size - reduced left padding */
+    padding: 1.2em 1.5em 1.2em 0.5em; /* Reduced top/bottom padding to fit more content */
+    min-width: 0; /* Allow flex/grid item to shrink below content size */
+    width: 100%; /* Ensure it respects container width */
+}
+
+/* Reduce top padding for SLM screens to move content up */
+.lcd__main--slm {
+    padding-top: 0.3em !important; /* Minimal top padding for SLM screens */
 }
 .lcd__softkeys { 
     background: var(--lcd-softkeys-bg);
@@ -421,12 +431,15 @@ body {
 }
 
 .screen-element--title {
-    font-size: 1.3em; /* Scale relative to LCD base font size */
+    font-size: clamp(1.1em, 1.3em, 1.3em); /* Scale relative to LCD base font size with responsive clamp */
     font-weight: 600;
     color: #e6e6e6;
     margin-bottom: 0.5em;
     white-space: nowrap; /* Prevent wrapping */
     padding-left: 0; /* No left padding to align with menu items */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 /* Smaller title font for AUTO RUN Timed Run to fit on screen */
@@ -570,14 +583,18 @@ body {
 .menu-item {
     font-size: 1em; /* Scale relative to LCD base font size */
     color: #888888;
-    padding: 0.02em 0.6em 0.02em 0; /* Minimal vertical padding to reduce line spacing - no left padding */
-    margin-bottom: 0.05em; /* Minimal margin to reduce line spacing */
+    padding: 0.01em 0.6em 0.01em 0; /* Even more minimal vertical padding to fit more items */
+    margin-bottom: 0.03em; /* Reduced margin to fit more items */
     cursor: default;
     transition: background-color 0.15s ease, color 0.15s ease;
     display: flex;
     align-items: center;
     white-space: nowrap; /* Prevent wrapping - text should scale instead */
-    min-height: 1.5em; /* Consistent height to prevent vertical shifting */
+    min-height: 1.4em; /* Slightly reduced height to fit more items */
+    overflow: hidden; /* Prevent overflow */
+    text-overflow: ellipsis; /* Show ellipsis if text is too long */
+    max-width: 100%; /* Ensure it doesn't exceed container */
+    line-height: 1.2; /* Tighter line height to fit more content */
 }
 
 .menu-item--meter-set {
@@ -594,6 +611,9 @@ body {
 .menu-item__title {
     flex: 1;
     text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0; /* Allow flex item to shrink */
 }
 
 /* Center title and value when used in date display */
@@ -867,6 +887,127 @@ body {
     line-height: 1.2;
     align-items: center;
     width: 100%;
+}
+
+/* SLM Status Bar */
+.screen-element--status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4em 0.5em; /* Increased vertical padding for proper height */
+    width: 100%;
+    min-height: 2em; /* Ensure minimum height for status bar */
+    margin-bottom: 0.2em; /* Small gap before bar graph */
+}
+
+.status-bar__battery {
+    width: 1.4em; /* Horizontal width - almost as wide as green bar (1.5em) */
+    height: 1.0em; /* Vertical height - doubled from 0.5em */
+    background-color: #4ade80; /* Green for full battery */
+    border: 1px solid #3a8a5a; /* Slightly darker green border */
+    border-radius: 0.1em; /* Slight rounding */
+    flex-shrink: 0; /* Prevent shrinking */
+    display: block;
+}
+
+.status-bar__play-icon,
+.status-bar__pause-icon,
+.status-bar__stop-icon {
+    font-size: 2.2em; /* Doubled from 1.1em */
+    color: #e6e6e6;
+    margin-left: 0.5em;
+}
+
+.status-bar__timer {
+    font-size: 1.8em; /* Doubled from 0.9em */
+    color: #e6e6e6;
+    font-family: 'Courier New', monospace;
+}
+
+/* SLM Bar Graph */
+.screen-element--bar-graph {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0.2em 0.5em; /* Reduced padding to move content up */
+    margin-bottom: 0.2em; /* Small gap before main readout */
+}
+
+.bar-graph__labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.7em; /* Doubled from 0.85em */
+    color: #888888;
+    margin-bottom: 0.2em;
+}
+
+.bar-graph__min-label {
+    text-align: left;
+}
+
+.bar-graph__max-label {
+    text-align: right;
+}
+
+.bar-graph__container {
+    width: 100%;
+    height: 3em; /* Doubled from 1.5em to match larger labels */
+    background-color: #2a3340;
+    border: 1px solid #3a4450;
+    position: relative;
+    overflow: hidden;
+}
+
+.bar-graph__fill {
+    height: 100%;
+    background-color: #4ade80; /* Green fill */
+    transition: width 0.1s ease;
+    min-width: 0;
+}
+
+/* SLM Main Readout */
+.screen-element--main-readout {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    padding: 0.5em;
+    width: 100%;
+}
+
+.main-readout__value {
+    font-size: 3.5em;
+    font-weight: 600;
+    color: #e6e6e6;
+    line-height: 1;
+    font-family: 'Courier New', monospace;
+    margin-right: 0.3em;
+}
+
+.main-readout__units {
+    font-size: 1.2em;
+    color: #888888;
+    vertical-align: baseline;
+}
+
+/* Timer positioning */
+.screen-element--timer {
+    font-size: 0.9em;
+    color: #e6e6e6;
+    font-family: 'Courier New', monospace;
+}
+
+.screen-element--timer-top-right {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    z-index: 10;
+}
+
+/* Softkey underline for active selections */
+.softkey-underline {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
 }
 
 

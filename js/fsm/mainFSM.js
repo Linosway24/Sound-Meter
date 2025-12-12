@@ -234,7 +234,15 @@
             comms: { editing: false, selectedIndex: 0, usbMode: "Mass Storage", usbModeIndex: 0, rs232Mode: "Serial", rs232ModeIndex: 0, baudRate: 9600, baudRateIndex: 1 }, // baudRateIndex 1 = 9600 (second option in BAUD_RATE_OPTIONS)
         battery: { type: "ALK" }, // "ALK" or "NiMH"
         flags: { locked: false },
-        measurement: { runtime: 0, state: "stopped", isRunning: false },
+        measurement: { runtime: 0, state: "stopped", isRunning: false, currentSPL: 0 },
+        slm: {
+            currentPage: 1,           // 1-4
+            mode: 'numeric',          // 'numeric', '1of1', '1of3'
+            timeConstant: 'S',       // 'F', 'S', 'I'
+            weighting: 'R',          // 'R', 'C', 'Z', 'F'
+            activeMeter: 1,         // 1 or 2
+            units: 'LZS'            // Format string for units display
+        },
         history: [],
         previousViewId: null // For navigation back from cal/files/etc
     };
@@ -310,7 +318,11 @@
     }
 
     function isSlm() {
-        return _state.viewId === "slm_home" || _state.viewId === "slm_home_paused" || _state.viewId === "slm_home_stopped";
+        return _state.viewId && (
+            _state.viewId.startsWith("slm_home") ||
+            _state.viewId.startsWith("slm_graph_1of1") ||
+            _state.viewId.startsWith("slm_graph_1of3")
+        );
     }
 
     function isInSetup() {
@@ -326,6 +338,45 @@
 
     function isInFiles() {
         return _state.viewId.startsWith("files_");
+    }
+    
+    /**
+     * Get SLM screen ID based on page, mode, and run state
+     * @param {number} page - Page number (1-4)
+     * @param {string} mode - Mode ('numeric', '1of1', '1of3')
+     * @param {string} runState - Run state ('running', 'paused', 'stopped')
+     * @returns {string} Screen ID
+     */
+    function getSlmScreenId(page, mode, runState) {
+        // Graph modes always include page suffix, even for page 1
+        if (mode === '1of1' || mode === '1of3') {
+            const pageSuffix = `_page${page}`; // Always include page suffix for graph modes
+            const stateSuffix = runState === 'running' ? '_running' : runState === 'paused' ? '_paused' : '_stopped';
+            const prefix = mode === '1of1' ? 'slm_graph_1of1' : 'slm_graph_1of3';
+            return `${prefix}${pageSuffix}${stateSuffix}`;
+        } else {
+            // Numeric mode: page 1 has special naming (no suffix for running), pages 2-4 always include state suffix
+            const pageSuffix = page === 1 ? '' : `_page${page}`;
+            let stateSuffix;
+            if (page === 1) {
+                // Page 1: running has no suffix, paused/stopped have suffix
+                stateSuffix = runState === 'running' ? '' : runState === 'paused' ? '_paused' : '_stopped';
+            } else {
+                // Pages 2-4: always include state suffix
+                stateSuffix = runState === 'running' ? '_running' : runState === 'paused' ? '_paused' : '_stopped';
+            }
+            return `slm_home${pageSuffix}${stateSuffix}`;
+        }
+    }
+    
+    /**
+     * Update SLM screen based on current page, mode, and run state
+     */
+    function updateSlmScreen() {
+        const page = _state.slm?.currentPage || 1;
+        const mode = _state.slm?.mode || 'numeric';
+        const runState = _state.measurement?.state || 'stopped';
+        _state.viewId = getSlmScreenId(page, mode, runState);
     }
 
     function initMainFSM() {
@@ -400,7 +451,15 @@
                 levelFocus: "title" // "title" | "upper" | "lower" - which part of LEVEL is focused
             },
             flags: { locked: false },
-            measurement: { runtime: 0, state: "stopped", isRunning: false },
+            measurement: { runtime: 0, state: "stopped", isRunning: false, currentSPL: 0 },
+            slm: {
+                currentPage: 1,           // 1-4
+                mode: 'numeric',          // 'numeric', '1of1', '1of3'
+                timeConstant: 'S',       // 'F', 'S', 'I'
+                weighting: 'R',          // 'R', 'C', 'Z', 'F'
+                activeMeter: 1,         // 1 or 2
+                units: 'LZS'            // Format string for units display
+            },
             history: [],
             previousViewId: null
         };
@@ -426,7 +485,8 @@
         _state.timers.stopHold = setTimeout(() => {
             _state.measurement.state = "stopped";
             _state.measurement.isRunning = false;
-            _state.viewId = "slm_home_stopped";
+            _stopMeasurementTimer();
+            updateSlmScreen();
             _clearTimer('stopHold');
             if (window.Config && window.Config.ENABLE_TOASTS) {
                 _showToast("Saved & cleared", 2000);
@@ -468,6 +528,11 @@
                 break;
 
             case "UP":
+                // UP/DOWN do not handle SLM page navigation - ENTER cycles pages
+                if (isSlm()) {
+                    // UP/DOWN have no effect on page navigation in SLM mode
+                    break;
+                }
                 if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
                     const item = _state.meterSet.items[_state.meterSet.selectedIndex];
                     // Only adjust value if focus is "value" AND item is enabled (not showing "off")
@@ -886,6 +951,11 @@
                 break;
 
             case "DOWN":
+                // UP/DOWN do not handle SLM page navigation - ENTER cycles pages
+                if (isSlm()) {
+                    // UP/DOWN have no effect on page navigation in SLM mode
+                    break;
+                }
                 if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
                     const item = _state.meterSet.items[_state.meterSet.selectedIndex];
                     // Only adjust value if focus is "value" AND item is enabled (not showing "off")
@@ -1856,10 +1926,19 @@
                 break;
 
             case "ENTER":
+                // SLM page navigation (ENTER cycles pages 1-4)
+                if (isSlm() && _state.viewId !== "stop_confirm") {
+                    // Cycle to next page: 1→2, 2→3, 3→4, 4→1
+                    _state.slm.currentPage = ((_state.slm.currentPage || 1) % 4) + 1;
+                    updateSlmScreen();
+                    console.log(`[SLM] ENTER: Page ${_state.slm.currentPage}, Mode: ${_state.slm.mode}`);
+                    _emit();
+                    break;
+                }
                 if (_state.viewId === "stop_confirm") {
                     // Cancel stop confirmation
                     _clearTimer('stopHold');
-                    _state.viewId = _state.measurement.state === "running" ? "slm_home" : "slm_home_paused";
+                    updateSlmScreen();
                     _emit();
                 } else if (_state.viewId === "slm_view_menu") {
                     const item = SLM_VIEW_ITEMS[_state.menu.selectedIndex];
@@ -1872,7 +1951,8 @@
                         _state.viewId = "home_screen_running";
                         _emit();
                     } else if (item === "VIEW SESSION") {
-                        _state.viewId = "slm_home";
+                        // Return to current SLM screen (preserve page and mode)
+                        updateSlmScreen();
                         _emit();
                     }
                 } else if (_state.viewId === "setup_menu") {
@@ -2717,12 +2797,24 @@
                     } else if (item === "VIEW CURRENT STUDY") {
                         _state.measurement.state = "running";
                         _state.measurement.isRunning = true;
+                        _state.measurement.runtime = 0; // Reset runtime when starting new measurement
+                        _startMeasurementTimer();
                         _state.viewId = "home_screen_running";
                         _emit();
                     } else if (item === "VIEW SESSION") {
-                        _state.measurement.state = "running";
-                        _state.measurement.isRunning = true;
-                        _state.viewId = "slm_home";
+                        // Don't change measurement state - preserve current state (stopped/running/paused)
+                        // Set SLM mode based on slmLabelIndex
+                        const modeMap = { 0: 'numeric', 1: '1of1', 2: '1of3' };
+                        _state.slm.mode = modeMap[_state.slmLabelIndex] || 'numeric';
+                        _state.slm.currentPage = 1;
+                        // Ensure measurement state is preserved (don't override if already set)
+                        // If measurement state is not set, default to stopped
+                        if (!_state.measurement.state) {
+                            _state.measurement.state = "stopped";
+                            _state.measurement.isRunning = false;
+                        }
+                        updateSlmScreen();
+                        console.log('[FSM] VIEW SESSION: mode=', _state.slm.mode, 'page=', _state.slm.currentPage, 'measurement.state=', _state.measurement.state, 'viewId=', _state.viewId);
                         _emit();
                     } else if (item === "SETUP") {
                         _pushHistory("setup_menu");
@@ -2735,17 +2827,23 @@
                         _emit();
                     }
                 } else if (_state.viewId === "home_screen_running") {
-                    _state.viewId = "slm_home";
+                    // Set SLM mode based on slmLabelIndex
+                    const modeMap = { 0: 'numeric', 1: '1of1', 2: '1of3' };
+                    _state.slm.mode = modeMap[_state.slmLabelIndex] || 'numeric';
+                    _state.slm.currentPage = 1;
+                    updateSlmScreen();
                     _emit();
-                } else if (_state.viewId === "slm_home" && _state.measurement.state === "running") {
+                } else if (isSlm() && _state.measurement.state === "running") {
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
-                    _state.viewId = "slm_home_paused";
+                    // Timer keeps running but won't increment (checks isRunning)
+                    updateSlmScreen();
                     _emit();
-                } else if (_state.viewId === "slm_home_paused") {
+                } else if (isSlm() && _state.measurement.state === "paused") {
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
-                    _state.viewId = "slm_home";
+                    // Timer already running, will resume incrementing
+                    updateSlmScreen();
                     _emit();
                 }
                 break;
@@ -2754,7 +2852,7 @@
                 console.log(`[FSM] ESC pressed - viewId: ${_state.viewId}, sigInput.editing: ${_state.sigInput?.editing}, sigInput.focus: ${_state.sigInput?.focus}`);
                 if (_state.viewId === "stop_confirm") {
                     _clearTimer('stopHold');
-                    _state.viewId = _state.measurement.state === "running" ? "slm_home" : "slm_home_paused";
+                    updateSlmScreen();
                     _emit();
                 } else if (_state.viewId === "cal_running") {
                     _clearTimer('cal');
@@ -2997,39 +3095,86 @@
                     _state.viewId = previousView;
                     _emit();
                 } else if (isSlm()) {
-                    _state.measurement.state = "stopped";
-                    _state.measurement.isRunning = false;
-                    _state.viewId = "home_screen";
+                    // Preserve measurement state when returning to home from SLM screens
+                    const measurementState = _state.measurement?.state || "stopped";
+                    const backlight = _state.backlight;
+                    
+                    if (measurementState === "running") {
+                        // Keep timer running and state as-is
+                        // Don't modify measurement.state or isRunning - preserve them
+                        // Use home_screen or home_screen_dim - status bar will show play icon based on state
+                        _state.viewId = backlight ? "home_screen" : "home_screen_dim";
+                    } else if (measurementState === "paused") {
+                        // Timer should still be running but paused (isRunning = false)
+                        // Don't stop timer - it keeps running but won't increment
+                        // Use home_screen or home_screen_dim based on backlight
+                        _state.viewId = backlight ? "home_screen" : "home_screen_dim";
+                    } else {
+                        // Stopped - stop timer and use home_screen or home_screen_dim
+                        _state.measurement.state = "stopped";
+                        _state.measurement.isRunning = false;
+                        _stopMeasurementTimer();
+                        _state.viewId = backlight ? "home_screen" : "home_screen_dim";
+                    }
                     _emit();
                 }
                 break;
 
             case "RUN":
             case "RUNPAUSE":
-                if (isHome() || _state.viewId === "slm_home_stopped") {
-                    _state.measurement.state = "running";
-                    _state.measurement.isRunning = true;
-                    _state.viewId = "slm_home";
+                if (isHome()) {
+                    // Toggle play/pause on home screen - stay on home screen
+                    if (_state.measurement.state === "stopped") {
+                        _state.measurement.state = "running";
+                        _state.measurement.isRunning = true;
+                        _state.measurement.runtime = 0; // Reset runtime when starting new measurement
+                        _startMeasurementTimer();
+                    } else if (_state.measurement.state === "running") {
+                        _state.measurement.state = "paused";
+                        _state.measurement.isRunning = false;
+                        // Timer keeps running but won't increment (checks isRunning)
+                    } else if (_state.measurement.state === "paused") {
+                        _state.measurement.state = "running";
+                        _state.measurement.isRunning = true;
+                        // Timer already running, will resume incrementing
+                    }
+                    // Stay on home screen - don't call updateSlmScreen()
                     _emit();
-                } else if (_state.viewId === "slm_home_paused") {
+                } else if (isSlm() && _state.measurement.state === "stopped") {
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
-                    _state.viewId = "slm_home";
+                    _state.measurement.runtime = 0; // Reset runtime when starting new measurement
+                    _startMeasurementTimer();
+                    updateSlmScreen();
+                    _emit();
+                } else if (isSlm() && _state.measurement.state === "running") {
+                    // Toggle to paused on SLM screen
+                    _state.measurement.state = "paused";
+                    _state.measurement.isRunning = false;
+                    // Timer keeps running but won't increment (checks isRunning)
+                    updateSlmScreen();
+                    _emit();
+                } else if (isSlm() && _state.measurement.state === "paused") {
+                    _state.measurement.state = "running";
+                    _state.measurement.isRunning = true;
+                    // Timer already running, will resume incrementing
+                    updateSlmScreen();
                     _emit();
                 }
                 break;
 
             case "PAUSE":
-                if (_state.viewId === "slm_home" && _state.measurement.state === "running") {
+                if (isSlm() && _state.measurement.state === "running") {
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
-                    _state.viewId = "slm_home_paused";
+                    // Timer keeps running but won't increment (checks isRunning)
+                    updateSlmScreen();
                     _emit();
                 }
                 break;
 
             case "STOP_DOWN":
-                if (_state.viewId === "slm_home" || _state.viewId === "slm_home_paused") {
+                if (isSlm() && (_state.measurement.state === "paused" || _state.measurement.state === "running")) {
                     _startStopHoldTimer();
                 }
                 break;
@@ -3037,7 +3182,7 @@
             case "STOP_UP":
                 if (_state.viewId === "stop_confirm") {
                     _clearTimer('stopHold');
-                    _state.viewId = _state.measurement.state === "running" ? "slm_home" : "slm_home_paused";
+                    updateSlmScreen();
                     _emit();
                 }
                 break;
@@ -3088,6 +3233,18 @@
                 break;
 
             case "SOFT2":
+                // SLM SOFT2: Cycle F/S/I (time constant)
+                if (isSlm()) {
+                    const timeConstants = ['F', 'S', 'I'];
+                    const currentIndex = timeConstants.indexOf(_state.slm.timeConstant || 'S');
+                    const nextIndex = (currentIndex + 1) % timeConstants.length;
+                    _state.slm.timeConstant = timeConstants[nextIndex];
+                    // Update units format
+                    _state.slm.units = `L${_state.slm.timeConstant}S`;
+                    console.log(`[SLM] SOFT2: Time constant = ${_state.slm.timeConstant}`);
+                    _emit();
+                    break;
+                }
                 if (_state.viewId === "battery_menu") {
                     // SOFT2 = NiMH on battery menu
                     _state.battery.type = "NiMH";
@@ -3120,8 +3277,8 @@
                     _state.autoRunDate.selectedIndex = 1; // Select line 2
                     console.log(`[AUTO RUN DATE] SOFT2: Line 2 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
-                } else if (isSlm() || isHome()) {
-                    // SOFT2 = CAL (Calibration) on SLM or Home screens
+                } else if (isHome()) {
+                    // SOFT2 = CAL (Calibration) on Home screen
                     console.log('[FSM] SOFT2 pressed → Navigating to cal_menu');
                     _state.previousViewId = _state.viewId;
                     _state.viewId = "cal_menu";
@@ -3132,8 +3289,23 @@
                 break;
 
             case "SOFT3":
-                if (isSlm() || isHome()) {
-                    // SOFT3 = FILE (Files menu)
+                // SLM SOFT3: Cycle R/C/Z/F (weighting)
+                if (isSlm()) {
+                    const weightings = ['R', 'C', 'Z', 'F'];
+                    const currentIndex = weightings.indexOf(_state.slm.weighting || 'R');
+                    const nextIndex = (currentIndex + 1) % weightings.length;
+                    _state.slm.weighting = weightings[nextIndex];
+                    // Update units format (R->L, C->C, Z->Z, F->F)
+                    const weightingMap = { 'R': 'L', 'C': 'C', 'Z': 'Z', 'F': 'F' };
+                    const w = weightingMap[_state.slm.weighting] || 'L';
+                    const tc = _state.slm.timeConstant || 'S';
+                    _state.slm.units = `${w}${tc}S`;
+                    console.log(`[SLM] SOFT3: Weighting = ${_state.slm.weighting}`);
+                    _emit();
+                    break;
+                }
+                if (isHome()) {
+                    // SOFT3 = FILE (Files menu) on Home screen
                     console.log('[FSM] SOFT3 pressed → Navigating to files_menu');
                     _state.viewId = "files_menu";
                     _state.menu.selectedIndex = 0;
@@ -3164,6 +3336,13 @@
                 break;
 
             case "SOFT4":
+                // SLM SOFT4: Toggle Meter 1/2
+                if (isSlm()) {
+                    _state.slm.activeMeter = _state.slm.activeMeter === 1 ? 2 : 1;
+                    console.log(`[SLM] SOFT4: Active meter = ${_state.slm.activeMeter}`);
+                    _emit();
+                    break;
+                }
                 if (_state.viewId === "auto_run_date_params") {
                     // SOFT4 = -4 / +4: enable/disable line 4 and select it
                     const line = _state.autoRunDate.lines[3];

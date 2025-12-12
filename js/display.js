@@ -82,7 +82,13 @@
 
         for (let i = 0; i < 4; i++) {
             if (softKeyLabelElements[i]) {
-                softKeyLabelElements[i].textContent = labels[i] || '';
+                const label = labels[i] || '';
+                // Use innerHTML if label contains HTML tags (for SLM softkey underlines)
+                if (label.includes('<') && label.includes('>')) {
+                    softKeyLabelElements[i].innerHTML = label;
+                } else {
+                    softKeyLabelElements[i].textContent = label;
+                }
             }
         }
     }
@@ -94,6 +100,12 @@
     function updateMainArea(html) {
         if (lcdMain) {
             lcdMain.innerHTML = html;
+            // Add class if this is an SLM screen (has status bar)
+            if (html.includes('screen-element--status-bar')) {
+                lcdMain.classList.add('lcd__main--slm');
+            } else {
+                lcdMain.classList.remove('lcd__main--slm');
+            }
         } else {
             console.warn('[DISPLAY] lcdMain element not found');
         }

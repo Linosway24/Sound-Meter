@@ -1034,7 +1034,123 @@
                     .replace('hh', String(hours).padStart(2, '0'))
                     .replace('mm', String(minutes).padStart(2, '0'))
                     .replace('ss', String(seconds).padStart(2, '0'));
-                return `<div id="${element.id}" class="screen-element screen-element--timer">${formatted}</div>`;
+                // Handle position attribute (e.g., "top-right")
+                const positionClass = element.position === 'top-right' ? 'screen-element--timer-top-right' : '';
+                return `<div id="${element.id}" class="screen-element screen-element--timer ${positionClass}">${formatted}</div>`;
+            
+            case 'statusBar':
+                // Status bar with battery icon, play/pause icon, and timer
+                const statusRuntime = element.timer?.bind ? 
+                    (() => {
+                        const bindPath = element.timer.bind.split('.');
+                        let value = state;
+                        for (const key of bindPath) {
+                            value = value?.[key];
+                        }
+                        const timerFormat = element.timer.format || 'hh:mm:ss';
+                        const timerHours = Math.floor((value || 0) / 3600);
+                        const timerMinutes = Math.floor(((value || 0) % 3600) / 60);
+                        const timerSeconds = (value || 0) % 60;
+                        return timerFormat
+                            .replace('hh', String(timerHours).padStart(2, '0'))
+                            .replace('mm', String(timerMinutes).padStart(2, '0'))
+                            .replace('ss', String(timerSeconds).padStart(2, '0'));
+                    })() : '00:00:00';
+                
+                const measurementState = state?.measurement?.state || 'stopped';
+                const isRunning = measurementState === 'running' || state?.measurement?.isRunning;
+                const isPaused = measurementState === 'paused';
+                const isStopped = measurementState === 'stopped';
+                
+                const showPlayIcon = element.playPauseIcon && isRunning;
+                const showPauseIcon = element.playPauseIcon && isPaused;
+                const showStopIcon = element.playPauseIcon && isStopped;
+                
+                let statusBarHtml = `<div id="${element.id}" class="screen-element screen-element--status-bar">`;
+                if (element.batteryIcon) {
+                    statusBarHtml += `<div class="status-bar__battery"></div>`;
+                }
+                if (showPlayIcon) {
+                    statusBarHtml += `<span class="status-bar__play-icon">▶</span>`;
+                } else if (showPauseIcon) {
+                    statusBarHtml += `<span class="status-bar__pause-icon">⏸</span>`;
+                } else if (showStopIcon) {
+                    statusBarHtml += `<span class="status-bar__stop-icon">■</span>`;
+                }
+                if (element.timer) {
+                    statusBarHtml += `<span class="status-bar__timer">${statusRuntime}</span>`;
+                }
+                statusBarHtml += `</div>`;
+                return statusBarHtml;
+            
+            case 'barGraph':
+                // Horizontal bar graph with range indicators
+                const currentValue = element.bind ? 
+                    (() => {
+                        const bindPath = element.bind.split('.');
+                        let value = state;
+                        for (const key of bindPath) {
+                            value = value?.[key];
+                        }
+                        return value || 0;
+                    })() : 0;
+                
+                const minValue = element.minValue || -20;
+                const maxValue = element.maxValue || 70;
+                const range = maxValue - minValue;
+                const normalizedValue = Math.max(minValue, Math.min(maxValue, currentValue));
+                const percentage = ((normalizedValue - minValue) / range) * 100;
+                
+                let barGraphHtml = `<div id="${element.id}" class="screen-element screen-element--bar-graph">`;
+                barGraphHtml += `<div class="bar-graph__labels">`;
+                barGraphHtml += `<span class="bar-graph__min-label">${element.minLabel || minValue}</span>`;
+                barGraphHtml += `<span class="bar-graph__max-label">${element.maxLabel || maxValue}</span>`;
+                barGraphHtml += `</div>`;
+                barGraphHtml += `<div class="bar-graph__container">`;
+                barGraphHtml += `<div class="bar-graph__fill" style="width: ${percentage}%"></div>`;
+                barGraphHtml += `</div>`;
+                barGraphHtml += `</div>`;
+                return barGraphHtml;
+            
+            case 'mainReadout':
+                // Main dB readout with large digits and units
+                const readoutValue = element.bind ? 
+                    (() => {
+                        const bindPath = element.bind.split('.');
+                        let value = state;
+                        for (const key of bindPath) {
+                            value = value?.[key];
+                        }
+                        return typeof value === 'number' ? value.toFixed(1) : (value || '0.0');
+                    })() : '0.0';
+                
+                // Format units based on SLM state
+                let unitsText = 'dB';
+                if (element.units) {
+                    const weighting = state?.slm?.weighting || 'R';
+                    const timeConstant = state?.slm?.timeConstant || 'S';
+                    // Map weighting: R->L (Linear), C->C, Z->Z, F->F
+                    const weightingMap = { 'R': 'L', 'C': 'C', 'Z': 'Z', 'F': 'F' };
+                    const timeConstantMap = { 'F': 'F', 'S': 'S', 'I': 'I' };
+                    const w = weightingMap[weighting] || 'L';
+                    const tc = timeConstantMap[timeConstant] || 'S';
+                    // Format: dB LZS (L=weighting, Z=zero/weighting, S=time constant)
+                    // For now, use simple format: dB LZS where L=Linear, Z=Zero, S=Slow
+                    if (w === 'L' && tc === 'S') {
+                        unitsText = 'dB LZS';
+                    } else if (w === 'L' && tc === 'F') {
+                        unitsText = 'dB LZF';
+                    } else if (w === 'L' && tc === 'I') {
+                        unitsText = 'dB LZI';
+                    } else {
+                        unitsText = `dB ${w}${tc}`;
+                    }
+                }
+                
+                return `<div id="${element.id}" class="screen-element screen-element--main-readout">`
+                    + `<span class="main-readout__value">${readoutValue}</span>`
+                    + `<span class="main-readout__units">${unitsText}</span>`
+                    + `</div>`;
             
             case 'softKeyRow':
                 // Metadata element, not rendered (soft keys rendered separately)
@@ -1124,9 +1240,52 @@
                 const line = state?.autoRunDate?.lines?.[lineIdx];
                 label = line?.enabled ? `+${lineIdx + 1}` : `-${lineIdx + 1}`;
             }
+            // SLM softkey handling with underlines
+            else if (isSlmScreen(state?.viewId)) {
+                if (i === 1 && label === "F-S-I") {
+                    // Softkey 2: F-S-I with underline
+                    const timeConstant = state?.slm?.timeConstant || 'S';
+                    const letters = ['F', 'S', 'I'];
+                    const activeIndex = letters.indexOf(timeConstant);
+                    label = letters.map((letter, idx) => {
+                        if (idx === activeIndex) {
+                            return `<span class="softkey-underline">${letter}</span>`;
+                        }
+                        return letter;
+                    }).join('-');
+                } else if (i === 2 && label === "R-C-Z-F") {
+                    // Softkey 3: R-C-Z-F with underline
+                    const weighting = state?.slm?.weighting || 'R';
+                    const letters = ['R', 'C', 'Z', 'F'];
+                    const activeIndex = letters.indexOf(weighting);
+                    label = letters.map((letter, idx) => {
+                        if (idx === activeIndex) {
+                            return `<span class="softkey-underline">${letter}</span>`;
+                        }
+                        return letter;
+                    }).join('-');
+                } else if (i === 3 && label.startsWith("METER")) {
+                    // Softkey 4: METER 1 or METER 2
+                    const activeMeter = state?.slm?.activeMeter || 1;
+                    label = `METER ${activeMeter}`;
+                }
+            }
             labels.push(label);
         }
         return labels;
+    }
+    
+    /**
+     * Check if current screen is an SLM screen
+     * @param {string} viewId - Current view ID
+     * @returns {boolean}
+     */
+    function isSlmScreen(viewId) {
+        return viewId && (
+            viewId.startsWith('slm_home') ||
+            viewId.startsWith('slm_graph_1of1') ||
+            viewId.startsWith('slm_graph_1of3')
+        );
     }
 
     /**
@@ -1158,6 +1317,10 @@
 
         // Render main area
         let mainHTML = '';
+        // Separate elements by type to control rendering order
+        let positionedElements = []; // Elements with position (e.g., top-right timer)
+        let regularElements = []; // Regular flow elements
+        
         if (elements) {
             elements.forEach(element => {
                 // Skip softKeyRow - it's metadata, not rendered content
@@ -1177,6 +1340,22 @@
                         }
                     }
                 }
+                
+                // Separate positioned elements from regular flow elements
+                if (element.position) {
+                    positionedElements.push(element);
+                } else {
+                    regularElements.push(element);
+                }
+            });
+            
+            // Render regular elements first (title, menu, etc.)
+            regularElements.forEach(element => {
+                mainHTML += renderElement(element, state);
+            });
+            
+            // Render positioned elements last (so they appear on top)
+            positionedElements.forEach(element => {
                 mainHTML += renderElement(element, state);
             });
         }

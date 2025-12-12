@@ -167,12 +167,19 @@
                 const fsmState = window.getMainFSMState?.();
                 const viewId = fsmState?.viewId;
                 
-                if (viewId === "logging_menu" || viewId === "auto_run_date_params") {
-                    // On logging menu or date params screen, send SOFT4
+                // Check if SLM screen (same logic as isSlm() in mainFSM.js)
+                const isSlmScreen = viewId && (
+                    viewId.startsWith("slm_home") ||
+                    viewId.startsWith("slm_graph_1of1") ||
+                    viewId.startsWith("slm_graph_1of3")
+                );
+                
+                if (isSlmScreen || viewId === "logging_menu" || viewId === "auto_run_date_params") {
+                    // On SLM screens, logging menu, or date params screen, send SOFT4
                     console.log(`[BUTTON] Soft Key 4: (via mainFSM)`);
                     window.dispatch({ type: 'SOFT4' });
                 } else {
-                    // On home or SLM screens, send LOCK_SOFTKEY
+                    // On other screens (home, etc.), send LOCK_SOFTKEY
                     console.log('[BUTTON] Soft Key 4: Lock menu (via mainFSM)');
                     window.dispatch({ type: 'LOCK_SOFTKEY' });
                 }
