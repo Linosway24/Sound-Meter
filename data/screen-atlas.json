@@ -1724,7 +1724,27 @@
       "title": "Files",
       "mode": "MENU",
       "referenceImage": "Capture/operational/files_menu.jpeg",
-      "elements": [],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        { "type": "title", "id": "screen_title", "text": "\\FILE" },
+        { "type": "divider", "id": "title_rule" },
+        {
+          "type": "textList",
+          "id": "files_menu_list",
+          "items": [
+            "SESSION DIRECTORY",
+            "CONFIG DIRECTORY",
+            "RENAME LAST SESSION",
+            "SAVE CONFIG FILE",
+            "FORMAT CARD"
+          ],
+          "bind": "menu.selectedIndex"
+        }
+      ],
       "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
@@ -1734,8 +1754,28 @@
       "title": "Session Directory",
       "mode": "MENU",
       "referenceImage": "Capture/operational/files_session_dir.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        { "type": "label", "id": "data_file_label", "text": "\\DATA File" },
+        {
+          "type": "fileList",
+          "id": "session_file_list",
+          "bind": "files.sessionFiles",
+          "selectedIndex": "files.sessionDir.selectedIndex",
+          "scrollOffset": "files.sessionDir.scrollOffset"
+        },
+        {
+          "type": "graph",
+          "id": "session_dir_graph",
+          "style": "timeline"
+        },
+        { "type": "softKeyRow", "id": "softkeys", "labels": ["DELETE", "", "LOAD", "more..."] }
+      ],
+      "softkeys": ["DELETE", "", "LOAD", "more..."],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -1744,7 +1784,21 @@
       "title": "Config Directory",
       "mode": "MENU",
       "referenceImage": "Capture/operational/files_config_dir.jpeg",
-      "elements": [],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        { "type": "label", "id": "setup_file_label", "text": "\\SETUP FILE" },
+        {
+          "type": "fileList",
+          "id": "config_file_list",
+          "bind": "files.configFiles",
+          "selectedIndex": "files.configDir.selectedIndex",
+          "scrollOffset": "files.configDir.scrollOffset"
+        }
+      ],
       "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
@@ -1754,9 +1808,30 @@
       "title": "Rename Last Session",
       "mode": "MENU",
       "referenceImage": "Capture/operational/files_rename_last.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
-      "keys": ["enter", "esc"],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        { "type": "label", "id": "data_file_label", "text": "\\DATA FILE" },
+        { "type": "divider", "id": "divider_1" },
+        { "type": "label", "id": "file_name_label", "text": "FILE NAME", "highlighted": true },
+        {
+          "type": "textInput",
+          "id": "rename_input",
+          "bind": "files.renameLastSession.filename",
+          "cursorPosition": "files.renameLastSession.cursorPosition",
+          "editing": "files.renameLastSession.editing",
+          "centered": true
+        },
+        { "type": "divider", "id": "divider_2" },
+        { "type": "label", "id": "save_label", "text": "SAVE", "align": "left" },
+        { "type": "label", "id": "dir_label", "text": "DIR.", "align": "right" },
+        { "type": "softKeyRow", "id": "softkeys", "labels": ["0.....9", "A.....H", "I.....Q", "R.....Z"] }
+      ],
+      "softkeys": ["0.....9", "A.....H", "I.....Q", "R.....Z"],
+      "keys": ["left", "right", "enter", "esc", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "backspace"],
       "display": { "backlight": true }
     },
     {
@@ -1764,9 +1839,30 @@
       "title": "Save Config File",
       "mode": "MENU",
       "referenceImage": "Capture/operational/files_save_config.jpeg",
-      "elements": [],
-      "softkeys": ["", "", "", ""],
-      "keys": ["enter", "esc"],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        { "type": "label", "id": "setup_file_label", "text": "\\SETUP FILE" },
+        { "type": "divider", "id": "divider_1" },
+        { "type": "label", "id": "file_name_label", "text": "FILE NAME", "highlighted": true },
+        {
+          "type": "textInput",
+          "id": "save_config_input",
+          "bind": "files.saveConfig.filename",
+          "cursorPosition": "files.saveConfig.cursorPosition",
+          "editing": "files.saveConfig.editing",
+          "centered": true
+        },
+        { "type": "divider", "id": "divider_2" },
+        { "type": "label", "id": "save_label", "text": "SAVE", "align": "left" },
+        { "type": "label", "id": "dir_label", "text": "DIR.", "align": "right" },
+        { "type": "softKeyRow", "id": "softkeys", "labels": ["0.....9", "A.....H", "I.....Q", "R.....Z"] }
+      ],
+      "softkeys": ["0.....9", "A.....H", "I.....Q", "R.....Z"],
+      "keys": ["left", "right", "enter", "esc", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "backspace"],
       "display": { "backlight": true }
     },
     {
@@ -1774,19 +1870,285 @@
       "title": "Format Card",
       "mode": "MENU",
       "referenceImage": "Capture/operational/files_format_card.jpeg",
-      "elements": [],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "format_title",
+          "text": "\\FORMAT"
+        },
+        {
+          "type": "textList",
+          "id": "format_options_list",
+          "items": [
+            "QUICK FORMAT",
+            "FULL FORMAT"
+          ],
+          "bind": "files.formatCard.selectedIndex"
+        },
+        {
+          "type": "label",
+          "id": "warning_label",
+          "text": "*** WARNING ***"
+        },
+        {
+          "type": "label",
+          "id": "warning_message",
+          "text": "ALL DATA WILL BE ERASED"
+        }
+      ],
       "softkeys": ["", "", "", ""],
-      "keys": [],
+      "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
     {
-      "id": "files_delete_confirm",
-      "title": "Delete Confirm",
+      "id": "files_format_status",
+      "title": "Format Status",
       "mode": "MENU",
       "referenceImage": "Capture/operational/files_delete_confirm.jpeg",
-      "elements": [],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "data_file_label",
+          "text": "\\DATA FILE"
+        },
+        {
+          "type": "label",
+          "id": "format_status_label",
+          "text": "",
+          "bind": "files.formatStatus.formatMessage"
+        },
+        {
+          "type": "divider",
+          "id": "divider_1"
+        },
+        {
+          "type": "divider",
+          "id": "divider_2"
+        },
+        {
+          "type": "graph",
+          "id": "format_status_graph",
+          "style": "timeline"
+        }
+      ],
       "softkeys": ["", "", "", ""],
-      "keys": ["enter", "esc"],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_delete_status",
+      "title": "Delete Status",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_delete_confirm.jpeg",
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "data_file_label",
+          "text": "\\DATA FILE"
+        },
+        {
+          "type": "label",
+          "id": "deleted_file_label",
+          "text": "",
+          "bind": "files.deleteStatus.deletedFileName"
+        },
+        {
+          "type": "divider",
+          "id": "divider_1"
+        },
+        {
+          "type": "divider",
+          "id": "divider_2"
+        },
+        {
+          "type": "graph",
+          "id": "delete_graph",
+          "style": "timeline"
+        }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_load_status",
+      "title": "Load Status",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_delete_confirm.jpeg",
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "data_file_label",
+          "text": "\\DATA FILE"
+        },
+        {
+          "type": "label",
+          "id": "loaded_file_label",
+          "text": "",
+          "bind": "files.loadStatus.loadedFileName"
+        },
+        {
+          "type": "divider",
+          "id": "divider_1"
+        },
+        {
+          "type": "divider",
+          "id": "divider_2"
+        },
+        {
+          "type": "graph",
+          "id": "load_graph",
+          "style": "timeline"
+        }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_rename_status",
+      "title": "Rename Status",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_delete_confirm.jpeg",
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "data_file_label",
+          "text": "\\DATA FILE"
+        },
+        {
+          "type": "label",
+          "id": "renamed_file_label",
+          "text": "",
+          "bind": "files.renameStatus.renamedFileName"
+        },
+        {
+          "type": "divider",
+          "id": "divider_1"
+        },
+        {
+          "type": "divider",
+          "id": "divider_2"
+        },
+        {
+          "type": "graph",
+          "id": "rename_graph",
+          "style": "timeline"
+        }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_save_config_status",
+      "title": "Save Config Status",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_delete_confirm.jpeg",
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "setup_file_label",
+          "text": "\\SETUP FILE"
+        },
+        {
+          "type": "label",
+          "id": "saved_file_label",
+          "text": "",
+          "bind": "files.saveConfigStatus.savedFileName"
+        },
+        {
+          "type": "divider",
+          "id": "divider_1"
+        },
+        {
+          "type": "divider",
+          "id": "divider_2"
+        },
+        {
+          "type": "graph",
+          "id": "save_config_graph",
+          "style": "timeline"
+        }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "files_error",
+      "title": "File Error",
+      "mode": "MENU",
+      "referenceImage": "Capture/operational/files_delete_confirm.jpeg",
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "data_file_label",
+          "text": "\\DATA FILE"
+        },
+        {
+          "type": "label",
+          "id": "error_line1_label",
+          "text": "",
+          "bind": "files.errorStatus.errorLine1"
+        },
+        {
+          "type": "label",
+          "id": "error_line2_label",
+          "text": "",
+          "bind": "files.errorStatus.errorLine2"
+        },
+        {
+          "type": "divider",
+          "id": "divider_1"
+        },
+        {
+          "type": "divider",
+          "id": "divider_2"
+        },
+        {
+          "type": "graph",
+          "id": "error_graph",
+          "style": "timeline"
+        }
+      ],
+      "softkeys": ["", "", "", ""],
+      "keys": ["esc"],
       "display": { "backlight": true }
     },
     {

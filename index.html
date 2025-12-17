@@ -87,6 +87,18 @@
     <!-- Initialize application -->
     <script>
         async function initializeApp() {
+            // Initialize display module first (sets up lcdMain, lcdStatus, etc.)
+            if (window.renderDisplay) {
+                // renderDisplay will call init() internally if needed
+                // But we need to ensure display is initialized
+                const lcdMain = document.querySelector('.lcd__main');
+                if (!lcdMain) {
+                    console.error('[INIT] LCD main element not found in DOM');
+                } else {
+                    console.log('[INIT] LCD main element found');
+                }
+            }
+            
             // Initialize screen renderer first (loads screen-atlas.json)
             if (window.initScreenRenderer) {
                 await window.initScreenRenderer();
@@ -102,47 +114,121 @@
                 }
                 
                 // Subscribe display to FSM state changes
-                if (window.subscribeMainFSM && window.renderDisplay) {
-                    window.subscribeMainFSM((state) => {
-                        // Render by viewId
-                        if (window.renderScreen) {
-                            const rendered = window.renderScreen(state.viewId, state);
-                            if (window.updateMainArea) {
-                                window.updateMainArea(rendered.mainHTML);
+                console.log('[INIT] Checking subscription setup...');
+                console.log('[INIT] window.subscribeMainFSM:', !!window.subscribeMainFSM);
+                console.log('[INIT] window.renderScreen:', !!window.renderScreen);
+                if (window.subscribeMainFSM && window.renderScreen) {
+                    console.log('[INIT] Setting up subscription...');
+                    const unsubscribe = window.subscribeMainFSM((state) => {
+                        try {
+                            // #region agent log
+                            fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:122',message:'subscription callback entry',data:{viewId:state.viewId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                            // #endregion
+                            console.log('[SUBSCRIBE] State changed, viewId:', state.viewId);
+                            // Update LCD power state CSS classes
+                            const lcd = document.querySelector('.lcd');
+                            if (lcd) {
+                                if (state.viewId === 'OFF') {
+                                    lcd.classList.add('lcd--powered-off');
+                                } else {
+                                    lcd.classList.remove('lcd--powered-off');
+                                }
                             }
+                            
+                            // Handle OFF state - clear display
+                            if (state.viewId === 'OFF') {
+                                if (window.updateMainArea) {
+                                    window.updateMainArea('');
+                                }
+                                if (window.updateStatusArea) {
+                                    window.updateStatusArea('');
+                                }
+                                if (window.updateSoftKeyLabels) {
+                                    window.updateSoftKeyLabels(['', '', '', '']);
+                                }
+                                if (window.updateDisplayBacklightState) {
+                                    window.updateDisplayBacklightState(false);
+                                }
+                                // Hide toast when off
+                                if (window.hideToast) {
+                                    window.hideToast();
+                                }
+                                return; // Don't render anything when OFF
+                            }
+                            
+                            // Render by viewId
+                            if (window.renderScreen) {
+                                // #region agent log
+                                fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:157',message:'subscription callback renderScreen',data:{viewId:state.viewId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                                // #endregion
+                                console.log('[SUBSCRIBE] Rendering screen:', state.viewId);
+                                const rendered = window.renderScreen(state.viewId, state);
+                                // #region agent log
+                                fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:160',message:'subscription renderScreen result',data:{viewId:state.viewId,mainHTMLLength:rendered?.mainHTML?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                                // #endregion
+                                console.log('[SUBSCRIBE] Rendered HTML length:', rendered.mainHTML ? rendered.mainHTML.length : 0);
+                                console.log('[SUBSCRIBE] Rendered HTML preview:', rendered.mainHTML ? rendered.mainHTML.substring(0, 200) : 'null');
+                                
+                                // Check if display functions are available
+                                if (!window.updateMainArea) {
+                                    console.error('[SUBSCRIBE] window.updateMainArea is not available!');
+                                }
+                                if (!window.updateStatusArea) {
+                                    console.error('[SUBSCRIBE] window.updateStatusArea is not available!');
+                                }
+                                if (!window.updateSoftKeyLabels) {
+                                    console.error('[SUBSCRIBE] window.updateSoftKeyLabels is not available!');
+                                }
+                                
+                                if (window.updateMainArea) {
+                                    console.log('[SUBSCRIBE] Calling updateMainArea...');
+                                    window.updateMainArea(rendered.mainHTML);
+                                }
+                                // Update status area with rendered content first
+                                if (window.updateStatusArea) {
+                                    window.updateStatusArea(rendered.statusHTML || '');
+                                }
+                                if (window.updateSoftKeyLabels) {
+                                    window.updateSoftKeyLabels(rendered.softkeys);
+                                }
+                            } else {
+                                console.error('[SUBSCRIBE] window.renderScreen is not available!');
+                            }
+                            
+                            // Set backlight state
+                            if (window.updateDisplayBacklightState) {
+                                window.updateDisplayBacklightState(state.backlight);
+                            }
+                            // Render toast if present
+                            if (window.renderToast && state.toast) {
+                                window.renderToast(state.toast);
+                            } else if (window.hideToast) {
+                                window.hideToast();
+                            }
+                            
+                            // Debug: Show selected index in status area (temporary until highlighting is implemented)
+                            // Only add debug text if statusHTML is empty (so it doesn't overwrite actual content)
                             if (window.updateStatusArea) {
-                                window.updateStatusArea(rendered.statusHTML);
+                                const statusEl = document.querySelector('.lcd__status');
+                                if (statusEl && (state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' || 
+                                    state.viewId === 'setup_menu' || state.viewId === 'files_menu' || state.viewId === 'slm_view_menu')) {
+                                    // Only show debug text if status area is empty (no actual status content)
+                                    const hasStatusContent = statusEl.innerHTML.trim().length > 0;
+                                    if (!hasStatusContent) {
+                                        const menuItems = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' ? 
+                                            ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION', 'SETUP', 'UNIT INFO'] :
+                                            state.viewId === 'setup_menu' ? 
+                                            ['METER SET', 'MEASURE', 'AUTO RUN', 'DATETIME', 'DIGITAL OUT', 'OPTIONS', 'SIG INPUT', 'LOGGING', 'COMMS', 'BATTERY', 'DISPLAY'] :
+                                            state.viewId === 'files_menu' ?
+                                            ['SESSION DIRECTORY', 'CONFIG DIRECTORY', 'RENAME LAST SESSION', 'SAVE CONFIG FILE', 'FORMAT CARD'] :
+                                            ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION'];
+                                        const selectedItem = menuItems[state.menu.selectedIndex] || 'N/A';
+                                        statusEl.innerHTML = `<span style="font-size: 10px; opacity: 0.7;">[${state.menu.selectedIndex}] ${selectedItem}</span>`;
+                                    }
+                                }
                             }
-                            if (window.updateSoftKeyLabels) {
-                                window.updateSoftKeyLabels(rendered.softkeys);
-                            }
-                        }
-                        // Set backlight state
-                        if (window.updateDisplayBacklightState) {
-                            window.updateDisplayBacklightState(state.backlight);
-                        }
-                        // Render toast if present
-                        if (window.renderToast && state.toast) {
-                            window.renderToast(state.toast);
-                        } else if (window.hideToast) {
-                            window.hideToast();
-                        }
-                        
-                        // Debug: Show selected index in status area (temporary until highlighting is implemented)
-                        if (window.updateStatusArea) {
-                            const statusEl = document.querySelector('.lcd__status');
-                            if (statusEl && (state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' || 
-                                state.viewId === 'setup_menu' || state.viewId === 'files_menu' || state.viewId === 'slm_view_menu')) {
-                                const menuItems = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' ? 
-                                    ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION', 'SETUP', 'UNIT INFO'] :
-                                    state.viewId === 'setup_menu' ? 
-                                    ['METER SET', 'MEASURE', 'AUTO RUN', 'DATETIME', 'DIGITAL OUT', 'OPTIONS', 'SIG INPUT', 'LOGGING', 'COMMS', 'BATTERY', 'DISPLAY'] :
-                                    state.viewId === 'files_menu' ?
-                                    ['SESSION DIRECTORY', 'CONFIG DIRECTORY', 'RENAME LAST SESSION', 'SAVE CONFIG FILE', 'FORMAT CARD'] :
-                                    ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION'];
-                                const selectedItem = menuItems[state.menu.selectedIndex] || 'N/A';
-                                statusEl.innerHTML = `<span style="font-size: 10px; opacity: 0.7;">[${state.menu.selectedIndex}] ${selectedItem}</span>`;
-                            }
+                        } catch (error) {
+                            console.error('[SUBSCRIBE] Error in subscription callback:', error);
                         }
                     });
                 }
@@ -152,9 +238,45 @@
                     window.initButtons();
                 }
                 
-                // Initial render
-                if (window.renderDisplay) {
-                    window.renderDisplay();
+                // Trigger initial render after everything is set up
+                // The subscription callback should fire automatically, but ensure initial state is rendered
+                if (window.getMainFSMState) {
+                    const initialState = window.getMainFSMState();
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:235',message:'initial state check',data:{viewId:initialState.viewId,hasRenderScreen:!!window.renderScreen,hasUpdateMainArea:!!window.updateMainArea},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                    // #endregion
+                    console.log('[INIT] Initial state viewId:', initialState.viewId);
+                    
+                    // Manually trigger render for initial state (in case subscription didn't fire)
+                    const lcd = document.querySelector('.lcd');
+                    if (lcd) {
+                        if (initialState.viewId === 'OFF') {
+                            lcd.classList.add('lcd--powered-off');
+                        } else {
+                            lcd.classList.remove('lcd--powered-off');
+                        }
+                    }
+                    
+                    if (initialState.viewId !== 'OFF' && window.renderScreen) {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:248',message:'initial render calling renderScreen',data:{viewId:initialState.viewId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                        // #endregion
+                        const rendered = window.renderScreen(initialState.viewId, initialState);
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:250',message:'initial render result',data:{viewId:initialState.viewId,mainHTMLLength:rendered?.mainHTML?.length||0,hasUpdateMainArea:!!window.updateMainArea},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                        // #endregion
+                        if (window.updateMainArea) window.updateMainArea(rendered.mainHTML);
+                        if (window.updateStatusArea) window.updateStatusArea(rendered.statusHTML || '');
+                        if (window.updateSoftKeyLabels) window.updateSoftKeyLabels(rendered.softkeys);
+                    } else if (initialState.viewId === 'OFF') {
+                        if (window.updateMainArea) window.updateMainArea('');
+                        if (window.updateStatusArea) window.updateStatusArea('');
+                        if (window.updateSoftKeyLabels) window.updateSoftKeyLabels(['', '', '', '']);
+                    }
+                    
+                    if (window.updateDisplayBacklightState) {
+                        window.updateDisplayBacklightState(initialState.backlight || false);
+                    }
                 }
             };
             document.head.appendChild(fsmScript);

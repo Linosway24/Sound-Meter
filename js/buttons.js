@@ -115,12 +115,18 @@
         }
 
         console.log(`[BUTTON] ${buttonInfo.name}: SHORT PRESS`);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'buttons.js:117',message:'handleButtonPress entry',data:{buttonName:buttonInfo.name,buttonType:buttonInfo.type,buttonAction:buttonInfo.action},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
 
         switch (buttonInfo.type) {
             case 'softKey':
                 handleSoftKey(buttonInfo.number);
                 break;
             case 'nav':
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'buttons.js:124',message:'handleButtonPress calling handleNavigation',data:{action:buttonInfo.action},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
                 handleNavigation(buttonInfo.action);
                 break;
             case 'function':
@@ -174,8 +180,8 @@
                     viewId.startsWith("slm_graph_1of3")
                 );
                 
-                if (isSlmScreen || viewId === "logging_menu" || viewId === "auto_run_date_params") {
-                    // On SLM screens, logging menu, or date params screen, send SOFT4
+                if (isSlmScreen || viewId === "logging_menu" || viewId === "auto_run_date_params" || viewId === "files_session_dir") {
+                    // On SLM screens, logging menu, date params screen, or session directory, send SOFT4
                     console.log(`[BUTTON] Soft Key 4: (via mainFSM)`);
                     window.dispatch({ type: 'SOFT4' });
                 } else {
@@ -198,6 +204,9 @@
      * @param {string} direction - 'up', 'down', 'left', 'right', 'enter'
      */
     function handleNavigation(direction) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'buttons.js:200',message:'handleNavigation entry',data:{direction,hasDispatch:!!window.dispatch},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         // Use mainFSM dispatch if available
         if (window.dispatch) {
             const fsmEvents = {
@@ -210,6 +219,9 @@
             
             const fsmEvent = fsmEvents[direction];
             if (fsmEvent) {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'buttons.js:214',message:'handleNavigation calling dispatch',data:{direction,fsmEvent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
                 console.log(`[BUTTON] Navigation ${direction}: (via mainFSM)`);
                 window.dispatch({ type: fsmEvent });
                 return;
@@ -417,7 +429,13 @@
                     
                     if (isOff) {
                         console.log(`[BUTTON] Power: SHORT PRESS - Boot sequence (via mainFSM)`);
-                        window.dispatch({ type: 'POWER' });
+                        console.log(`[BUTTON] Power: Calling window.dispatch({ type: 'POWER' })`);
+                        if (window.dispatch) {
+                            window.dispatch({ type: 'POWER' });
+                            console.log(`[BUTTON] Power: window.dispatch called successfully`);
+                        } else {
+                            console.error(`[BUTTON] Power: window.dispatch is not available!`);
+                        }
                     } else {
                         console.log(`[BUTTON] Power: SHORT PRESS - Esc/Back (via mainFSM)`);
                         window.dispatch({ type: 'ESC' });
@@ -453,7 +471,12 @@
         const element = event.target;
         const buttonInfo = getButtonInfo(element);
 
-        if (!buttonInfo) return;
+        if (!buttonInfo) {
+            console.log('[BUTTONS] handleDown: No buttonInfo for element:', element.className);
+            return;
+        }
+
+        console.log(`[BUTTONS] handleDown: ${buttonInfo.name}, activeButton:`, pressState.activeButton?.className || 'null');
 
         event.preventDefault();
 
@@ -465,8 +488,14 @@
             handleStopDown(element);
         } else {
             // Other buttons - add visual feedback
+            // Clear any previous active button to handle rapid clicks
+            if (pressState.activeButton && pressState.activeButton !== element) {
+                console.log(`[BUTTONS] Clearing previous activeButton: ${pressState.activeButton.className}`);
+                removePressFeedback(pressState.activeButton);
+            }
             addPressFeedback(element);
             pressState.activeButton = element;
+            console.log(`[BUTTONS] Set activeButton to: ${element.className}`);
         }
     }
 
@@ -478,7 +507,12 @@
         const element = event.target;
         const buttonInfo = getButtonInfo(element);
 
-        if (!buttonInfo) return;
+        if (!buttonInfo) {
+            console.log('[BUTTONS] handleUp: No buttonInfo for element:', element.className);
+            return;
+        }
+
+        console.log(`[BUTTONS] handleUp: ${buttonInfo.name}, activeButton:`, pressState.activeButton?.className || 'null');
 
         event.preventDefault();
 
@@ -492,7 +526,16 @@
             // Other buttons - handle press
             removePressFeedback(element);
             
-            if (pressState.activeButton === element) {
+            // Process press even if activeButton doesn't match (handles rapid clicks)
+            // This ensures rapid button presses are not missed
+            if (pressState.activeButton === element || !pressState.activeButton) {
+                console.log(`[BUTTONS] Processing press for ${buttonInfo.name}`);
+                handleButtonPress(element, buttonInfo);
+                pressState.activeButton = null;
+            } else {
+                console.log(`[BUTTON] ${buttonInfo.name}: Press ignored - activeButton mismatch. Active: ${pressState.activeButton?.className}, Current: ${element.className}`);
+                // Still process the press even if there's a mismatch (for rapid clicks)
+                console.log(`[BUTTONS] Processing press anyway due to rapid click handling`);
                 handleButtonPress(element, buttonInfo);
                 pressState.activeButton = null;
             }

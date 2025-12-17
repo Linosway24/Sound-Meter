@@ -52,6 +52,73 @@
 
         switch (element.type) {
             case 'label':
+                // Special handling for rename screen action buttons (SAVE and DIR.)
+                if ((element.id === "save_label" || element.id === "dir_label") && 
+                    (state?.viewId === "files_rename_last" || state?.viewId === "files_save_config")) {
+                    // These will be handled together by checking for both
+                    // Only render if we haven't already rendered the container
+                    if (element.id === "save_label") {
+                        const saveText = element.text || 'SAVE';
+                        const screenDef = getScreenDefinition(state?.viewId);
+                        const dirElement = screenDef?.elements?.find(e => e.id === "dir_label");
+                        const dirText = dirElement?.text || 'DIR.';
+                        // Check if SAVE should be highlighted
+                        let focus, isEditing;
+                        if (state?.viewId === "files_rename_last") {
+                            focus = state?.files?.renameLastSession?.focus || "file_name";
+                            isEditing = state?.files?.renameLastSession?.editing;
+                        } else {
+                            focus = state?.files?.saveConfig?.focus || "file_name";
+                            isEditing = state?.files?.saveConfig?.editing;
+                        }
+                        const saveHighlighted = !isEditing && focus === "save";
+                        const saveClass = saveHighlighted ? ' action-button--selected' : '';
+                        return `<div class="screen-element screen-element--action-buttons"><span class="action-button--left${saveClass}">${saveText}</span><span class="action-button--right">${dirText}</span></div>`;
+                    }
+                    // If it's dir_label, return empty (already rendered with save_label)
+                    return '';
+                }
+                // Special handling for delete status screen
+                if (element.id === "deleted_file_label" && state?.viewId === "files_delete_status") {
+                    const deletedFileName = state?.files?.deleteStatus?.deletedFileName || "";
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${deletedFileName}</div>`;
+                }
+                // Special handling for load status screen
+                if (element.id === "loaded_file_label" && state?.viewId === "files_load_status") {
+                    const loadedFileName = state?.files?.loadStatus?.loadedFileName || "";
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${loadedFileName}</div>`;
+                }
+                // Special handling for rename status screen
+                if (element.id === "renamed_file_label" && state?.viewId === "files_rename_status") {
+                    const renamedFileName = state?.files?.renameStatus?.renamedFileName || "";
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${renamedFileName}</div>`;
+                }
+                // Special handling for save config status screen
+                if (element.id === "saved_file_label" && state?.viewId === "files_save_config_status") {
+                    const savedFileName = state?.files?.saveConfigStatus?.savedFileName || "";
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${savedFileName}</div>`;
+                }
+                // Special handling for format card title (should be underlined)
+                if (element.id === "format_title" && state?.viewId === "files_format_card") {
+                    const text = element.text || "\\FORMAT";
+                    // Remove backslash and add underline styling
+                    const displayText = text.replace(/^\\/, '');
+                    return `<div id="${element.id}" class="screen-element screen-element--label" style="text-decoration: underline;">${displayText}</div>`;
+                }
+                // Special handling for format status screen
+                if (element.id === "format_status_label" && state?.viewId === "files_format_status") {
+                    const formatMessage = state?.files?.formatStatus?.formatMessage || "";
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${formatMessage}</div>`;
+                }
+                // Special handling for error screen
+                if (element.id === "error_line1_label" && state?.viewId === "files_error") {
+                    const errorLine1 = state?.files?.errorStatus?.errorLine1 || "";
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${errorLine1}</div>`;
+                }
+                if (element.id === "error_line2_label" && state?.viewId === "files_error") {
+                    const errorLine2 = state?.files?.errorStatus?.errorLine2 || "";
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${errorLine2}</div>`;
+                }
                 // Special handling for comms_edit screen
                 if (element.id === "edit_item" && state?.viewId === "comms_edit") {
                     const baudRate = state?.comms?.baudRate || 9600;
@@ -242,7 +309,27 @@
                     }
                     return `<div id="${element.id}" class="screen-element screen-element--label screen-element--date-display">${html}</div>`;
                 }
-                return `<div id="${element.id}" class="screen-element screen-element--label">${element.text || ''}</div>`;
+                // Default label rendering - support highlighted and align properties
+                const labelText = element.text || '';
+                let highlightedClass = element.highlighted ? ' screen-element--highlighted' : '';
+                // Special handling for FILE NAME label: show as selected when not editing and focus is "file_name"
+                if ((element.id === "file_name_label" && state?.viewId === "files_rename_last") ||
+                    (element.id === "file_name_label" && state?.viewId === "files_save_config")) {
+                    let isEditing, focus;
+                    if (state?.viewId === "files_rename_last") {
+                        isEditing = state?.files?.renameLastSession?.editing;
+                        focus = state?.files?.renameLastSession?.focus || "file_name";
+                    } else {
+                        isEditing = state?.files?.saveConfig?.editing;
+                        focus = state?.files?.saveConfig?.focus || "file_name";
+                    }
+                    if (!isEditing && focus === "file_name") {
+                        highlightedClass += ' screen-element--selected';
+                    }
+                }
+                const alignClass = element.align === 'left' ? ' screen-element--label-left' : 
+                                  element.align === 'right' ? ' screen-element--label-right' : '';
+                return `<div id="${element.id}" class="screen-element screen-element--label${highlightedClass}${alignClass}">${labelText}</div>`;
             
             case 'title':
                 // Special handling for AUTO RUN Timed Run title - smaller font to fit
@@ -259,6 +346,23 @@
             
             case 'divider':
                 return `<div id="${element.id}" class="screen-element screen-element--divider"></div>`;
+            
+            case 'graph':
+                // Simple graph rendering for delete status screen (timeline style)
+                if (element.style === "timeline") {
+                    // Render a simple horizontal line with vertical dashed lines (timeline graph)
+                    // Based on device image: horizontal line with vertical dashed lines extending down
+                    // Positioned at absolute bottom to align with softkey labels
+                    return `<div id="${element.id}" class="screen-element screen-element--graph" style="height: 1.5em; position: relative; width: 100%;">
+                        <div style="position: absolute; left: 0; top: 0; width: 100%; height: 0.1em; background: #e6e6e6;"></div>
+                        <div style="position: absolute; left: 0; top: 0; width: 0.1em; height: 100%; background: repeating-linear-gradient(to bottom, #e6e6e6 0, #e6e6e6 0.15em, transparent 0.15em, transparent 0.3em);"></div>
+                        <div style="position: absolute; left: 25%; top: 0; width: 0.1em; height: 100%; background: repeating-linear-gradient(to bottom, #e6e6e6 0, #e6e6e6 0.15em, transparent 0.15em, transparent 0.3em);"></div>
+                        <div style="position: absolute; left: 50%; top: 0; width: 0.1em; height: 100%; background: repeating-linear-gradient(to bottom, #e6e6e6 0, #e6e6e6 0.15em, transparent 0.15em, transparent 0.3em);"></div>
+                        <div style="position: absolute; left: 75%; top: 0; width: 0.1em; height: 100%; background: repeating-linear-gradient(to bottom, #e6e6e6 0, #e6e6e6 0.15em, transparent 0.15em, transparent 0.3em);"></div>
+                        <div style="position: absolute; right: 0; top: 0; width: 0.1em; height: 100%; background: repeating-linear-gradient(to bottom, #e6e6e6 0, #e6e6e6 0.15em, transparent 0.15em, transparent 0.3em);"></div>
+                    </div>`;
+                }
+                return `<div id="${element.id}" class="screen-element screen-element--graph"></div>`;
             
             case 'textList':
                 // Special handling for AUTO RUN Level-Triggered textList - MUST be checked FIRST
@@ -811,13 +915,29 @@
                 } else {
                     // Single column layout (default)
                     let html = `<div id="${element.id}" class="screen-element screen-element--textList">`;
+                    console.log(`[SCREEN-RENDERER] Rendering ${element.id}: ${items.length} items, selectedIndex: ${selectedIndex}`);
+                    
+                    // Special handling for format card: add spacing before the list
+                    if (element.id === "format_options_list") {
+                        html += `<div class="menu-item menu-item--spacer-line"></div>`;
+                    }
+                    
                     items.forEach((item, index) => {
                         const isSelected = index === selectedIndex;
+                        console.log(`[SCREEN-RENDERER] Item ${index}: "${typeof item === 'string' ? item : item.title || 'object'}", selected: ${isSelected}`);
                         
                         // Special handling for AUTO RUN menu: add minimal spacing before second item (VIEW/SET PARAMETERS)
                         if (element.id === "auto_run_list" && index === 1) {
                             // Add 1 small spacer line before VIEW/SET PARAMETERS to position it just above softkey bar
                             html += `<div class="menu-item menu-item--spacer-line"></div>`;
+                        }
+                        
+                        // Special handling for format card options: use highlight box style
+                        if (element.id === "format_options_list") {
+                            const itemText = typeof item === 'string' ? item : item.title || '';
+                            const selectedClass = isSelected ? 'format-option--selected' : '';
+                            html += `<div class="menu-item format-option ${selectedClass}">${itemText}</div>`;
+                            return; // Skip default rendering for format options (return from forEach callback)
                         }
                         const isEditing = state?.meterSet?.editing && isSelected;
                         const focusValue = state?.meterSet?.focus === "value";
@@ -1156,6 +1276,142 @@
                 // Metadata element, not rendered (soft keys rendered separately)
                 return '';
             
+            case 'fileList':
+                // File list rendering for session/config directories
+                const fileListBind = element.bind ? element.bind.split('.') : [];
+                let fileList = state;
+                for (const key of fileListBind) {
+                    fileList = fileList?.[key];
+                }
+                if (!Array.isArray(fileList)) fileList = [];
+                
+                const selectedIndexBind = element.selectedIndex ? element.selectedIndex.split('.') : [];
+                let fileListSelectedIndex = 0;
+                let selectedIndexState = state;
+                for (const key of selectedIndexBind) {
+                    selectedIndexState = selectedIndexState?.[key];
+                }
+                if (typeof selectedIndexState === 'number') fileListSelectedIndex = selectedIndexState;
+                
+                const scrollOffsetBind = element.scrollOffset ? element.scrollOffset.split('.') : [];
+                let scrollOffset = 0;
+                let scrollOffsetState = state;
+                for (const key of scrollOffsetBind) {
+                    scrollOffsetState = scrollOffsetState?.[key];
+                }
+                if (typeof scrollOffsetState === 'number') scrollOffset = scrollOffsetState;
+                
+                // Check if this is session directory - use 2 columns (left: 1-5, right: 6-10)
+                const isSessionDir = element.id === "session_file_list";
+                const fileListColumns = isSessionDir && fileList.length > 5 ? 2 : 1;
+                const maxVisible = isSessionDir ? 10 : 8; // 10 for session dir (2 columns of 5), 8 for others
+                const visibleFiles = fileList.slice(scrollOffset, scrollOffset + maxVisible);
+                
+                let html = `<div id="${element.id}" class="screen-element screen-element--fileList ${fileListColumns === 2 ? 'fileList--two-columns' : ''}">`;
+                
+                if (fileListColumns === 2) {
+                    // Render in 2 columns: left column (1-5), right column (6-10)
+                    html += '<div class="fileList-row">';
+                    // Left column: items 0-4 (1-5)
+                    html += '<div class="fileList-column">';
+                    for (let i = 0; i < 5; i++) {
+                        if (i < visibleFiles.length) {
+                            const actualIndex = scrollOffset + i;
+                            const isSelected = actualIndex === fileListSelectedIndex;
+                            const file = visibleFiles[i];
+                            const fileName = file.name || file;
+                            html += `<div class="file-item ${isSelected ? 'file-item--selected' : ''}">${fileName}</div>`;
+                        } else {
+                            html += '<div class="file-item file-item--empty"></div>';
+                        }
+                    }
+                    html += '</div>';
+                    // Right column: items 5-9 (6-10)
+                    html += '<div class="fileList-column">';
+                    for (let i = 5; i < 10; i++) {
+                        if (i < visibleFiles.length) {
+                            const actualIndex = scrollOffset + i;
+                            const isSelected = actualIndex === fileListSelectedIndex;
+                            const file = visibleFiles[i];
+                            const fileName = file.name || file;
+                            html += `<div class="file-item ${isSelected ? 'file-item--selected' : ''}">${fileName}</div>`;
+                        } else {
+                            html += '<div class="file-item file-item--empty"></div>';
+                        }
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                } else {
+                    // Single column layout
+                    visibleFiles.forEach((file, index) => {
+                        const actualIndex = scrollOffset + index;
+                        const isSelected = actualIndex === fileListSelectedIndex;
+                        const fileName = file.name || file;
+                        html += `<div class="file-item ${isSelected ? 'file-item--selected' : ''}">${fileName}</div>`;
+                    });
+                }
+                
+                html += '</div>';
+                return html;
+
+            case 'textInput':
+                // Text input for rename/save config
+                const textBind = element.bind ? element.bind.split('.') : [];
+                let textValue = '';
+                let textState = state;
+                for (const key of textBind) {
+                    textState = textState?.[key];
+                }
+                if (typeof textState === 'string') textValue = textState;
+                
+                const cursorBind = element.cursorPosition ? element.cursorPosition.split('.') : [];
+                let cursorPos = 0;
+                let cursorState = state;
+                for (const key of cursorBind) {
+                    cursorState = cursorState?.[key];
+                }
+                if (typeof cursorState === 'number') cursorPos = cursorState;
+                
+                const editingBind = element.editing ? element.editing.split('.') : [];
+                let isEditing = false;
+                let editingState = state;
+                for (const key of editingBind) {
+                    editingState = editingState?.[key];
+                }
+                if (typeof editingState === 'boolean') isEditing = editingState;
+                
+                // Render text with cursor indicator
+                const centeredClass = element.centered ? ' screen-element--textInput-centered' : '';
+                let textHtml = `<div id="${element.id}" class="screen-element screen-element--textInput${centeredClass}">`;
+                if (isEditing) {
+                    // Show text with underline at cursor position
+                    const beforeCursor = textValue.slice(0, cursorPos);
+                    const atCursor = textValue.slice(cursorPos, cursorPos + 1);
+                    const afterCursor = textValue.slice(cursorPos + 1);
+                    textHtml += `<span>${beforeCursor}</span><span class="text-input__cursor">${atCursor}</span><span>${afterCursor}</span>`;
+                } else {
+                    // Show text without cursor when not editing
+                    textHtml += `<span>${textValue}</span>`;
+                }
+                textHtml += '</div>';
+                return textHtml;
+
+            case 'yesNoSelection':
+                // YES/NO selection for delete confirm
+                const optionBind = element.bind ? element.bind.split('.') : [];
+                let selectedOption = 'NO';
+                let optionState = state;
+                for (const key of optionBind) {
+                    optionState = optionState?.[key];
+                }
+                if (typeof optionState === 'string') selectedOption = optionState;
+                
+                let yesNoHtml = `<div id="${element.id}" class="screen-element screen-element--yesNoSelection">`;
+                yesNoHtml += `<span class="yes-no-option ${selectedOption === 'YES' ? 'yes-no-option--selected' : ''}">YES</span>`;
+                yesNoHtml += `<span class="yes-no-option ${selectedOption === 'NO' ? 'yes-no-option--selected' : ''}">NO</span>`;
+                yesNoHtml += '</div>';
+                return yesNoHtml;
+
             default:
                 return '';
         }
@@ -1240,6 +1496,33 @@
                 const line = state?.autoRunDate?.lines?.[lineIdx];
                 label = line?.enabled ? `+${lineIdx + 1}` : `-${lineIdx + 1}`;
             }
+            // Session Directory softkey handling
+            else if (state?.viewId === "files_session_dir") {
+                if (i === 3 && label === "more...") {
+                    // SOFT4: Show "more..." only if there are more than 10 files
+                    const fileList = state?.files?.sessionFiles || [];
+                    if (fileList.length <= 10) {
+                        label = ''; // Hide "more..." if 10 or fewer files
+                    }
+                }
+                // SOFT1 (DELETE) and SOFT3 (LOAD) are always shown as defined in atlas
+            }
+            // Rename screen softkey handling - highlight selected softkey when in edit mode
+            else if (state?.viewId === "files_rename_last" && state?.files?.renameLastSession?.editing) {
+                // When in edit mode, highlight the selected softkey to show which group is active
+                const selectedSoftkeyIndex = state?.files?.renameLastSession?.selectedSoftkeyIndex || 0;
+                if (i === selectedSoftkeyIndex && label) {
+                    label = `<span class="softkey-selected">${label}</span>`;
+                }
+            }
+            // Save config screen softkey handling - highlight selected softkey when in edit mode
+            else if (state?.viewId === "files_save_config" && state?.files?.saveConfig?.editing) {
+                // When in edit mode, highlight the selected softkey to show which group is active
+                const selectedSoftkeyIndex = state?.files?.saveConfig?.selectedSoftkeyIndex || 0;
+                if (i === selectedSoftkeyIndex && label) {
+                    label = `<span class="softkey-selected">${label}</span>`;
+                }
+            }
             // SLM softkey handling with underlines
             else if (isSlmScreen(state?.viewId)) {
                 if (i === 1 && label === "F-S-I") {
@@ -1295,9 +1578,16 @@
      * @returns {Object} { mainHTML, statusHTML, softkeys }
      */
     function renderScreen(screenId, state) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'screen-renderer.js:1472',message:'renderScreen entry',data:{screenId,hasState:!!state,hasScreenAtlas:!!screenAtlas},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        console.log('[SCREEN-RENDERER] renderScreen called for:', screenId);
         const screenDef = getScreenDefinition(screenId);
         
         if (!screenDef) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'screen-renderer.js:1476',message:'renderScreen screen not found',data:{screenId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+            // #endregion
             console.warn('[SCREEN-RENDERER] Screen not found:', screenId);
             return {
                 mainHTML: '',
@@ -1305,6 +1595,11 @@
                 softkeys: ['', '', '', '']
             };
         }
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'screen-renderer.js:1485',message:'renderScreen screen found',data:{screenId,elementsCount:screenDef.elements?.length||0,hasElementsRef:!!screenDef.elementsRef},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        console.log('[SCREEN-RENDERER] Screen definition found, elements:', screenDef.elements ? screenDef.elements.length : 0);
 
         // Handle elementsRef (reference to another screen's elements)
         let elements = screenDef.elements;
@@ -1317,6 +1612,7 @@
 
         // Render main area
         let mainHTML = '';
+        let softkeysGraphHTML = ''; // Graph elements that should render in softkeys area
         // Separate elements by type to control rendering order
         let positionedElements = []; // Elements with position (e.g., top-right timer)
         let regularElements = []; // Regular flow elements
@@ -1326,6 +1622,12 @@
                 // Skip softKeyRow - it's metadata, not rendered content
                 if (element.type === 'softKeyRow') {
                     return;
+                }
+                
+                // Check if this is a graph element that should render in softkeys area
+                if (element.type === 'graph' && (element.id === 'session_dir_graph' || element.id === 'delete_graph' || element.id === 'load_graph')) {
+                    softkeysGraphHTML += renderElement(element, state);
+                    return; // Don't add to mainHTML
                 }
                 
                 // Check visibility conditions
@@ -1363,10 +1665,19 @@
         // Render soft keys
         const softkeys = renderSoftKeys(screenDef.softkeys, state);
 
+        // Wrap delete/load status screens in flexbox container to position graph at bottom
+        if (screenId === "files_delete_status" || screenId === "files_load_status") {
+            mainHTML = `<div style="display: flex; flex-direction: column; height: 100%; min-height: 100%; justify-content: space-between; padding: 0; margin: 0;">${mainHTML}</div>`;
+        }
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'screen-renderer.js:1565',message:'renderScreen returning result',data:{screenId,mainHTMLLength:mainHTML.length,mainHTMLPreview:mainHTML.substring(0,200),softkeysCount:softkeys?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         return {
             mainHTML,
             statusHTML: '', // Status area can be added later if needed
-            softkeys
+            softkeys,
+            softkeysGraphHTML // Graph HTML to render in softkeys area
         };
     }
 

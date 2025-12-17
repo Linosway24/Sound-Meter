@@ -119,6 +119,56 @@ body {
     width: 100%; /* Ensure it respects container width */
 }
 
+/* Remove bottom padding when graph is present to position it right above softkeys */
+.lcd__main:has(#session_dir_graph),
+.lcd__main:has(#delete_graph) {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Delete status screen - position graph at bottom aligned with softkeys */
+.lcd__main--delete-status {
+    padding: 1.2em 1.5em 0 0.5em !important; /* Top and sides only, no bottom */
+    position: relative;
+    overflow: hidden; /* Prevent scrolling when graph is at bottom */
+}
+
+.lcd__main--delete-status > div {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100%;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+
+
+/* Graph container in softkeys area */
+.lcd__softkeys .softkeys-graph-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 1.5em;
+    margin: 0;
+    padding: 0;
+    z-index: 0; /* Behind softkey labels */
+    pointer-events: none; /* Don't block clicks on softkeys */
+    overflow: visible; /* Ensure graph is visible */
+}
+
+.lcd__softkeys .softkeys-graph-container #session_dir_graph,
+.lcd__softkeys .softkeys-graph-container #delete_graph,
+.lcd__softkeys .softkeys-graph-container #load_graph {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 /* Reduce top padding for SLM screens to move content up */
 .lcd__main--slm {
     padding-top: 0.3em !important; /* Minimal top padding for SLM screens */
@@ -130,6 +180,8 @@ body {
     align-items: center;
     padding: 0.6em; /* Scale relative to LCD base font size */
     color: #ccc;
+    position: relative; /* Allow graph to overlay */
+    z-index: 1; /* Softkey labels above background, below graph */
 }
 
 /* Soft key labels */
@@ -498,6 +550,42 @@ body {
     text-overflow: ellipsis;
 }
 
+.screen-element--label-left {
+    text-align: left;
+    width: 100%;
+}
+
+.screen-element--label-right {
+    text-align: right;
+    width: 100%;
+}
+
+.screen-element--action-buttons {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 1em;
+    color: #e6e6e6;
+    padding: 0.5em 0;
+}
+
+.action-button--left {
+    text-align: left;
+    padding-left: 2em;
+}
+
+.action-button--right {
+    text-align: right;
+    padding-right: 2em;
+}
+
+.action-button--selected {
+    background-color: rgba(230, 230, 230, 0.15);
+    padding: 0.2em 0.5em;
+    border: 1px solid rgba(230, 230, 230, 0.3);
+    border-radius: 2px;
+}
+
 /* Centered label for AUTO RUN Timed Run */
 .screen-element--centered {
     text-align: center;
@@ -517,6 +605,13 @@ body {
     font-weight: 600;
     margin-top: 0.5em; /* Spacing from divider */
     margin-bottom: 1em; /* One line space before duration */
+}
+
+/* Selected label style (for FILE NAME when not editing) */
+.screen-element--selected {
+    background-color: rgba(230, 230, 230, 0.15);
+    padding: 0.2em 0.5em;
+    border: 1px solid rgba(230, 230, 230, 0.3);
 }
 
 .screen-element--textList {
@@ -1008,6 +1103,142 @@ body {
     text-decoration: underline;
     text-decoration-thickness: 2px;
     text-underline-offset: 2px;
+}
+
+/* Softkey selected highlight for rename screen */
+.softkey-selected {
+    background-color: rgba(230, 230, 230, 0.15);
+    padding: 0.1em 0.3em;
+    border: 1px solid rgba(230, 230, 230, 0.3);
+}
+
+/* Format card option styling */
+.format-option {
+    padding: 0.2em 0.5em;
+    color: #888888;
+    margin: 0.1em 0;
+}
+
+.format-option--selected {
+    background-color: #2a3340;
+    color: #ffffff;
+    padding: 0.2em 0.5em;
+    border-radius: 0.2em;
+    font-weight: 500;
+}
+
+/* File List Styles */
+.screen-element--fileList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05em;
+    padding: 0.5em 0;
+}
+
+.screen-element--fileList.fileList--two-columns {
+    gap: 0.1em;
+}
+
+.fileList-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5em;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.fileList-column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 0.05em;
+    min-width: 0;
+}
+
+.fileList-column .file-item {
+    width: 100%;
+    max-width: 100%;
+}
+
+.file-item {
+    font-size: 1em;
+    color: #888888;
+    padding: 0.01em 0.6em 0.01em 0;
+    margin-bottom: 0.03em;
+    cursor: default;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    min-height: 1.4em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.2;
+}
+
+.file-item--selected {
+    color: #e6e6e6;
+    background-color: rgba(230, 230, 230, 0.1);
+    padding-left: 0.3em;
+    border-left: 2px solid #e6e6e6;
+}
+
+.file-item--empty {
+    visibility: hidden;
+}
+
+/* Text Input Styles */
+.screen-element--textInput {
+    font-size: 1em;
+    color: #e6e6e6;
+    padding: 0.5em;
+    display: flex;
+    align-items: center;
+    min-height: 2em;
+}
+
+.screen-element--textInput-centered {
+    justify-content: center;
+    text-align: center;
+}
+
+.text-input__cursor {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* YES/NO Selection Styles */
+.screen-element--yesNoSelection {
+    display: flex;
+    flex-direction: row;
+    gap: 2em;
+    justify-content: center;
+    align-items: center;
+    padding: 1em 0;
+}
+
+.yes-no-option {
+    font-size: 1.2em;
+    color: #888888;
+    padding: 0.3em 1em;
+    cursor: default;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    border: 1px solid #888888;
+    border-radius: 0.2em;
+}
+
+.yes-no-option--selected {
+    color: #e6e6e6;
+    background-color: rgba(230, 230, 230, 0.2);
+    border-color: #e6e6e6;
+    font-weight: bold;
 }
 
 

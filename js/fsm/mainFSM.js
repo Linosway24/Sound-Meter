@@ -181,7 +181,71 @@
             cal: null,
             measurementRuntime: null
         },
-        files: { cursor: 0 },
+        files: {
+            cursor: 0,
+            sessionFiles: [
+                { name: "SES001", date: "2025-01-15", time: "10:30:00" },
+                { name: "SES002", date: "2025-01-14", time: "14:20:00" },
+                { name: "SES003", date: "2025-01-13", time: "09:15:00" },
+                { name: "SES004", date: "2025-01-12", time: "16:45:00" },
+                { name: "SES005", date: "2025-01-11", time: "11:20:00" }
+            ],
+            configFiles: [
+                { name: "CONFIG001", date: "2025-01-10", time: "09:15:00" },
+                { name: "CONFIG002", date: "2025-01-09", time: "14:30:00" },
+                { name: "CONFIG003", date: "2025-01-08", time: "10:00:00" }
+            ],
+            sessionDir: {
+                selectedIndex: 0,
+                scrollOffset: 0
+            },
+            configDir: {
+                selectedIndex: 0,
+                scrollOffset: 0
+            },
+            renameLastSession: {
+                editing: false,
+                filename: "SES001",
+                cursorPosition: 0,
+                originalFilename: "SES001",
+                selectedSoftkeyIndex: 0, // 0 = "0.....9", 1 = "A.....H", 2 = "I.....Q", 3 = "R.....Z"
+                previousMenuIndex: 2, // Store the files_menu selectedIndex when navigating to rename screen
+                focus: "file_name" // "file_name" or "save" - controls which element is highlighted
+            },
+            saveConfig: {
+                editing: false,
+                filename: "CONFIG001",
+                cursorPosition: 0,
+                originalFilename: "CONFIG001",
+                selectedSoftkeyIndex: 0, // 0 = "0.....9", 1 = "A.....H", 2 = "I.....Q", 3 = "R.....Z"
+                focus: "file_name" // "file_name" or "save" - controls which element is highlighted
+            },
+            deleteConfirm: {
+                selectedOption: "NO" // "YES" or "NO"
+            },
+            deleteStatus: {
+                deletedFileName: ""
+            },
+            loadStatus: {
+                loadedFileName: ""
+            },
+            renameStatus: {
+                renamedFileName: ""
+            },
+            saveConfigStatus: {
+                savedFileName: ""
+            },
+            formatCard: {
+                selectedIndex: 0 // 0 = QUICK FORMAT, 1 = FULL FORMAT
+            },
+            formatStatus: {
+                formatMessage: ""
+            },
+            errorStatus: {
+                errorLine1: "",
+                errorLine2: ""
+            }
+        },
         display: { 
             contrast: 0, 
             backlightMode: "MANUAL", // "MANUAL" or number (0-60) for time in seconds
@@ -248,7 +312,23 @@
     };
 
     const _subs = new Set();
-    function _emit() { _subs.forEach(cb => cb(getState())); }
+    function _emit() { 
+        const state = getState();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:293',message:'_emit called',data:{subscribers:_subs.size,viewId:state.viewId,selectedIndex:state.menu?.selectedIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        console.log('[FSM] _emit called, subscribers:', _subs.size);
+        _subs.forEach(cb => {
+            try {
+                cb(state);
+            } catch (error) {
+                console.error('[FSM] Error in subscriber callback:', error);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:299',message:'_emit subscriber error',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                // #endregion
+            }
+        });
+    }
 
     // Navigation history management
     function _pushHistory(viewId) {
@@ -389,7 +469,88 @@
             toast: null,
             slmLabelIndex: 0, // 0 = "SLM", 1 = "1/1", 2 = "1/3"
             timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null },
-            files: { cursor: 0 },
+            files: {
+                cursor: 0,
+                sessionFiles: [
+                    { name: "SES001", date: "2025-01-15", time: "10:30:00" },
+                    { name: "SES002", date: "2025-01-14", time: "14:20:00" },
+                    { name: "SES003", date: "2025-01-13", time: "09:15:00" },
+                    { name: "SES004", date: "2025-01-12", time: "16:45:00" },
+                    { name: "SES005", date: "2025-01-11", time: "11:20:00" },
+                    { name: "SES006", date: "2025-01-10", time: "08:45:00" },
+                    { name: "SES007", date: "2025-01-09", time: "13:30:00" },
+                    { name: "SES008", date: "2025-01-08", time: "15:20:00" },
+                    { name: "SES009", date: "2025-01-07", time: "12:10:00" },
+                    { name: "SES010", date: "2025-01-06", time: "09:55:00" },
+                    { name: "SES011", date: "2025-01-05", time: "14:40:00" },
+                    { name: "SES012", date: "2025-01-04", time: "11:25:00" },
+                    { name: "SES013", date: "2025-01-03", time: "16:15:00" },
+                    { name: "SES014", date: "2025-01-02", time: "10:05:00" },
+                    { name: "SES015", date: "2025-01-01", time: "08:30:00" },
+                    { name: "SES016", date: "2024-12-31", time: "17:20:00" },
+                    { name: "SES017", date: "2024-12-30", time: "13:45:00" },
+                    { name: "SES018", date: "2024-12-29", time: "11:10:00" },
+                    { name: "SES019", date: "2024-12-28", time: "09:30:00" },
+                    { name: "SES020", date: "2024-12-27", time: "15:55:00" },
+                    { name: "SES021", date: "2024-12-26", time: "12:40:00" },
+                    { name: "SES022", date: "2024-12-25", time: "10:15:00" },
+                    { name: "SES023", date: "2024-12-24", time: "14:25:00" },
+                    { name: "SES024", date: "2024-12-23", time: "08:50:00" },
+                    { name: "SES025", date: "2024-12-22", time: "16:30:00" }
+                ],
+                configFiles: [
+                    { name: "CONFIG001", date: "2025-01-10", time: "09:15:00" },
+                    { name: "CONFIG002", date: "2025-01-09", time: "14:30:00" },
+                    { name: "CONFIG003", date: "2025-01-08", time: "10:00:00" }
+                ],
+                sessionDir: {
+                    selectedIndex: 0,
+                    scrollOffset: 0
+                },
+                configDir: {
+                    selectedIndex: 0,
+                    scrollOffset: 0
+                },
+                renameLastSession: {
+                    editing: false,
+                    filename: "SES001",
+                    cursorPosition: 0,
+                    originalFilename: "SES001",
+                    selectedSoftkeyIndex: 0,
+                    previousMenuIndex: 2,
+                    focus: "file_name"
+                },
+                saveConfig: {
+                    editing: false,
+                    filename: "CONFIG001",
+                    cursorPosition: 0,
+                    originalFilename: "CONFIG001",
+                    selectedSoftkeyIndex: 0,
+                    focus: "file_name"
+                },
+                deleteConfirm: {
+                    selectedOption: "NO"
+                },
+                deleteStatus: {
+                    deletedFileName: ""
+                },
+                renameStatus: {
+                    renamedFileName: ""
+                },
+                saveConfigStatus: {
+                    savedFileName: ""
+                },
+                formatCard: {
+                    selectedIndex: 0
+                },
+                formatStatus: {
+                    formatMessage: ""
+                },
+                errorStatus: {
+                    errorLine1: "",
+                    errorLine2: ""
+                }
+            },
             display: { 
                 contrast: 0, 
                 backlightMode: "MANUAL",
@@ -468,8 +629,20 @@
     }
 
     function subscribe(cb) {
+        console.log('[FSM] subscribe called, adding callback, current subscribers:', _subs.size);
         _subs.add(cb);
-        return () => _subs.delete(cb);
+        // Immediately call callback with current state so new subscribers get initial state
+        const initialState = getState();
+        console.log('[FSM] Calling callback immediately with initial state, viewId:', initialState.viewId);
+        try {
+            cb(initialState);
+        } catch (error) {
+            console.error('[FSM] Error calling subscriber callback:', error);
+        }
+        return () => {
+            console.log('[FSM] Unsubscribing callback');
+            _subs.delete(cb);
+        };
     }
 
     function getState() {
@@ -496,22 +669,34 @@
     }
 
     function dispatch(evt) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:620',message:'dispatch entry',data:{eventType:evt.type,locked:_state.flags.locked,viewId:_state.viewId,selectedIndex:_state.menu?.selectedIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         if (_state.flags.locked && evt.type !== "LOCK_SOFTKEY") {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:622',message:'dispatch blocked by lock',data:{eventType:evt.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
             return; // Ignore input when locked (except unlock)
         }
 
         switch (evt.type) {
             case "POWER":
+                console.log('[FSM] POWER event received, current viewId:', _state.viewId);
                 if (_state.viewId === "OFF") {
+                    console.log('[FSM] Powering on: OFF → boot_screen');
                     _state.viewId = "boot_screen";
                     _state.backlight = false;
                     _emit();
                     const bootDuration = 300 + Math.random() * 500; // 300-800ms
+                    console.log('[FSM] Boot duration:', bootDuration, 'ms');
                     setTimeout(() => {
+                        console.log('[FSM] Boot complete: boot_screen → home_screen_dim');
                         _state.viewId = "home_screen_dim";
                         _state.backlight = false;
                         _emit();
                     }, bootDuration);
+                } else {
+                    console.log('[FSM] POWER event ignored - device not OFF, current viewId:', _state.viewId);
                 }
                 break;
 
@@ -564,8 +749,18 @@
                     console.log(`[MENU] Setup menu - Selected index: ${_state.menu.selectedIndex} → "${SETUP_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "files_menu") {
-                    _state.menu.selectedIndex = (_state.menu.selectedIndex + FILES_MENU_ITEMS.length - 1) % FILES_MENU_ITEMS.length;
-                    console.log(`[MENU] Files menu - Selected index: ${_state.menu.selectedIndex} → "${FILES_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    const currentIndex = Math.max(0, Math.min(_state.menu.selectedIndex, FILES_MENU_ITEMS.length - 1));
+                    const newIndex = (currentIndex + FILES_MENU_ITEMS.length - 1) % FILES_MENU_ITEMS.length;
+                    _state.menu.selectedIndex = newIndex;
+                    console.log(`[MENU] Files menu UP - Selected index: ${currentIndex} → ${newIndex} → "${FILES_MENU_ITEMS[newIndex]}" (total items: ${FILES_MENU_ITEMS.length})`);
+                    _emit();
+                } else if (_state.viewId === "files_format_card") {
+                    // UP: cycle between QUICK FORMAT (0) and FULL FORMAT (1)
+                    const currentIndex = _state.files.formatCard.selectedIndex;
+                    const newIndex = (currentIndex + 1) % 2; // Toggle between 0 and 1
+                    _state.files.formatCard.selectedIndex = newIndex;
+                    const options = ["QUICK FORMAT", "FULL FORMAT"];
+                    console.log(`[FILES] Format Card UP - Selected index: ${currentIndex} → ${newIndex} → "${options[newIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "meter_set_menu") {
                     _state.meterSet.selectedIndex = (_state.meterSet.selectedIndex + METER_SET_ITEMS.length - 1) % METER_SET_ITEMS.length;
@@ -941,18 +1136,204 @@
                     console.log(`[COMMS] Baud rate: ${_state.comms.baudRate}`);
                     _emit();
                 } else if (isHome()) {
-                    _state.menu.selectedIndex = (_state.menu.selectedIndex + MENU_ITEMS.length - 1) % MENU_ITEMS.length;
-                    console.log(`[MENU] Home menu - Selected index: ${_state.menu.selectedIndex} → "${MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    const currentIndex = Math.max(0, Math.min(_state.menu.selectedIndex, MENU_ITEMS.length - 1));
+                    const newIndex = (currentIndex + MENU_ITEMS.length - 1) % MENU_ITEMS.length;
+                    _state.menu.selectedIndex = newIndex;
+                    console.log(`[MENU] Home menu UP - Selected index: ${currentIndex} → ${newIndex} → "${MENU_ITEMS[newIndex]}" (total items: ${MENU_ITEMS.length})`);
+                    console.log(`[MENU] All items: ${MENU_ITEMS.map((item, idx) => `${idx}:${item}`).join(', ')}`);
+                    console.log(`[MENU] State after update: _state.menu.selectedIndex = ${_state.menu.selectedIndex}`);
                     _emit();
-                } else if (isInFiles() && (_state.viewId === "files_session_dir" || _state.viewId === "files_config_dir")) {
-                    _state.files.cursor = Math.max(0, _state.files.cursor - 1);
+                } else if (_state.viewId === "files_session_dir") {
+                    const fileList = _state.files.sessionFiles;
+                    if (fileList.length > 0) {
+                        // UP: cycle through all files sequentially, wrapping at top
+                        const currentIndex = _state.files.sessionDir.selectedIndex;
+                        const newIndex = currentIndex === 0 ? 
+                            Math.min(9, fileList.length - 1) : // Wrap to last visible (9 or last file)
+                            currentIndex - 1;
+                        _state.files.sessionDir.selectedIndex = newIndex;
+                        // Update scroll offset if needed (show 10 items at a time in 2 columns)
+                        const maxVisible = 10;
+                        if (_state.files.sessionDir.selectedIndex < _state.files.sessionDir.scrollOffset) {
+                            _state.files.sessionDir.scrollOffset = Math.max(0, _state.files.sessionDir.selectedIndex);
+                        }
+                        console.log(`[FILES] Session Directory UP: Selected index: ${_state.files.sessionDir.selectedIndex}`);
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_config_dir") {
+                    const fileList = _state.files.configFiles;
+                    if (fileList.length > 0) {
+                        _state.files.configDir.selectedIndex = Math.max(0, _state.files.configDir.selectedIndex - 1);
+                        // Update scroll offset if needed
+                        if (_state.files.configDir.selectedIndex < _state.files.configDir.scrollOffset) {
+                            _state.files.configDir.scrollOffset = _state.files.configDir.selectedIndex;
+                        }
+                        console.log(`[FILES] Config Directory UP: Selected index: ${_state.files.configDir.selectedIndex}`);
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) {
+                    // UP arrow: cycle to next character in selected softkey group (or next group if at end)
+                    const softkeyGroups = [
+                        ["0","1","2","3","4","5","6","7","8","9"],
+                        ["A","B","C","D","E","F","G","H"],
+                        ["I","J","K","L","M","N","O","P","Q"],
+                        ["R","S","T","U","V","W","X","Y","Z"]
+                    ];
+                    let softkeyIndex = _state.files.renameLastSession.selectedSoftkeyIndex || 0;
+                    let charGroup = softkeyGroups[softkeyIndex];
+                    const filename = _state.files.renameLastSession.filename;
+                    const cursorPos = _state.files.renameLastSession.cursorPosition;
+                    const currentChar = filename[cursorPos] || "";
+                    let currentIndex = charGroup.indexOf(currentChar.toUpperCase());
+                    
+                    // If not found in current group, try to find it in any group
+                    if (currentIndex < 0) {
+                        for (let i = 0; i < softkeyGroups.length; i++) {
+                            const idx = softkeyGroups[i].indexOf(currentChar.toUpperCase());
+                            if (idx >= 0) {
+                                softkeyIndex = i;
+                                charGroup = softkeyGroups[i];
+                                currentIndex = idx;
+                                break;
+                            }
+                        }
+                        // If still not found, use first char of current group
+                        if (currentIndex < 0) {
+                            currentIndex = -1;
+                        }
+                    }
+                    
+                    // Move to next character in current group
+                    let nextIndex = currentIndex < 0 ? 0 : currentIndex + 1;
+                    let newChar;
+                    
+                    // If at end of current group, jump to next group
+                    if (nextIndex >= charGroup.length) {
+                        if (softkeyIndex < softkeyGroups.length - 1) {
+                            // Move to next softkey group, start at first character
+                            softkeyIndex = softkeyIndex + 1;
+                            charGroup = softkeyGroups[softkeyIndex];
+                            _state.files.renameLastSession.selectedSoftkeyIndex = softkeyIndex;
+                            newChar = charGroup[0];
+                            console.log(`[FILES] Rename UP: Jumped to softkey group ${softkeyIndex}, changed character at position ${cursorPos} to '${newChar}'`);
+                        } else {
+                            // Already at last group (Z), wrap to first softkey group and start at 0
+                            softkeyIndex = 0;
+                            charGroup = softkeyGroups[0];
+                            _state.files.renameLastSession.selectedSoftkeyIndex = 0;
+                            newChar = charGroup[0];
+                            console.log(`[FILES] Rename UP: Wrapped to softkey group 0, changed character at position ${cursorPos} to '${newChar}'`);
+                        }
+                    } else {
+                        newChar = charGroup[nextIndex];
+                    }
+                    
+                    // Replace character at cursor position
+                    const newFilename = filename.slice(0, cursorPos) + newChar + filename.slice(cursorPos + 1);
+                    _state.files.renameLastSession.filename = newFilename;
+                    if (nextIndex < charGroup.length) {
+                        console.log(`[FILES] Rename UP: Changed character at position ${cursorPos} to '${newChar}'`);
+                    }
                     _emit();
+                } else if (_state.viewId === "files_save_config" && _state.files.saveConfig.editing) {
+                    // UP arrow: cycle to next character in selected softkey group
+                    const softkeyGroups = [
+                        ["0","1","2","3","4","5","6","7","8","9"],
+                        ["A","B","C","D","E","F","G","H"],
+                        ["I","J","K","L","M","N","O","P","Q"],
+                        ["R","S","T","U","V","W","X","Y","Z"]
+                    ];
+                    let softkeyIndex = _state.files.saveConfig.selectedSoftkeyIndex || 0;
+                    let charGroup = softkeyGroups[softkeyIndex];
+                    const filename = _state.files.saveConfig.filename;
+                    const cursorPos = _state.files.saveConfig.cursorPosition;
+                    const currentChar = filename[cursorPos] || "";
+                    let currentIndex = charGroup.indexOf(currentChar.toUpperCase());
+                    
+                    // If not found in current group, try to find it in any group
+                    if (currentIndex < 0) {
+                        for (let i = 0; i < softkeyGroups.length; i++) {
+                            const idx = softkeyGroups[i].indexOf(currentChar.toUpperCase());
+                            if (idx >= 0) {
+                                softkeyIndex = i;
+                                charGroup = softkeyGroups[i];
+                                currentIndex = idx;
+                                break;
+                            }
+                        }
+                        // If still not found, use first char of current group
+                        if (currentIndex < 0) {
+                            currentIndex = -1;
+                        }
+                    }
+                    
+                    // Move to next character in current group
+                    let nextIndex = currentIndex < 0 ? 0 : currentIndex + 1;
+                    let newChar;
+                    
+                    // If at end of current group, jump to next group
+                    if (nextIndex >= charGroup.length) {
+                        if (softkeyIndex < softkeyGroups.length - 1) {
+                            // Move to next softkey group, start at first character
+                            softkeyIndex = softkeyIndex + 1;
+                            charGroup = softkeyGroups[softkeyIndex];
+                            _state.files.saveConfig.selectedSoftkeyIndex = softkeyIndex;
+                            newChar = charGroup[0];
+                            console.log(`[FILES] Save Config UP: Jumped to softkey group ${softkeyIndex}, changed character at position ${cursorPos} to '${newChar}'`);
+                        } else {
+                            // Already at last group (Z), wrap to first softkey group and start at 0
+                            softkeyIndex = 0;
+                            charGroup = softkeyGroups[0];
+                            _state.files.saveConfig.selectedSoftkeyIndex = 0;
+                            newChar = charGroup[0];
+                            console.log(`[FILES] Save Config UP: Wrapped to softkey group 0, changed character at position ${cursorPos} to '${newChar}'`);
+                        }
+                    } else {
+                        newChar = charGroup[nextIndex];
+                    }
+                    
+                    // Replace character at cursor position
+                    const newFilename = filename.slice(0, cursorPos) + newChar + filename.slice(cursorPos + 1);
+                    _state.files.saveConfig.filename = newFilename;
+                    if (nextIndex < charGroup.length) {
+                        console.log(`[FILES] Save Config UP: Changed character at position ${cursorPos} to '${newChar}'`);
+                    }
+                    _emit();
+                } else if (_state.viewId === "files_session_dir") {
+                    // LEFT arrow: move to left column (same row position)
+                    const fileList = _state.files.sessionFiles;
+                    if (fileList.length > 5) {
+                        const currentIndex = _state.files.sessionDir.selectedIndex;
+                        if (currentIndex >= 5 && currentIndex < 10) {
+                            // In right column: move to left column (same row: 0-4)
+                            const rowInRightColumn = currentIndex - 5;
+                            const newIndex = Math.min(4, rowInRightColumn);
+                            _state.files.sessionDir.selectedIndex = newIndex;
+                            console.log(`[FILES] Session Directory LEFT: Moved from right column (${currentIndex}) to left column (${newIndex})`);
+                            _emit();
+                        } else if (currentIndex < 5) {
+                            // Already in left column: do nothing or wrap to right column
+                            // Optionally wrap to right column at same row
+                            const newIndex = currentIndex + 5;
+                            if (newIndex < fileList.length) {
+                                _state.files.sessionDir.selectedIndex = newIndex;
+                                console.log(`[FILES] Session Directory LEFT: Wrapped from left column (${currentIndex}) to right column (${newIndex})`);
+                                _emit();
+                            }
+                        }
+                    }
                 }
                 break;
 
             case "DOWN":
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1145',message:'DOWN case entry',data:{viewId:_state.viewId,isSlm:isSlm(),isHome:isHome(),selectedIndex:_state.menu?.selectedIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                // #endregion
                 // UP/DOWN do not handle SLM page navigation - ENTER cycles pages
                 if (isSlm()) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1147',message:'DOWN blocked by isSlm',data:{viewId:_state.viewId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                    // #endregion
                     // UP/DOWN have no effect on page navigation in SLM mode
                     break;
                 }
@@ -979,8 +1360,176 @@
                     console.log(`[MENU] Setup menu - Selected index: ${_state.menu.selectedIndex} → "${SETUP_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                     _emit();
                 } else if (_state.viewId === "files_menu") {
-                    _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % FILES_MENU_ITEMS.length;
-                    console.log(`[MENU] Files menu - Selected index: ${_state.menu.selectedIndex} → "${FILES_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    const currentIndex = Math.max(0, Math.min(_state.menu.selectedIndex, FILES_MENU_ITEMS.length - 1));
+                    const newIndex = (currentIndex + 1) % FILES_MENU_ITEMS.length;
+                    _state.menu.selectedIndex = newIndex;
+                    console.log(`[MENU] Files menu DOWN - Selected index: ${currentIndex} → ${newIndex} → "${FILES_MENU_ITEMS[newIndex]}" (total items: ${FILES_MENU_ITEMS.length})`);
+                    _emit();
+                } else if (_state.viewId === "files_format_card") {
+                    // DOWN: cycle between QUICK FORMAT (0) and FULL FORMAT (1)
+                    const currentIndex = _state.files.formatCard.selectedIndex;
+                    const newIndex = (currentIndex + 1) % 2; // Toggle between 0 and 1
+                    _state.files.formatCard.selectedIndex = newIndex;
+                    const options = ["QUICK FORMAT", "FULL FORMAT"];
+                    console.log(`[FILES] Format Card DOWN - Selected index: ${currentIndex} → ${newIndex} → "${options[newIndex]}"`);
+                    _emit();
+                } else if (_state.viewId === "files_session_dir") {
+                    const fileList = _state.files.sessionFiles;
+                    if (fileList.length > 0) {
+                        // DOWN: cycle through all files sequentially, wrapping at bottom
+                        const currentIndex = _state.files.sessionDir.selectedIndex;
+                        const maxVisible = 10;
+                        const lastVisibleIndex = Math.min(maxVisible - 1, fileList.length - 1);
+                        const newIndex = currentIndex >= lastVisibleIndex ? 
+                            0 : // Wrap to first file (0)
+                            currentIndex + 1;
+                        _state.files.sessionDir.selectedIndex = newIndex;
+                        // Update scroll offset if needed (show 10 items at a time in 2 columns, adjust offset)
+                        if (_state.files.sessionDir.selectedIndex >= _state.files.sessionDir.scrollOffset + maxVisible) {
+                            _state.files.sessionDir.scrollOffset = _state.files.sessionDir.selectedIndex - maxVisible + 1;
+                        }
+                        console.log(`[FILES] Session Directory DOWN: Selected index: ${_state.files.sessionDir.selectedIndex}`);
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_config_dir") {
+                    const fileList = _state.files.configFiles;
+                    if (fileList.length > 0) {
+                        _state.files.configDir.selectedIndex = Math.min(fileList.length - 1, _state.files.configDir.selectedIndex + 1);
+                        // Update scroll offset if needed
+                        const maxVisible = 8;
+                        if (_state.files.configDir.selectedIndex >= _state.files.configDir.scrollOffset + maxVisible) {
+                            _state.files.configDir.scrollOffset = _state.files.configDir.selectedIndex - maxVisible + 1;
+                        }
+                        console.log(`[FILES] Config Directory DOWN: Selected index: ${_state.files.configDir.selectedIndex}`);
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) {
+                    // DOWN arrow: cycle to previous character in selected softkey group (or previous group if at start)
+                    const softkeyGroups = [
+                        ["0","1","2","3","4","5","6","7","8","9"],
+                        ["A","B","C","D","E","F","G","H"],
+                        ["I","J","K","L","M","N","O","P","Q"],
+                        ["R","S","T","U","V","W","X","Y","Z"]
+                    ];
+                    let softkeyIndex = _state.files.renameLastSession.selectedSoftkeyIndex || 0;
+                    let charGroup = softkeyGroups[softkeyIndex];
+                    const filename = _state.files.renameLastSession.filename;
+                    const cursorPos = _state.files.renameLastSession.cursorPosition;
+                    const currentChar = filename[cursorPos] || "";
+                    let currentIndex = charGroup.indexOf(currentChar.toUpperCase());
+                    
+                    // If not found in current group, try to find it in any group
+                    if (currentIndex < 0) {
+                        for (let i = 0; i < softkeyGroups.length; i++) {
+                            const idx = softkeyGroups[i].indexOf(currentChar.toUpperCase());
+                            if (idx >= 0) {
+                                softkeyIndex = i;
+                                charGroup = softkeyGroups[i];
+                                currentIndex = idx;
+                                break;
+                            }
+                        }
+                        // If still not found, use last char of current group
+                        if (currentIndex < 0) {
+                            currentIndex = charGroup.length;
+                        }
+                    }
+                    
+                    // Move to previous character in current group
+                    let prevIndex = currentIndex - 1;
+                    let newChar;
+                    
+                    // If at start of current group, jump to previous group
+                    if (prevIndex < 0) {
+                        if (softkeyIndex > 0) {
+                            // Move to previous softkey group, start at last character
+                            softkeyIndex = softkeyIndex - 1;
+                            charGroup = softkeyGroups[softkeyIndex];
+                            _state.files.renameLastSession.selectedSoftkeyIndex = softkeyIndex;
+                            newChar = charGroup[charGroup.length - 1];
+                            console.log(`[FILES] Rename DOWN: Jumped to softkey group ${softkeyIndex}, changed character at position ${cursorPos} to '${newChar}'`);
+                        } else {
+                            // Already at first group (0), wrap to last softkey group and start at Z
+                            softkeyIndex = softkeyGroups.length - 1;
+                            charGroup = softkeyGroups[softkeyIndex];
+                            _state.files.renameLastSession.selectedSoftkeyIndex = softkeyIndex;
+                            newChar = charGroup[charGroup.length - 1];
+                            console.log(`[FILES] Rename DOWN: Wrapped to softkey group ${softkeyIndex}, changed character at position ${cursorPos} to '${newChar}'`);
+                        }
+                    } else {
+                        newChar = charGroup[prevIndex];
+                    }
+                    
+                    // Replace character at cursor position
+                    const newFilename = filename.slice(0, cursorPos) + newChar + filename.slice(cursorPos + 1);
+                    _state.files.renameLastSession.filename = newFilename;
+                    if (prevIndex >= 0) {
+                        console.log(`[FILES] Rename DOWN: Changed character at position ${cursorPos} to '${newChar}'`);
+                    }
+                    _emit();
+                } else if (_state.viewId === "files_save_config" && _state.files.saveConfig.editing) {
+                    // DOWN arrow: cycle to previous character in selected softkey group (or previous group if at start)
+                    const softkeyGroups = [
+                        ["0","1","2","3","4","5","6","7","8","9"],
+                        ["A","B","C","D","E","F","G","H"],
+                        ["I","J","K","L","M","N","O","P","Q"],
+                        ["R","S","T","U","V","W","X","Y","Z"]
+                    ];
+                    let softkeyIndex = _state.files.saveConfig.selectedSoftkeyIndex || 0;
+                    let charGroup = softkeyGroups[softkeyIndex];
+                    const filename = _state.files.saveConfig.filename;
+                    const cursorPos = _state.files.saveConfig.cursorPosition;
+                    const currentChar = filename[cursorPos] || "";
+                    let currentIndex = charGroup.indexOf(currentChar.toUpperCase());
+                    
+                    // If not found in current group, try to find it in any group
+                    if (currentIndex < 0) {
+                        for (let i = 0; i < softkeyGroups.length; i++) {
+                            const idx = softkeyGroups[i].indexOf(currentChar.toUpperCase());
+                            if (idx >= 0) {
+                                softkeyIndex = i;
+                                charGroup = softkeyGroups[i];
+                                currentIndex = idx;
+                                break;
+                            }
+                        }
+                        // If still not found, use last char of current group
+                        if (currentIndex < 0) {
+                            currentIndex = charGroup.length;
+                        }
+                    }
+                    
+                    // Move to previous character in current group
+                    let prevIndex = currentIndex - 1;
+                    let newChar;
+                    
+                    // If at start of current group, jump to previous group
+                    if (prevIndex < 0) {
+                        if (softkeyIndex > 0) {
+                            // Move to previous softkey group, start at last character
+                            softkeyIndex = softkeyIndex - 1;
+                            charGroup = softkeyGroups[softkeyIndex];
+                            _state.files.saveConfig.selectedSoftkeyIndex = softkeyIndex;
+                            newChar = charGroup[charGroup.length - 1];
+                            console.log(`[FILES] Save Config DOWN: Jumped to softkey group ${softkeyIndex}, changed character at position ${cursorPos} to '${newChar}'`);
+                        } else {
+                            // Already at first group (0), wrap to last softkey group and start at Z
+                            softkeyIndex = softkeyGroups.length - 1;
+                            charGroup = softkeyGroups[softkeyIndex];
+                            _state.files.saveConfig.selectedSoftkeyIndex = softkeyIndex;
+                            newChar = charGroup[charGroup.length - 1];
+                            console.log(`[FILES] Save Config DOWN: Wrapped to softkey group ${softkeyIndex}, changed character at position ${cursorPos} to '${newChar}'`);
+                        }
+                    } else {
+                        newChar = charGroup[prevIndex];
+                    }
+                    
+                    // Replace character at cursor position
+                    const newFilename = filename.slice(0, cursorPos) + newChar + filename.slice(cursorPos + 1);
+                    _state.files.saveConfig.filename = newFilename;
+                    if (prevIndex >= 0) {
+                        console.log(`[FILES] Save Config DOWN: Changed character at position ${cursorPos} to '${newChar}'`);
+                    }
                     _emit();
                 } else if (_state.viewId === "meter_set_menu") {
                     // Only navigate if not editing - when editing, UP/DOWN adjusts values (but only if enabled and focus is "value")
@@ -1362,12 +1911,29 @@
                     console.log(`[COMMS] Baud rate: ${_state.comms.baudRate}`);
                     _emit();
                 } else if (isHome()) {
-                    _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % MENU_ITEMS.length;
-                    console.log(`[MENU] Home menu - Selected index: ${_state.menu.selectedIndex} → "${MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1600',message:'isHome branch taken',data:{viewId:_state.viewId,selectedIndexBefore:_state.menu.selectedIndex,menuItemsLength:MENU_ITEMS.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                    const currentIndex = Math.max(0, Math.min(_state.menu.selectedIndex, MENU_ITEMS.length - 1));
+                    const newIndex = (currentIndex + 1) % MENU_ITEMS.length;
+                    _state.menu.selectedIndex = newIndex;
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1603',message:'isHome branch after update',data:{currentIndex,newIndex,selectedIndexAfter:_state.menu.selectedIndex,selectedItem:MENU_ITEMS[newIndex]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                    console.log(`[MENU] Home menu DOWN - Selected index: ${currentIndex} → ${newIndex} → "${MENU_ITEMS[newIndex]}" (total items: ${MENU_ITEMS.length})`);
+                    console.log(`[MENU] All items: ${MENU_ITEMS.map((item, idx) => `${idx}:${item}`).join(', ')}`);
+                    console.log(`[MENU] State after update: _state.menu.selectedIndex = ${_state.menu.selectedIndex}`);
                     _emit();
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1607',message:'_emit called after isHome update',data:{selectedIndex:_state.menu.selectedIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
                 } else if (isInFiles() && (_state.viewId === "files_session_dir" || _state.viewId === "files_config_dir")) {
                     _state.files.cursor++;
                     _emit();
+                } else {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1611',message:'DOWN case no match',data:{viewId:_state.viewId,isHome:isHome(),isInFiles:isInFiles()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                    // #endregion
                 }
                 break;
 
@@ -1415,6 +1981,54 @@
                         _emit();
                     }
                     // In Meter 2 or when not editing, LEFT does nothing
+                } else if (_state.viewId === "files_rename_last") {
+                    if (_state.files.renameLastSession.editing) {
+                        // LEFT arrow: delete character before cursor (backspace behavior)
+                        const filename = _state.files.renameLastSession.filename;
+                        const cursorPos = _state.files.renameLastSession.cursorPosition;
+                        if (cursorPos > 0) {
+                            const newFilename = filename.slice(0, cursorPos - 1) + filename.slice(cursorPos);
+                            _state.files.renameLastSession.filename = newFilename;
+                            _state.files.renameLastSession.cursorPosition = cursorPos - 1;
+                            console.log(`[FILES] Rename LEFT: Deleted character at position ${cursorPos - 1}`);
+                        }
+                        _emit();
+                    } else {
+                        // LEFT/RIGHT when not editing: navigate between FILE NAME and SAVE
+                        const focus = _state.files.renameLastSession.focus || "file_name";
+                        if (focus === "save") {
+                            _state.files.renameLastSession.focus = "file_name";
+                            console.log(`[FILES] Rename LEFT: Focus changed to FILE NAME`);
+                        } else {
+                            _state.files.renameLastSession.focus = "save";
+                            console.log(`[FILES] Rename RIGHT: Focus changed to SAVE`);
+                        }
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_save_config") {
+                    if (_state.files.saveConfig.editing) {
+                        // LEFT arrow: delete character before cursor (backspace behavior)
+                        const filename = _state.files.saveConfig.filename;
+                        const cursorPos = _state.files.saveConfig.cursorPosition;
+                        if (cursorPos > 0) {
+                            const newFilename = filename.slice(0, cursorPos - 1) + filename.slice(cursorPos);
+                            _state.files.saveConfig.filename = newFilename;
+                            _state.files.saveConfig.cursorPosition = cursorPos - 1;
+                            console.log(`[FILES] Save Config LEFT: Deleted character at position ${cursorPos - 1}`);
+                        }
+                        _emit();
+                    } else {
+                        // LEFT/RIGHT when not editing: navigate between FILE NAME and SAVE
+                        const focus = _state.files.saveConfig.focus || "file_name";
+                        if (focus === "save") {
+                            _state.files.saveConfig.focus = "file_name";
+                            console.log(`[FILES] Save Config LEFT: Focus changed to FILE NAME`);
+                        } else {
+                            _state.files.saveConfig.focus = "save";
+                            console.log(`[FILES] Save Config RIGHT: Focus changed to SAVE`);
+                        }
+                        _emit();
+                    }
                 } else if (_state.viewId === "datetime_menu" && _state.datetime.editing) {
                     // LEFT arrow: move to previous subfield
                     const currentSubField = _state.datetime.editSubField;
@@ -1681,6 +2295,98 @@
                         }
                     }
                     // In Meter 2, RIGHT does nothing
+                } else if (_state.viewId === "files_session_dir") {
+                    // RIGHT arrow: move to right column (same row position)
+                    const fileList = _state.files.sessionFiles;
+                    if (fileList.length > 5) {
+                        const currentIndex = _state.files.sessionDir.selectedIndex;
+                        if (currentIndex < 5) {
+                            // In left column: move to right column (same row: 5-9)
+                            const newIndex = Math.min(9, Math.min(fileList.length - 1, currentIndex + 5));
+                            _state.files.sessionDir.selectedIndex = newIndex;
+                            console.log(`[FILES] Session Directory RIGHT: Moved from left column (${currentIndex}) to right column (${newIndex})`);
+                            _emit();
+                        } else if (currentIndex >= 5 && currentIndex < 10) {
+                            // Already in right column: wrap to left column at same row
+                            const rowInRightColumn = currentIndex - 5;
+                            const newIndex = Math.min(4, rowInRightColumn);
+                            _state.files.sessionDir.selectedIndex = newIndex;
+                            console.log(`[FILES] Session Directory RIGHT: Wrapped from right column (${currentIndex}) to left column (${newIndex})`);
+                            _emit();
+                        }
+                    }
+                } else if (_state.viewId === "files_rename_last") {
+                    if (_state.files.renameLastSession.editing) {
+                        // RIGHT arrow: insert/add character from selected softkey group at cursor position
+                        const softkeyGroups = [
+                            ["0","1","2","3","4","5","6","7","8","9"],
+                            ["A","B","C","D","E","F","G","H"],
+                            ["I","J","K","L","M","N","O","P","Q"],
+                            ["R","S","T","U","V","W","X","Y","Z"]
+                        ];
+                        const softkeyIndex = _state.files.renameLastSession.selectedSoftkeyIndex || 0;
+                        const charGroup = softkeyGroups[softkeyIndex];
+                        const filename = _state.files.renameLastSession.filename;
+                        const cursorPos = _state.files.renameLastSession.cursorPosition;
+                        // Get the first character from the selected softkey group
+                        const charToInsert = charGroup[0];
+                        // Insert character at cursor position
+                        const newFilename = filename.slice(0, cursorPos) + charToInsert + filename.slice(cursorPos);
+                        // Limit filename length (e.g., 8 characters)
+                        if (newFilename.length <= 8) {
+                            _state.files.renameLastSession.filename = newFilename;
+                            _state.files.renameLastSession.cursorPosition = cursorPos + 1;
+                            console.log(`[FILES] Rename RIGHT: Inserted '${charToInsert}' at position ${cursorPos}`);
+                        }
+                        _emit();
+                    } else {
+                        // LEFT/RIGHT when not editing: navigate between FILE NAME and SAVE
+                        const focus = _state.files.renameLastSession.focus || "file_name";
+                        if (focus === "file_name") {
+                            _state.files.renameLastSession.focus = "save";
+                            console.log(`[FILES] Rename RIGHT: Focus changed to SAVE`);
+                        } else {
+                            _state.files.renameLastSession.focus = "file_name";
+                            console.log(`[FILES] Rename LEFT: Focus changed to FILE NAME`);
+                        }
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_save_config") {
+                    if (_state.files.saveConfig.editing) {
+                        // RIGHT arrow: insert/add character from selected softkey group at cursor position
+                        const softkeyGroups = [
+                            ["0","1","2","3","4","5","6","7","8","9"],
+                            ["A","B","C","D","E","F","G","H"],
+                            ["I","J","K","L","M","N","O","P","Q"],
+                            ["R","S","T","U","V","W","X","Y","Z"]
+                        ];
+                        const softkeyIndex = _state.files.saveConfig.selectedSoftkeyIndex || 0;
+                        const charGroup = softkeyGroups[softkeyIndex];
+                        const filename = _state.files.saveConfig.filename;
+                        const cursorPos = _state.files.saveConfig.cursorPosition;
+                        // Get the first character from the selected softkey group
+                        const charToInsert = charGroup[0];
+                        // Insert character at cursor position
+                        const newFilename = filename.slice(0, cursorPos) + charToInsert + filename.slice(cursorPos);
+                        // Limit filename length (e.g., 8 characters)
+                        if (newFilename.length <= 8) {
+                            _state.files.saveConfig.filename = newFilename;
+                            _state.files.saveConfig.cursorPosition = cursorPos + 1;
+                            console.log(`[FILES] Save Config RIGHT: Inserted '${charToInsert}' at position ${cursorPos}`);
+                        }
+                        _emit();
+                    } else {
+                        // LEFT/RIGHT when not editing: navigate between FILE NAME and SAVE
+                        const focus = _state.files.saveConfig.focus || "file_name";
+                        if (focus === "file_name") {
+                            _state.files.saveConfig.focus = "save";
+                            console.log(`[FILES] Save Config RIGHT: Focus changed to SAVE`);
+                        } else {
+                            _state.files.saveConfig.focus = "file_name";
+                            console.log(`[FILES] Save Config LEFT: Focus changed to FILE NAME`);
+                        }
+                        _emit();
+                    }
                 } else if (_state.viewId === "datetime_menu" && _state.datetime.editing) {
                     // RIGHT arrow: move to next subfield
                     const currentSubField = _state.datetime.editSubField;
@@ -2749,33 +3455,203 @@
                     if (item === "SESSION DIRECTORY") {
                         _pushHistory("files_session_dir");
                         _state.viewId = "files_session_dir";
-                        _state.files.cursor = 0;
+                        _state.files.sessionDir.selectedIndex = 0;
+                        _state.files.sessionDir.scrollOffset = 0;
                         _emit();
                     } else if (item === "CONFIG DIRECTORY") {
                         _pushHistory("files_config_dir");
                         _state.viewId = "files_config_dir";
-                        _state.files.cursor = 0;
+                        _state.files.configDir.selectedIndex = 0;
+                        _state.files.configDir.scrollOffset = 0;
                         _emit();
                     } else if (item === "RENAME LAST SESSION") {
-                        _showToast("File renamed");
+                        // Get the last session file name (first in list)
+                        const lastSession = _state.files.sessionFiles.length > 0 ? _state.files.sessionFiles[0].name : "SES001";
+                        _state.files.renameLastSession.filename = lastSession;
+                        _state.files.renameLastSession.originalFilename = lastSession;
+                        _state.files.renameLastSession.cursorPosition = 0;
+                        _state.files.renameLastSession.editing = false;
+                        _state.files.renameLastSession.focus = "file_name"; // Start with FILE NAME highlighted
+                        // Save the current menu selectedIndex so we can restore it when returning
+                        _state.files.renameLastSession.previousMenuIndex = _state.menu.selectedIndex;
+                        _pushHistory("files_rename_last");
+                        _state.viewId = "files_rename_last";
                         _emit();
                     } else if (item === "SAVE CONFIG FILE") {
-                        _showToast("Config saved");
+                        // Generate default config filename
+                        const configCount = _state.files.configFiles.length;
+                        const defaultName = `CONFIG${String(configCount + 1).padStart(3, '0')}`;
+                        _state.files.saveConfig.filename = defaultName;
+                        _state.files.saveConfig.originalFilename = defaultName;
+                        _state.files.saveConfig.cursorPosition = 0;
+                        _state.files.saveConfig.editing = false;
+                        _state.files.saveConfig.focus = "file_name"; // Start with FILE NAME highlighted
+                        _state.files.saveConfig.selectedSoftkeyIndex = 0;
+                        _pushHistory("files_save_config");
+                        _state.viewId = "files_save_config";
                         _emit();
                     } else if (item === "FORMAT CARD") {
+                        _state.files.formatCard.selectedIndex = 0; // Default to QUICK FORMAT
                         _state.previousViewId = "files_menu";
                         _state.viewId = "files_format_card";
+                        console.log(`[FILES] Format Card: Navigated to format card screen`);
                         _emit();
-                        const formatDuration = 2000 + Math.random() * 1000; // 2000-3000ms
-                        _state.timers.formatting = setTimeout(() => {
-                            _state.viewId = "files_menu";
-                            _clearTimer('formatting');
-                            _emit();
-                        }, formatDuration);
                     }
-                } else if (_state.viewId === "files_delete_confirm") {
-                    _showToast("Deleted");
+                } else if (_state.viewId === "files_rename_last") {
+                    console.log(`[FILES] ENTER pressed on rename screen - editing: ${_state.files.renameLastSession.editing}, focus: ${_state.files.renameLastSession.focus}`);
+                    if (_state.files.renameLastSession.editing) {
+                        // ENTER in edit mode: exit edit mode and highlight SAVE (do NOT save yet)
+                        _state.files.renameLastSession.editing = false;
+                        _state.files.renameLastSession.cursorPosition = 0;
+                        _state.files.renameLastSession.selectedSoftkeyIndex = 0;
+                        _state.files.renameLastSession.focus = "save"; // Highlight SAVE so user can save
+                        console.log(`[FILES] Rename: Exited edit mode, focus set to SAVE (filename: ${_state.files.renameLastSession.filename})`);
+                        _emit();
+                    } else {
+                        // ENTER when not editing: check focus
+                        const focus = _state.files.renameLastSession.focus || "file_name";
+                        if (focus === "save") {
+                            // ENTER on SAVE: save the renamed file and navigate to rename status screen
+                            const newName = _state.files.renameLastSession.filename.trim();
+                            console.log(`[FILES] Checking for duplicate: newName="${newName}", sessionFiles:`, _state.files.sessionFiles);
+                            
+                            // First check: if new name matches the current name of the file being renamed (index 0)
+                            const currentFile = _state.files.sessionFiles[0];
+                            const currentName = currentFile ? (typeof currentFile === 'string' ? currentFile : currentFile.name) : '';
+                            const isSameName = currentName && currentName.trim().toUpperCase() === newName.toUpperCase();
+                            console.log(`[FILES] Current file name: "${currentName}", newName: "${newName}", isSameName: ${isSameName}`);
+                            
+                            // Second check: if file already exists in other files (excluding index 0)
+                            const existingFile = _state.files.sessionFiles.find((file, index) => {
+                                if (index === 0) {
+                                    console.log(`[FILES] Skipping index 0 (file being renamed)`);
+                                    return false; // Skip the file being renamed
+                                }
+                                const existingName = typeof file === 'string' ? file : file.name;
+                                const matches = existingName && existingName.trim().toUpperCase() === newName.toUpperCase();
+                                console.log(`[FILES] Checking index ${index}: existingName="${existingName}", matches=${matches}`);
+                                return matches;
+                            });
+                            console.log(`[FILES] Duplicate check result: existingFile=`, existingFile);
+                            
+                            // Show error if name is unchanged OR if it matches another file
+                            if (isSameName || existingFile) {
+                                // File already exists - show error
+                                _state.files.errorStatus = _state.files.errorStatus || {};
+                                _state.files.errorStatus.errorLine1 = "FILE ERROR";
+                                _state.files.errorStatus.errorLine2 = "FILE ALREADY EXISTS";
+                                _state.viewId = "files_error";
+                                console.log(`[FILES] Rename error: File ${newName} already exists`);
+                                _emit();
+                            } else {
+                                // Update the first session file name
+                                if (_state.files.sessionFiles.length > 0) {
+                                    _state.files.sessionFiles[0].name = newName;
+                                }
+                                // Set the renamed file name for the status screen
+                                _state.files.renameStatus = _state.files.renameStatus || {};
+                                _state.files.renameStatus.renamedFileName = "FILE SAVED";
+                                // Navigate to rename status screen
+                                _state.viewId = "files_rename_status";
+                                console.log(`[FILES] Rename saved via SAVE: ${newName}, navigating to rename status screen`);
+                                _emit();
+                            }
+                        } else {
+                            // ENTER on FILE NAME: enter edit mode
+                            _state.files.renameLastSession.editing = true;
+                            const filename = _state.files.renameLastSession.filename;
+                            // Position cursor at last character (not at end)
+                            _state.files.renameLastSession.cursorPosition = filename.length > 0 ? filename.length - 1 : 0;
+                            // Default to first softkey (numbers)
+                            _state.files.renameLastSession.selectedSoftkeyIndex = 0;
+                            // Focus stays on softkeys when editing (no highlight on FILE NAME or SAVE)
+                            console.log(`[FILES] Rename: Entered edit mode`);
+                            _emit();
+                        }
+                    }
+                } else if (_state.viewId === "files_save_config") {
+                    if (_state.files.saveConfig.editing) {
+                        // ENTER in edit mode: exit edit mode, highlight SAVE
+                        _state.files.saveConfig.editing = false;
+                        _state.files.saveConfig.cursorPosition = 0;
+                        _state.files.saveConfig.selectedSoftkeyIndex = 0;
+                        _state.files.saveConfig.focus = "save"; // Highlight SAVE so user can save
+                        console.log(`[FILES] Save Config: Exited edit mode, focus set to SAVE (filename: ${_state.files.saveConfig.filename})`);
+                        _emit();
+                    } else {
+                        // ENTER when not editing: check focus
+                        const focus = _state.files.saveConfig.focus || "file_name";
+                        if (focus === "save") {
+                            // ENTER on SAVE: save the config file
+                            const configName = _state.files.saveConfig.filename.trim();
+                            // Check if file already exists
+                            const existingFile = _state.files.configFiles.find(file => {
+                                const existingName = typeof file === 'string' ? file : file.name;
+                                return existingName && existingName.trim().toUpperCase() === configName.toUpperCase();
+                            });
+                            if (existingFile) {
+                                // File already exists - show error
+                                _state.files.errorStatus = _state.files.errorStatus || {};
+                                _state.files.errorStatus.errorLine1 = "FILE ERROR";
+                                _state.files.errorStatus.errorLine2 = "FILE ALREADY EXISTS";
+                                _state.viewId = "files_error";
+                                console.log(`[FILES] Save config error: File ${configName} already exists`);
+                                _emit();
+                            } else {
+                                // Add new config file to list
+                                const now = new Date();
+                                const dateStr = now.toISOString().split('T')[0];
+                                const timeStr = now.toTimeString().split(' ')[0];
+                                _state.files.configFiles.unshift({ name: configName, date: dateStr, time: timeStr });
+                                _state.files.saveConfig.editing = false;
+                                // Set the saved file name for the status screen
+                                _state.files.saveConfigStatus = _state.files.saveConfigStatus || {};
+                                _state.files.saveConfigStatus.savedFileName = "FILE SAVED";
+                                // Navigate to save config status screen
+                                _state.viewId = "files_save_config_status";
+                                console.log(`[FILES] Config saved: ${configName}, navigating to save config status screen`);
+                                _emit();
+                            }
+                        } else {
+                            // ENTER on FILE NAME: enter edit mode
+                            _state.files.saveConfig.editing = true;
+                            const filename = _state.files.saveConfig.filename;
+                            // Position cursor at last character (not at end)
+                            _state.files.saveConfig.cursorPosition = filename.length > 0 ? filename.length - 1 : 0;
+                            // Default to first softkey (numbers)
+                            _state.files.saveConfig.selectedSoftkeyIndex = 0;
+                            // Focus stays on softkeys when editing (no highlight on FILE NAME or SAVE)
+                            console.log(`[FILES] Save Config: Entered edit mode`);
+                            _emit();
+                        }
+                    }
+                } else if (_state.viewId === "files_format_card") {
+                    // ENTER: confirm format operation and start formatting
+                    const formatType = _state.files.formatCard.selectedIndex === 0 ? "QUICK FORMAT" : "FULL FORMAT";
+                    console.log(`[FILES] Format Card: Starting ${formatType}`);
+                    // Set format status message and navigate to format status screen
+                    _state.files.formatStatus = _state.files.formatStatus || {};
+                    _state.files.formatStatus.formatMessage = "FORMATTING...";
+                    _state.previousViewId = "files_format_card";
+                    _state.viewId = "files_format_status";
+                    _emit();
+                    // Start formatting timer (2-3 seconds)
+                    const formatDuration = 2000 + Math.random() * 1000; // 2000-3000ms
+                    _state.timers.formatting = setTimeout(() => {
+                        _state.viewId = "files_menu";
+                        _clearTimer('formatting');
+                        console.log(`[FILES] Format Card: Formatting complete, returned to files_menu`);
+                        _emit();
+                    }, formatDuration);
+                } else if (_state.viewId === "files_delete_status") {
+                    // ENTER on delete status screen: return to previous view
                     _state.viewId = _state.previousViewId || "files_menu";
+                    console.log(`[FILES] Delete Status: Returning to previous view`);
+                    _emit();
+                } else if (_state.viewId === "files_load_status") {
+                    // ENTER on load status screen: return to previous view
+                    _state.viewId = _state.previousViewId || "files_menu";
+                    console.log(`[FILES] Load Status: Returning to previous view`);
                     _emit();
                 } else if (_state.viewId === "cal_menu") {
                     _state.previousViewId = isSlm() ? _state.viewId : (isInSetup() ? _state.viewId : "home_screen");
@@ -3073,11 +3949,144 @@
                         const previousView = _popHistory() || "home_screen";
                         _state.viewId = previousView;
                         _emit();
-                    } else if (_state.viewId === "files_delete_confirm") {
+                    } else if (_state.viewId === "files_rename_status") {
+                        // ESC from rename status: return to files_menu
+                        _state.viewId = "files_menu";
+                        _state.menu.selectedIndex = 3; // Go to "SAVE CONFIG FILE"
+                        console.log(`[FILES] Rename status ESC: Returned to files_menu, selectedIndex set to 3`);
+                        _emit();
+                    } else if (_state.viewId === "files_save_config_status") {
+                        // ESC from save config status: return to files_menu
+                        _state.viewId = "files_menu";
+                        _state.menu.selectedIndex = 3; // Go to "SAVE CONFIG FILE"
+                        console.log(`[FILES] Save config status ESC: Returned to files_menu, selectedIndex set to 3`);
+                        _emit();
+                    } else if (_state.viewId === "files_error") {
+                        // ESC from error screen: return to previous screen
+                        // Return to the screen we came from (either rename or save config)
+                        if (_state.files.saveConfig.filename && !_state.files.saveConfig.editing) {
+                            // Came from save config
+                            _state.viewId = "files_save_config";
+                            _state.files.saveConfig.editing = false;
+                        } else {
+                            // Came from rename
+                            _state.viewId = "files_rename_last";
+                        }
+                        console.log(`[FILES] Error screen ESC: Returned to previous screen`);
+                        _emit();
+                    } else if (_state.viewId === "files_rename_last") {
+                        console.log(`[FILES] Rename ESC pressed - editing: ${_state.files.renameLastSession.editing}, viewId: ${_state.viewId}`);
+                        if (_state.files.renameLastSession.editing) {
+                            // ESC in edit mode: exit edit mode, keep modified filename, highlight SAVE
+                            // Do NOT restore original filename - user can save the new name or press ESC again to cancel
+                            _state.files.renameLastSession.editing = false;
+                            _state.files.renameLastSession.cursorPosition = 0;
+                            _state.files.renameLastSession.selectedSoftkeyIndex = 0;
+                            _state.files.renameLastSession.focus = "save"; // Highlight SAVE so user can save the new name
+                            console.log(`[FILES] Rename ESC: Exited edit mode, focus set to SAVE (filename kept: ${_state.files.renameLastSession.filename})`);
+                            _emit();
+                        } else {
+                            // ESC when not editing: if focus is on SAVE, revert to original filename and return to menu
+                            const focus = _state.files.renameLastSession.focus || "file_name";
+                            if (focus === "save") {
+                                // Second ESC press: cancel rename, revert to original filename
+                                _state.files.renameLastSession.filename = _state.files.renameLastSession.originalFilename || "SES001";
+                                _state.files.renameLastSession.focus = "file_name";
+                                console.log(`[FILES] Rename ESC: Cancelled editing, reverted to original filename: ${_state.files.renameLastSession.filename}`);
+                            }
+                            
+                            // Return to files_menu and go to "SAVE CONFIG FILE" (index 3)
+                            const previousView = _popHistory() || "files_menu";
+                            console.log(`[FILES] Rename ESC (not editing): previousView=${previousView}, current selectedIndex=${_state.menu.selectedIndex}`);
+                            
+                            // Always set selectedIndex to 3 (SAVE CONFIG FILE) when returning to files_menu
+                            // Set it BEFORE changing viewId to ensure it's set
+                            if (previousView === "files_menu") {
+                                _state.menu.selectedIndex = 3;
+                                console.log(`[FILES] Rename ESC: Setting selectedIndex to 3 BEFORE changing viewId`);
+                            }
+                            _state.viewId = previousView;
+                            
+                            // Double-check and force selectedIndex to 3 if we're going to files_menu
+                            if (_state.viewId === "files_menu") {
+                                if (_state.menu.selectedIndex !== 3) {
+                                    console.warn(`[FILES] Rename ESC: WARNING - selectedIndex is ${_state.menu.selectedIndex}, forcing to 3`);
+                                    _state.menu.selectedIndex = 3;
+                                }
+                                console.log(`[FILES] Rename ESC: Returned to files_menu, selectedIndex=${_state.menu.selectedIndex} (should be 3 for "${FILES_MENU_ITEMS[3]}")`);
+                            } else {
+                                console.log(`[FILES] Rename ESC: Returned to ${previousView}`);
+                            }
+                            _emit();
+                        }
+                    } else if (_state.viewId === "files_save_config") {
+                        console.log(`[FILES] Save Config ESC pressed - editing: ${_state.files.saveConfig.editing}, viewId: ${_state.viewId}`);
+                        if (_state.files.saveConfig.editing) {
+                            // ESC in edit mode: exit edit mode, keep modified filename, highlight SAVE
+                            // Do NOT restore original filename - user can save the new name or press ESC again to cancel
+                            _state.files.saveConfig.editing = false;
+                            _state.files.saveConfig.cursorPosition = 0;
+                            _state.files.saveConfig.selectedSoftkeyIndex = 0;
+                            _state.files.saveConfig.focus = "save"; // Highlight SAVE so user can save the new name
+                            console.log(`[FILES] Save Config ESC: Exited edit mode, focus set to SAVE (filename kept: ${_state.files.saveConfig.filename})`);
+                            _emit();
+                        } else {
+                            // ESC when not editing: if focus is on SAVE, revert to original filename and return to menu
+                            const focus = _state.files.saveConfig.focus || "file_name";
+                            if (focus === "save") {
+                                // Second ESC press: cancel save, revert to original filename
+                                _state.files.saveConfig.filename = _state.files.saveConfig.originalFilename || "CONFIG001";
+                                _state.files.saveConfig.focus = "file_name";
+                                console.log(`[FILES] Save Config ESC: Cancelled editing, reverted to original filename: ${_state.files.saveConfig.filename}`);
+                            }
+                            
+                            // Return to files_menu
+                            const previousView = _popHistory() || "files_menu";
+                            _state.viewId = previousView;
+                            console.log(`[FILES] Save Config ESC: Returned to ${previousView}`);
+                            _emit();
+                        }
+                    } else if (_state.viewId === "files_format_card") {
+                        // ESC: cancel format and return to files menu
+                        // Clear any pending format timer
+                        if (_state.timers.formatting) {
+                            _clearTimer('formatting');
+                        }
+                        _state.viewId = "files_menu";
+                        _state.menu.selectedIndex = 4; // Go to "FORMAT CARD" (index 4)
+                        console.log(`[FILES] Format Card ESC: Cancelled, returned to files_menu`);
+                        _emit();
+                    } else if (_state.viewId === "files_format_status") {
+                        // ESC from format status: return to files menu (formatting may still be in progress)
+                        // Note: Timer will still complete and return to files_menu
+                        _state.viewId = "files_menu";
+                        _state.menu.selectedIndex = 4; // Go to "FORMAT CARD" (index 4)
+                        console.log(`[FILES] Format Status ESC: Returned to files_menu`);
+                        _emit();
+                    } else if (_state.viewId === "files_delete_status") {
+                        // ESC: return to previous view
                         _state.viewId = _state.previousViewId || "files_menu";
+                        console.log(`[FILES] Delete Status ESC: Returning to previous view`);
+                        _emit();
+                    } else if (_state.viewId === "files_load_status") {
+                        // ESC: return to previous view
+                        _state.viewId = _state.previousViewId || "files_menu";
+                        console.log(`[FILES] Load Status ESC: Returning to previous view`);
+                        _emit();
+                    } else if (_state.viewId === "files_session_dir") {
+                        // ESC: return to files_menu
+                        const previousView = _popHistory() || "files_menu";
+                        _state.viewId = previousView;
+                        console.log(`[FILES] Session Directory ESC: Returning to ${previousView}`);
+                        _emit();
+                    } else if (_state.viewId === "files_config_dir") {
+                        // ESC: return to files_menu
+                        const previousView = _popHistory() || "files_menu";
+                        _state.viewId = previousView;
+                        console.log(`[FILES] Config Directory ESC: Returning to ${previousView}`);
                         _emit();
                     } else {
-                        // Pop history for submenus (SESSION DIRECTORY, CONFIG DIRECTORY, etc.)
+                        // Pop history for other file submenus
                         const previousView = _popHistory() || "files_menu";
                         _state.viewId = previousView;
                         _emit();
@@ -3188,7 +4197,17 @@
                 break;
 
             case "SOFT1":
-                if (isHome()) {
+                if ((_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) ||
+                    (_state.viewId === "files_save_config" && _state.files.saveConfig.editing)) {
+                    if (_state.viewId === "files_rename_last") {
+                        _state.files.renameLastSession.selectedSoftkeyIndex = 0;
+                        console.log(`[FILES] Rename SOFT1: Selected softkey group 0 (0.....9)`);
+                    } else {
+                        _state.files.saveConfig.selectedSoftkeyIndex = 0;
+                        console.log(`[FILES] Save Config SOFT1: Selected softkey group 0 (0.....9)`);
+                    }
+                    _emit();
+                } else if (isHome()) {
                     // Cycle SLM label: SLM (0) → 1/1 (1) → 1/3 (2) → SLM (0)
                     _state.slmLabelIndex = (_state.slmLabelIndex + 1) % 3;
                     console.log('[FSM] SOFT1 pressed on home → Cycling SLM label, index:', _state.slmLabelIndex);
@@ -3229,12 +4248,48 @@
                     _state.autoRunDate.selectedIndex = 0; // Select line 1
                     console.log(`[AUTO RUN DATE] SOFT1: Line 1 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
+                } else if (_state.viewId === "files_session_dir") {
+                    // SOFT1 = DELETE on Session Directory - delete immediately and show status
+                    const selectedIndex = _state.files.sessionDir.selectedIndex;
+                    if (selectedIndex >= 0 && selectedIndex < _state.files.sessionFiles.length) {
+                        const deletedFile = _state.files.sessionFiles[selectedIndex];
+                        const fileName = deletedFile.name || deletedFile;
+                        // Delete the file
+                        _state.files.sessionFiles.splice(selectedIndex, 1);
+                        // Adjust selected index if needed
+                        if (_state.files.sessionDir.selectedIndex >= _state.files.sessionFiles.length) {
+                            _state.files.sessionDir.selectedIndex = Math.max(0, _state.files.sessionFiles.length - 1);
+                        }
+                        // Extract number from filename (e.g., "SES001" -> "001", "SES3002" -> "3002")
+                        let fileNumber = fileName;
+                        const match = fileName.match(/SES(\d+)/i);
+                        if (match) {
+                            fileNumber = match[1];
+                        }
+                        // Store deleted filename and show status screen
+                        _state.previousViewId = "files_session_dir";
+                        _state.viewId = "files_delete_status";
+                        _state.files.deleteStatus = _state.files.deleteStatus || {};
+                        _state.files.deleteStatus.deletedFileName = `${fileNumber}.SES DELETED`;
+                        console.log(`[FILES] Session Directory SOFT1: Deleted file ${fileName} at index ${selectedIndex}`);
+                        _emit();
+                    }
                 }
                 break;
 
             case "SOFT2":
+                if ((_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) ||
+                    (_state.viewId === "files_save_config" && _state.files.saveConfig.editing)) {
+                    if (_state.viewId === "files_rename_last") {
+                        _state.files.renameLastSession.selectedSoftkeyIndex = 1;
+                        console.log(`[FILES] Rename SOFT2: Selected softkey group 1 (A.....H)`);
+                    } else {
+                        _state.files.saveConfig.selectedSoftkeyIndex = 1;
+                        console.log(`[FILES] Save Config SOFT2: Selected softkey group 1 (A.....H)`);
+                    }
+                    _emit();
+                } else if (isSlm()) {
                 // SLM SOFT2: Cycle F/S/I (time constant)
-                if (isSlm()) {
                     const timeConstants = ['F', 'S', 'I'];
                     const currentIndex = timeConstants.indexOf(_state.slm.timeConstant || 'S');
                     const nextIndex = (currentIndex + 1) % timeConstants.length;
@@ -3289,8 +4344,18 @@
                 break;
 
             case "SOFT3":
+                if ((_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) ||
+                    (_state.viewId === "files_save_config" && _state.files.saveConfig.editing)) {
+                    if (_state.viewId === "files_rename_last") {
+                        _state.files.renameLastSession.selectedSoftkeyIndex = 2;
+                        console.log(`[FILES] Rename SOFT3: Selected softkey group 2 (I.....Q)`);
+                    } else {
+                        _state.files.saveConfig.selectedSoftkeyIndex = 2;
+                        console.log(`[FILES] Save Config SOFT3: Selected softkey group 2 (I.....Q)`);
+                    }
+                    _emit();
+                } else if (isSlm()) {
                 // SLM SOFT3: Cycle R/C/Z/F (weighting)
-                if (isSlm()) {
                     const weightings = ['R', 'C', 'Z', 'F'];
                     const currentIndex = weightings.indexOf(_state.slm.weighting || 'R');
                     const nextIndex = (currentIndex + 1) % weightings.length;
@@ -3330,14 +4395,44 @@
                     _state.autoRunDate.selectedIndex = 2; // Select line 3
                     console.log(`[AUTO RUN DATE] SOFT3: Line 3 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
+                } else if (_state.viewId === "files_session_dir") {
+                    // SOFT3 = LOAD on Session Directory - show load status screen
+                    const selectedIndex = _state.files.sessionDir.selectedIndex;
+                    if (selectedIndex >= 0 && selectedIndex < _state.files.sessionFiles.length) {
+                        const selectedFile = _state.files.sessionFiles[selectedIndex];
+                        const fileName = selectedFile.name || selectedFile;
+                        // Extract number from filename (e.g., "SES001" -> "001", "SES3002" -> "3002")
+                        let fileNumber = fileName;
+                        const match = fileName.match(/SES(\d+)/i);
+                        if (match) {
+                            fileNumber = match[1];
+                        }
+                        // Store loaded filename and show status screen
+                        _state.previousViewId = "files_session_dir";
+                        _state.viewId = "files_load_status";
+                        _state.files.loadStatus = _state.files.loadStatus || {};
+                        _state.files.loadStatus.loadedFileName = `${fileNumber}.SES LOADED`;
+                        console.log(`[FILES] Session Directory SOFT3: Loaded file ${fileName} at index ${selectedIndex}`);
+                        _emit();
+                    }
                 } else {
-                    console.log('[FSM] SOFT3 pressed → Ignored (not on SLM, Home, or Date)');
+                    console.log('[FSM] SOFT3 pressed → Ignored (not on SLM, Home, Date, or Session Directory)');
                 }
                 break;
 
             case "SOFT4":
+                if ((_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) ||
+                    (_state.viewId === "files_save_config" && _state.files.saveConfig.editing)) {
+                    if (_state.viewId === "files_rename_last") {
+                        _state.files.renameLastSession.selectedSoftkeyIndex = 3;
+                        console.log(`[FILES] Rename SOFT4: Selected softkey group 3 (R.....Z)`);
+                    } else {
+                        _state.files.saveConfig.selectedSoftkeyIndex = 3;
+                        console.log(`[FILES] Save Config SOFT4: Selected softkey group 3 (R.....Z)`);
+                    }
+                    _emit();
+                } else if (isSlm()) {
                 // SLM SOFT4: Toggle Meter 1/2
-                if (isSlm()) {
                     _state.slm.activeMeter = _state.slm.activeMeter === 1 ? 2 : 1;
                     console.log(`[SLM] SOFT4: Active meter = ${_state.slm.activeMeter}`);
                     _emit();
@@ -3363,6 +4458,31 @@
                     _state.autoRunDate.selectedIndex = 3; // Select line 4
                     console.log(`[AUTO RUN DATE] SOFT4: Line 4 ${line.enabled ? 'enabled' : 'disabled'}, selected`);
                     _emit();
+                } else if (_state.viewId === "files_session_dir") {
+                    // SOFT4 = "more..." on Session Directory (if more than 10 files)
+                    const fileList = _state.files.sessionFiles;
+                    console.log(`[FILES] Session Directory SOFT4: fileList.length=${fileList.length}, scrollOffset=${_state.files.sessionDir.scrollOffset}`);
+                    if (fileList.length > 10) {
+                        // Scroll to next 10 files
+                        const maxVisible = 10;
+                        const currentOffset = _state.files.sessionDir.scrollOffset;
+                        const newOffset = currentOffset + maxVisible;
+                        
+                        // If we've scrolled past the end, wrap back to beginning
+                        if (newOffset >= fileList.length) {
+                            _state.files.sessionDir.scrollOffset = 0;
+                            _state.files.sessionDir.selectedIndex = 0;
+                            console.log(`[FILES] Session Directory SOFT4: Wrapped to beginning (offset 0)`);
+                        } else {
+                            _state.files.sessionDir.scrollOffset = newOffset;
+                            // Adjust selected index to first visible item
+                            _state.files.sessionDir.selectedIndex = newOffset;
+                            console.log(`[FILES] Session Directory SOFT4: Scroll to offset ${newOffset}`);
+                        }
+                        _emit();
+                    } else {
+                        console.log(`[FILES] Session Directory SOFT4: Not enough files (${fileList.length} <= 10), no action`);
+                    }
                 } else if (_state.viewId === "logging_menu") {
                     // SOFT4 = Meter 1/2 toggle on logging menu
                     if (_state.logging.meter === "meter1") {
@@ -3405,6 +4525,73 @@
                         console.log('[LOGGING] Meter 1 items:', _state.logging.items.map(i => `${i.title}=${i.value}`));
                     }
                     _emit();
+                }
+                break;
+
+            case "0":
+            case "1":
+            case "2":
+            case "3":
+            case "4":
+            case "5":
+            case "6":
+            case "7":
+            case "8":
+            case "9":
+                // Character input for text editing (rename, save config)
+                if (_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) {
+                    const char = evt.type;
+                    const filename = _state.files.renameLastSession.filename;
+                    const cursorPos = _state.files.renameLastSession.cursorPosition;
+                    // Insert character at cursor position
+                    const newFilename = filename.slice(0, cursorPos) + char + filename.slice(cursorPos);
+                    // Limit filename length (e.g., 8 characters)
+                    if (newFilename.length <= 8) {
+                        _state.files.renameLastSession.filename = newFilename;
+                        _state.files.renameLastSession.cursorPosition = cursorPos + 1;
+                        console.log(`[FILES] Rename: Inserted '${char}' at position ${cursorPos}`);
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_save_config" && _state.files.saveConfig.editing) {
+                    const char = evt.type;
+                    const filename = _state.files.saveConfig.filename;
+                    const cursorPos = _state.files.saveConfig.cursorPosition;
+                    // Insert character at cursor position
+                    const newFilename = filename.slice(0, cursorPos) + char + filename.slice(cursorPos);
+                    // Limit filename length (e.g., 8 characters)
+                    if (newFilename.length <= 8) {
+                        _state.files.saveConfig.filename = newFilename;
+                        _state.files.saveConfig.cursorPosition = cursorPos + 1;
+                        console.log(`[FILES] Save Config: Inserted '${char}' at position ${cursorPos}`);
+                        _emit();
+                    }
+                }
+                break;
+
+            case "backspace":
+                // Backspace for text editing (rename, save config)
+                if (_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) {
+                    const filename = _state.files.renameLastSession.filename;
+                    const cursorPos = _state.files.renameLastSession.cursorPosition;
+                    if (cursorPos > 0) {
+                        // Delete character before cursor
+                        const newFilename = filename.slice(0, cursorPos - 1) + filename.slice(cursorPos);
+                        _state.files.renameLastSession.filename = newFilename;
+                        _state.files.renameLastSession.cursorPosition = cursorPos - 1;
+                        console.log(`[FILES] Rename: Deleted character at position ${cursorPos - 1}`);
+                        _emit();
+                    }
+                } else if (_state.viewId === "files_save_config" && _state.files.saveConfig.editing) {
+                    const filename = _state.files.saveConfig.filename;
+                    const cursorPos = _state.files.saveConfig.cursorPosition;
+                    if (cursorPos > 0) {
+                        // Delete character before cursor
+                        const newFilename = filename.slice(0, cursorPos - 1) + filename.slice(cursorPos);
+                        _state.files.saveConfig.filename = newFilename;
+                        _state.files.saveConfig.cursorPosition = cursorPos - 1;
+                        console.log(`[FILES] Save Config: Deleted character at position ${cursorPos - 1}`);
+                        _emit();
+                    }
                 }
                 break;
 
