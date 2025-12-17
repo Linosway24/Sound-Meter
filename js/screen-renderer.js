@@ -365,6 +365,74 @@
                 return `<div id="${element.id}" class="screen-element screen-element--graph"></div>`;
             
             case 'textList':
+                // Special handling for Calibration Menu - CALIBRATE option
+                if (element.id === "cal_menu_list" && state?.viewId === "cal_menu") {
+                    const selectedIndex = state?.calibration?.selectedIndex || 0;
+                    // CALIBRATE is at index 0
+                    const isCalibrateSelected = selectedIndex === 0;
+                    const calibrateClass = isCalibrateSelected ? 'menu-item--selected' : '';
+                    
+                    let html = `<div id="${element.id}" class="screen-element screen-element--textList">`;
+                    // Add spacer line before CALIBRATE
+                    html += `<div class="menu-item menu-item--spacer-line"></div>`;
+                    html += `<div class="menu-item ${calibrateClass}"><span class="menu-item__title">CALIBRATE</span></div>`;
+                    html += '</div>';
+                    return html;
+                }
+                
+                // Special handling for Calibration Menu - last calibration display
+                if (element.id === "cal_history_list" && state?.viewId === "cal_menu") {
+                    const lastCalibration = state?.calibration?.lastCalibration;
+                    const selectedIndex = state?.calibration?.selectedIndex || 0;
+                    
+                    // Helper function to format date: "2025-11-06" -> "06-NOV-2025"
+                    function formatCalibrationDate(dateStr) {
+                        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                        const parts = dateStr.split('-');
+                        if (parts.length === 3) {
+                            const year = parts[0];
+                            const month = parseInt(parts[1], 10) - 1;
+                            const day = parseInt(parts[2], 10);
+                            // Zero-pad day to 2 digits
+                            const dayPadded = String(day).padStart(2, '0');
+                            return `${dayPadded}-${months[month]}-${year}`;
+                        }
+                        return dateStr; // Fallback if format is unexpected
+                    }
+                    
+                    let html = `<div id="${element.id}" class="screen-element screen-element--textList">`;
+                    
+                    // Render last calibration entry if it exists
+                    // Note: selectedIndex 0 = CALIBRATE, 1 = lastCalibration
+                    if (lastCalibration) {
+                        const isSelected = selectedIndex === 1;
+                        const selectedClass = isSelected ? 'menu-item--selected' : '';
+                        
+                        // Format: "PRE-CAL." (left) | "114.1db" (right) - lowercase db, no space
+                        const preCalLabel = "PRE-CAL.";
+                        const preCalValue = `${lastCalibration.preCalValue.toFixed(1)}db`;
+                        
+                        // Format: "11:48:44." (left) | "06-NOV-2025" (right) - time with period, date formatted
+                        const timeLabel = `${lastCalibration.time}.`; // Add period after time
+                        const formattedDate = formatCalibrationDate(lastCalibration.date);
+                        
+                        // Line 1: PRE-CAL. (left) | 114.1db (right)
+                        html += `<div class="menu-item ${selectedClass}" style="display: flex; justify-content: space-between; padding: 0 1.5em;">`;
+                        html += `<span style="text-align: left; flex: 1;">${preCalLabel}</span>`;
+                        html += `<span style="text-align: right; flex: 1;">${preCalValue}</span>`;
+                        html += `</div>`;
+                        
+                        // Line 2: 11:48:44. (left) | 06-NOV-2025 (right)
+                        html += `<div class="menu-item ${selectedClass}" style="display: flex; justify-content: space-between; padding: 0 1.5em;">`;
+                        html += `<span style="text-align: left; flex: 1;">${timeLabel}</span>`;
+                        html += `<span style="text-align: right; flex: 1;">${formattedDate}</span>`;
+                        html += `</div>`;
+                    }
+                    
+                    html += '</div>';
+                    return html;
+                }
+                
                 // Special handling for AUTO RUN Level-Triggered textList - MUST be checked FIRST
                 if (element.id === "level_triggered_list" && state?.viewId === "auto_run_level_triggered_params") {
                     // Render as textList with dynamic values

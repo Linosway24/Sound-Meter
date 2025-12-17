@@ -19,8 +19,8 @@ This document breaks down all implementation tasks required to complete the Ques
 - ✅ Phase 3: Setup Menu - Batch 2 (OPTIONS, SIG INPUT, LOGGING, COMM-SET, BATTERY - Complete)
 - ⏸️ Phase 3: Setup Menu - Batch 3 (Advanced Features - Pending)
 - ⏸️ Phase 4: SLM Multi-Page Views & Advanced Features (Pending)
-- ⏸️ Phase 5: Files Menu Enhancements (Pending)
-- ⏸️ Phase 6: Lock & Calibration Enhancements (Pending)
+- ✅ Phase 5: Files Menu Enhancements (Complete)
+- ✅ Phase 6: Lock & Calibration Enhancements (Complete)
 - ⏸️ Phase 7: Alerts & Edge Cases (Pending)
 
 ---
@@ -330,65 +330,56 @@ This document breaks down all implementation tasks required to complete the Ques
 
 ---
 
-## Phase 5: Files Menu ⏸️ PENDING
+## Phase 5: Files Menu ✅ COMPLETE
 
 ### 5.1 Files Root Menu (`files_menu`)
-**Status:** ✅ Complete (Basic navigation)  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 7.1
 
-**Current Implementation:**
+**Implementation:**
 - ✅ Screen definition
 - ✅ UP/DOWN navigation
 - ✅ ENTER routing to submenus
 - ✅ ESC returns to Home
 
-**Remaining:**
-- ⏸️ Full functionality for each menu item
-
 ### 5.2 Session Directory (`files_session_dir`)
-**Status:** ✅ Complete (Basic navigation)  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 7.2
 
-**Current Implementation:**
+**Implementation:**
 - ✅ Screen definition
 - ✅ UP/DOWN scrolling
+- ✅ File list rendering
 - ✅ ESC returns to files_menu
-
-**Remaining:**
-- ⏸️ File list rendering (deferred - no actual files in simulator)
-- ⏸️ ENTER behavior (open/preview - future)
 
 ### 5.3 Config Directory (`files_config_dir`)
-**Status:** ✅ Complete (Basic navigation)  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 7.3
 
-**Current Implementation:**
+**Implementation:**
 - ✅ Screen definition
 - ✅ UP/DOWN scrolling
+- ✅ File list rendering
 - ✅ ESC returns to files_menu
 
-**Remaining:**
-- ⏸️ File list rendering (deferred - no actual files in simulator)
-
 ### 5.4 Rename Last Session (`files_rename_last`)
-**Status:** ✅ Complete (Stub)  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 7.4
 
-**Current Implementation:**
+**Implementation:**
 - ✅ Screen definition
-- ✅ ENTER shows toast
-- ✅ ESC returns
-
-**Remaining:**
-- ⏸️ Text input functionality (generic name edit)
+- ✅ Text input functionality
+- ✅ ENTER saves and shows toast
+- ✅ ESC cancels
 
 ### 5.5 Save Config File (`files_save_config`)
-**Status:** ✅ Complete (Stub)  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 7.5
 
-**Current Implementation:**
+**Implementation:**
 - ✅ Screen definition
-- ✅ ENTER shows toast
+- ✅ Text input functionality
+- ✅ ENTER saves and shows toast
 - ✅ ESC cancels
 
 ### 5.6 Format Card (`files_format_card`)
@@ -402,20 +393,18 @@ This document breaks down all implementation tasks required to complete the Ques
 - ✅ ESC cancels if still on menu
 
 ### 5.7 Delete Confirm (`files_delete_confirm`)
-**Status:** ✅ Complete (Basic)  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 7.7
 
-**Current Implementation:**
+**Implementation:**
 - ✅ Screen definition
+- ✅ LEFT/RIGHT or UP/DOWN navigation between YES/NO
 - ✅ ENTER confirms (shows toast)
 - ✅ ESC cancels
 
-**Remaining:**
-- ⏸️ LEFT/RIGHT or UP/DOWN navigation between YES/NO
-
 ---
 
-## Phase 6: Lock & Calibration ⏸️ PENDING
+## Phase 6: Lock & Calibration ✅ COMPLETE
 
 ### 6.1 Lock Menu (`lock_menu`)
 **Status:** ✅ Complete  
@@ -427,17 +416,17 @@ This document breaks down all implementation tasks required to complete the Ques
 - ✅ All other inputs disabled when locked
 
 ### 6.2 Calibration Menu (`cal_menu`)
-**Status:** ✅ Complete (Basic)  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 9.1
 
-**Current Implementation:**
+**Implementation:**
 - ✅ Screen definition
+- ✅ CALIBRATE option with highlight box
+- ✅ Last calibration entry display (Pre-Cal value and timestamp)
+- ✅ Two-line format: "PRE-CAL. [value]db" and "[time]. [date]"
 - ✅ ENTER starts calibration sequence
 - ✅ ESC returns to Home
-
-**Remaining:**
-- ⏸️ Calibration history display
-- ⏸️ UP/DOWN navigation if multiple history lines
+- ✅ localStorage persistence for last calibration
 
 ### 6.3 Calibration Running (`cal_running`)
 **Status:** ✅ Complete  
@@ -445,9 +434,11 @@ This document breaks down all implementation tasks required to complete the Ques
 
 **Implementation:**
 - ✅ Screen definition
-- ✅ ENTER logs calibration and returns to Home
-- ✅ ESC cancels calibration
-- ✅ Timer-based auto-completion (4-6 seconds)
+- ✅ PRE-CAL title and live SPL display
+- ✅ ENTER manually completes calibration and returns to cal_menu
+- ✅ ESC cancels calibration and returns to cal_menu
+- ✅ Timer-based auto-completion (4-6 seconds) returns to cal_menu
+- ✅ Calibration completion updates lastCalibration with localStorage persistence
 
 ---
 

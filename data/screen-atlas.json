@@ -2166,9 +2166,40 @@
       "title": "Calibration",
       "mode": "MENU",
       "referenceImage": "Capture/operational/cal_menu.jpeg",
-      "elements": [],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "label",
+          "id": "cal_title",
+          "text": "CAL"
+        },
+        {
+          "type": "divider",
+          "id": "cal_spacer"
+        },
+        {
+          "type": "textList",
+          "id": "cal_menu_list",
+          "bind": "calibration.selectedIndex",
+          "calibrateOption": true
+        },
+        {
+          "type": "label",
+          "id": "cal_history_label",
+          "text": "CALIBRATION HISTORY:"
+        },
+        {
+          "type": "textList",
+          "id": "cal_history_list",
+          "bind": "calibration.history"
+        }
+      ],
       "softkeys": ["", "", "", ""],
-      "keys": ["enter", "esc"],
+      "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
     {
@@ -2176,9 +2207,31 @@
       "title": "Calibration Running",
       "mode": "MENU",
       "referenceImage": "Capture/operational/cal_running.jpeg",
-      "elements": [],
+      "elements": [
+        {
+          "type": "statusBar",
+          "id": "status_bar",
+          "batteryIcon": true
+        },
+        {
+          "type": "title",
+          "id": "cal_running_title",
+          "text": "PRE-CAL"
+        },
+        {
+          "type": "divider",
+          "id": "cal_running_divider"
+        },
+        {
+          "type": "label",
+          "id": "cal_running_spl",
+          "bind": "measurement.currentSPL",
+          "format": "value",
+          "unit": "dB LZS"
+        }
+      ],
       "softkeys": ["", "", "", ""],
-      "keys": ["esc"],
+      "keys": ["esc", "enter"],
       "display": { "backlight": true }
     }
   ]

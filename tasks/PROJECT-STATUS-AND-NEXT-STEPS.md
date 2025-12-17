@@ -25,7 +25,7 @@
 - ✅ **Menu System:** Complete - Phase 1-3 menus fully implemented
 - ✅ **Setup Menu:** Complete - All batches implemented and tested
 - ⏳ **SLM Multi-Page:** Pending - UI navigation ready, data content pending
-- ⏳ **Files Menu:** Basic navigation complete, enhancements pending
+- ✅ **Files Menu:** Complete - Phase 5 enhancements implemented and tested
 - ⏳ **Configuration:** Pending - Can be implemented as Task 4.0
 - ⏳ **Measurement:** Pending - Can be implemented as Task 5.0
 
@@ -231,49 +231,40 @@
 
 ---
 
-### Phase 5: Files Menu Enhancements ⏸️ PENDING
+### Phase 5: Files Menu Enhancements ✅ COMPLETE
 
-**Status:** Basic navigation complete, enhancements pending
+**Status:** All enhancements complete
 
 **What's Complete:**
-- ✅ Files root menu (`files_menu`) - Basic navigation
-- ✅ Session Directory (`files_session_dir`) - Basic navigation
-- ✅ Config Directory (`files_config_dir`) - Basic navigation
-- ✅ Rename Last Session (`files_rename_last`) - Stub
-- ✅ Save Config File (`files_save_config`) - Stub
+- ✅ Files root menu (`files_menu`) - Complete navigation
+- ✅ Session Directory (`files_session_dir`) - Complete with file list rendering
+- ✅ Config Directory (`files_config_dir`) - Complete with file list rendering
+- ✅ Rename Last Session (`files_rename_last`) - Complete with text input
+- ✅ Save Config File (`files_save_config`) - Complete functionality
 - ✅ Format Card (`files_format_card`) - Complete
-- ✅ Delete Confirm (`files_delete_confirm`) - Basic
+- ✅ Delete Confirm (`files_delete_confirm`) - Complete with YES/NO navigation
 
-**What's Pending:**
-- [ ] File list rendering (Session Directory, Config Directory)
-- [ ] Rename functionality (text input)
-- [ ] Save Config File full functionality
-- [ ] Delete Confirm navigation (LEFT/RIGHT or UP/DOWN between YES/NO)
-- [ ] File operations (open/preview - future)
+**Testing:** Complete - See `tasks/PHASE-5-TESTING-GUIDE.md`
 
 **Maps to:** Task 3.0 (Menu System Implementation)
 
-**Estimated Duration:** 2-3 days
-
 ---
 
-### Phase 6: Lock & Calibration Enhancements ⏸️ PENDING
+### Phase 6: Lock & Calibration Enhancements ✅ COMPLETE
 
-**Status:** Basic functionality complete, enhancements pending
+**Status:** All enhancements complete
 
 **What's Complete:**
 - ✅ Lock Menu (`lock_menu`) - Complete
-- ✅ Calibration Menu (`cal_menu`) - Basic
+- ✅ Calibration Menu (`cal_menu`) - Complete with history display
 - ✅ Calibration Running (`cal_running`) - Complete
+- ✅ Calibration last entry display with Pre-Cal value and timestamp
+- ✅ Calibration completion logging with localStorage persistence
+- ✅ ENTER/ESC return to calibration menu after completion
 
-**What's Pending:**
-- [ ] Calibration history display
-- [ ] UP/DOWN navigation if multiple calibration history lines
-- [ ] Enhanced calibration features
+**Testing:** Complete - See `tasks/PHASE-6-TESTING-GUIDE.md`
 
 **Maps to:** Task 3.0 (Menu System) + Task 8.0 (Calibration Features)
-
-**Estimated Duration:** 1-2 days
 
 ---
 
@@ -418,8 +409,8 @@
    ├─> Can start now (Phase 2 complete)
    └─> Task 5.0 recommended for data content
 
-⏸️ Phase 5: Files Menu Enhancements
-   └─> Can start now (no dependencies)
+✅ Phase 5: Files Menu Enhancements
+   └─> Complete
 
 ⏸️ Task 4.0: Configuration & Settings
    ├─> Can start now (Phase 3 complete)
@@ -430,8 +421,8 @@
    ├─> Task 4.0 recommended (not required)
    └─> Phase 4 recommended (not required)
 
-⏸️ Phase 6: Lock & Calibration Enhancements
-   └─> Can start now (basic functionality exists)
+✅ Phase 6: Lock & Calibration Enhancements
+   └─> Complete
 
 ⏸️ Phase 7: Alerts & Edge Cases
    └─> Can start now (deferred to later)
@@ -449,19 +440,19 @@
 ✅ Phase 1: Startup & Home
 ✅ Phase 2: SLM Core Operation
 ✅ Phase 3: Setup Menu (All Batches)
+✅ Phase 5: Files Menu Enhancements
+✅ Phase 6: Lock & Calibration Enhancements
 
 🎯 NEXT: Choose One
    ├─> Phase 4: SLM Multi-Page Views (RECOMMENDED)
    │   └─> Complete SLM functionality
-   ├─> Phase 5: Files Menu Enhancements (ALTERNATIVE)
-   │   └─> Enhance file management
    ├─> Task 4.0: Configuration & Settings (ALTERNATIVE)
    │   └─> Add configuration menus
    └─> Task 5.0: Measurement Engine (ALTERNATIVE)
        └─> Populate SLM with real data
 
-⏸️ Phase 6: Lock & Calibration Enhancements
-   └─> Independent work
+✅ Phase 6: Lock & Calibration Enhancements
+   └─> Complete
 
 ⏸️ Phase 7: Alerts & Edge Cases
    └─> Final polish
@@ -474,7 +465,7 @@
 ### For User (Michael Carlino)
 
 1. **DECIDE: Next Phase/Task**
-   - [ ] Choose: Phase 4, Phase 5, Task 4.0, or Task 5.0
+   - [ ] Choose: Phase 4, Task 4.0, or Task 5.0
    - [ ] Recommendation: Phase 4 to complete SLM functionality
    - [ ] Notify when ready to proceed
 
@@ -483,22 +474,18 @@
    - [ ] Specify if measurement data is needed now or later
    - [ ] Confirm softkey handler requirements
 
-3. **If Choosing Phase 5:**
-   - [ ] Review Files menu enhancement requirements
-   - [ ] Specify which file operations are priority
-
-4. **If Choosing Task 4.0:**
+3. **If Choosing Task 4.0:**
    - [ ] Review configuration requirements
    - [ ] Confirm Settings menu placement (SETUP sub-menu)
 
-5. **If Choosing Task 5.0:**
+4. **If Choosing Task 5.0:**
    - [ ] Review measurement data requirements
    - [ ] Specify measurement calculation requirements
 
 ### For Development Team
 
 1. **Ready to Proceed:**
-   - ✅ Phase 1-3 complete and tested
+   - ✅ Phase 1-3, 5-6 complete and tested
    - ✅ All SLM core functionality complete
    - ✅ All Setup menus complete
    - ✅ Code quality verified
@@ -522,8 +509,8 @@
 - **Phase 2:** 100% (Complete)
 - **Phase 3:** 100% (Complete - All batches)
 - **Phase 4:** 0% (Pending)
-- **Phase 5:** 30% (Basic navigation complete)
-- **Phase 6:** 70% (Basic functionality complete)
+- **Phase 5:** 100% (Complete)
+- **Phase 6:** 100% (Complete)
 - **Phase 7:** 0% (Deferred)
 - **Overall Project:** ~40% (Foundation and core menus complete)
 

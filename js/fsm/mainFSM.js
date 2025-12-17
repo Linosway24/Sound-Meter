@@ -311,6 +311,49 @@
         previousViewId: null // For navigation back from cal/files/etc
     };
 
+    // Helper functions for calibration persistence (defined before _state initialization)
+    function _loadCalibrationFromStorage() {
+        try {
+            const saved = localStorage.getItem('soundMeter_lastCalibration');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Validate the structure
+                if (parsed && typeof parsed.preCalValue === 'number' && parsed.timestamp && parsed.date && parsed.time) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.warn('[CAL] Failed to load calibration from localStorage:', e);
+        }
+        return null;
+    }
+
+    function _saveCalibrationToStorage(calibration) {
+        try {
+            if (calibration && calibration.preCalValue !== undefined) {
+                localStorage.setItem('soundMeter_lastCalibration', JSON.stringify(calibration));
+                console.log('[CAL] Saved calibration to localStorage');
+            }
+        } catch (e) {
+            console.warn('[CAL] Failed to save calibration to localStorage:', e);
+        }
+    }
+
+    // Initialize calibration from localStorage (after helper functions are defined)
+    _state.calibration = (function() {
+        // Try to load from localStorage, fallback to default
+        const saved = _loadCalibrationFromStorage();
+        return {
+            lastCalibration: saved || {
+                preCalValue: 114.1,
+                timestamp: "2025-11-06 11:48:44",
+                date: "2025-11-06",
+                time: "11:48:44"
+            },
+            selectedIndex: 0  // Currently selected item (0 = CALIBRATE, 1 = lastCalibration if exists)
+        };
+    })();
+
     const _subs = new Set();
     function _emit() { 
         const state = getState();
@@ -622,7 +665,20 @@
                 units: 'LZS'            // Format string for units display
             },
             history: [],
-            previousViewId: null
+            previousViewId: null,
+            calibration: (function() {
+                // Try to load from localStorage, fallback to default
+                const saved = _loadCalibrationFromStorage();
+                return {
+                    lastCalibration: saved || {
+                        preCalValue: 114.1,
+                        timestamp: "2025-11-06 11:48:44",
+                        date: "2025-11-06",
+                        time: "11:48:44"
+                    },
+                    selectedIndex: 0
+                };
+            })()
         };
         _clearAllTimers();
         _emit();
@@ -747,6 +803,28 @@
                 } else if (_state.viewId === "setup_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + SETUP_MENU_ITEMS.length - 1) % SETUP_MENU_ITEMS.length;
                     console.log(`[MENU] Setup menu - Selected index: ${_state.menu.selectedIndex} → "${SETUP_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    _emit();
+                } else if (_state.viewId === "cal_menu") {
+                    // UP: navigate through calibration menu
+                    // Ensure calibration state exists
+                    if (!_state.calibration) {
+                        _state.calibration = {
+                            history: [
+                                {
+                                    id: 1,
+                                    preCalValue: 114.0,
+                                    timestamp: "2025-10-30 13:45:21",
+                                    date: "2025-10-30",
+                                    time: "13:45:21"
+                                }
+                            ],
+                            selectedIndex: 0
+                        };
+                    }
+                    // Navigation: index 0 = CALIBRATE, index 1 = lastCalibration (if exists)
+                    const totalItems = _state.calibration.lastCalibration ? 2 : 1; // CALIBRATE + lastCalibration (if exists)
+                    _state.calibration.selectedIndex = (_state.calibration.selectedIndex + totalItems - 1) % totalItems;
+                    console.log(`[CAL] Calibration menu UP - Selected index: ${_state.calibration.selectedIndex} (total items: ${totalItems}, 0=CALIBRATE, 1=lastCalibration)`);
                     _emit();
                 } else if (_state.viewId === "files_menu") {
                     const currentIndex = Math.max(0, Math.min(_state.menu.selectedIndex, FILES_MENU_ITEMS.length - 1));
@@ -1358,6 +1436,28 @@
                 } else if (_state.viewId === "setup_menu") {
                     _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % SETUP_MENU_ITEMS.length;
                     console.log(`[MENU] Setup menu - Selected index: ${_state.menu.selectedIndex} → "${SETUP_MENU_ITEMS[_state.menu.selectedIndex]}"`);
+                    _emit();
+                } else if (_state.viewId === "cal_menu") {
+                    // DOWN: navigate through calibration menu
+                    // Ensure calibration state exists
+                    if (!_state.calibration) {
+                        _state.calibration = {
+                            history: [
+                                {
+                                    id: 1,
+                                    preCalValue: 114.0,
+                                    timestamp: "2025-10-30 13:45:21",
+                                    date: "2025-10-30",
+                                    time: "13:45:21"
+                                }
+                            ],
+                            selectedIndex: 0
+                        };
+                    }
+                    // Navigation: index 0 = CALIBRATE, index 1 = lastCalibration (if exists)
+                    const totalItems = _state.calibration.lastCalibration ? 2 : 1; // CALIBRATE + lastCalibration (if exists)
+                    _state.calibration.selectedIndex = (_state.calibration.selectedIndex + 1) % totalItems;
+                    console.log(`[CAL] Calibration menu DOWN - Selected index: ${_state.calibration.selectedIndex} (total items: ${totalItems}, 0=CALIBRATE, 1=lastCalibration)`);
                     _emit();
                 } else if (_state.viewId === "files_menu") {
                     const currentIndex = Math.max(0, Math.min(_state.menu.selectedIndex, FILES_MENU_ITEMS.length - 1));
@@ -2641,6 +2741,34 @@
                     _emit();
                     break;
                 }
+                // Handle ENTER on calibration running screen - manually complete calibration
+                if (_state.viewId === "cal_running") {
+                    // Clear the auto-completion timer
+                    _clearTimer('cal');
+                    
+                    // Complete calibration immediately
+                    const now = new Date();
+                    const dateStr = now.toISOString().split('T')[0];
+                    const timeStr = now.toTimeString().split(' ')[0];
+                    const timestamp = `${dateStr} ${timeStr}`;
+                    
+                    const preCalValue = _state.measurement.currentSPL || 85.2;
+                    
+                    _state.calibration.lastCalibration = {
+                        preCalValue: preCalValue,
+                        timestamp: timestamp,
+                        date: dateStr,
+                        time: timeStr
+                    };
+                    // Save to localStorage
+                    _saveCalibrationToStorage(_state.calibration.lastCalibration);
+                    console.log(`[CAL] Calibration completed: PRE-CAL ${_state.calibration.lastCalibration.preCalValue.toFixed(1)}dB`);
+                    
+                    // Return to calibration menu to show updated info
+                    _state.viewId = "cal_menu";
+                    _emit();
+                    break;
+                }
                 if (_state.viewId === "stop_confirm") {
                     // Cancel stop confirmation
                     _clearTimer('stopHold');
@@ -3654,15 +3782,59 @@
                     console.log(`[FILES] Load Status: Returning to previous view`);
                     _emit();
                 } else if (_state.viewId === "cal_menu") {
-                    _state.previousViewId = isSlm() ? _state.viewId : (isInSetup() ? _state.viewId : "home_screen");
-                    _state.viewId = "cal_running";
-                    _emit();
-                    const calDuration = 4000 + Math.random() * 2000; // 4000-6000ms
-                    _state.timers.cal = setTimeout(() => {
-                        _state.viewId = _state.previousViewId || "home_screen";
-                        _clearTimer('cal');
+                    // Only start calibration if CALIBRATE option is selected (last item)
+                    // Ensure calibration state exists
+                    if (!_state.calibration) {
+                        _state.calibration = {
+                            history: [
+                                {
+                                    id: 1,
+                                    preCalValue: 114.0,
+                                    timestamp: "2025-10-30 13:45:21",
+                                    date: "2025-10-30",
+                                    time: "13:45:21"
+                                }
+                            ],
+                            selectedIndex: 0
+                        };
+                    }
+                    // Navigation: index 0 = CALIBRATE, index 1+ = history entries
+                    const isCalibrateSelected = _state.calibration.selectedIndex === 0;
+                    
+                    if (isCalibrateSelected) {
+                        _state.previousViewId = isSlm() ? _state.viewId : (isInSetup() ? _state.viewId : "home_screen");
+                        _state.viewId = "cal_running";
                         _emit();
-                    }, calDuration);
+                        const calDuration = 4000 + Math.random() * 2000; // 4000-6000ms
+                        _state.timers.cal = setTimeout(() => {
+                            // Log calibration completion - add to history
+                            const now = new Date();
+                            const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+                            const timeStr = now.toTimeString().split(' ')[0]; // HH:MM:SS
+                            const timestamp = `${dateStr} ${timeStr}`;
+                            
+                            // Get Pre-Cal value from current measurement or use default
+                            const preCalValue = _state.measurement.currentSPL || 85.2;
+                            
+                            // Update lastCalibration
+                            _state.calibration.lastCalibration = {
+                                preCalValue: preCalValue,
+                                timestamp: timestamp,
+                                date: dateStr,
+                                time: timeStr
+                            };
+                            // Save to localStorage
+                            _saveCalibrationToStorage(_state.calibration.lastCalibration);
+                            console.log(`[CAL] Calibration completed: PRE-CAL ${_state.calibration.lastCalibration.preCalValue.toFixed(1)}dB`);
+                            
+                            _state.viewId = "cal_menu";
+                            _clearTimer('cal');
+                            _emit();
+                        }, calDuration);
+                    } else {
+                        // History entry selected - do nothing (or could show details in future)
+                        console.log(`[CAL] Last calibration entry selected - no action`);
+                    }
                 } else if (isHome()) {
                     const item = MENU_ITEMS[_state.menu.selectedIndex];
                     if (item === "VIEW PAST STUDIES") {
@@ -3730,9 +3902,14 @@
                     _clearTimer('stopHold');
                     updateSlmScreen();
                     _emit();
+                } else if (_state.viewId === "cal_menu") {
+                    // ESC from calibration menu returns to Home
+                    _state.viewId = _state.previousViewId || "home_screen";
+                    console.log('[CAL] ESC: Returning to Home');
+                    _emit();
                 } else if (_state.viewId === "cal_running") {
                     _clearTimer('cal');
-                    _state.viewId = _state.previousViewId || "home_screen";
+                    _state.viewId = "cal_menu";
                     _emit();
                 } else if (_state.viewId === "display_menu" && _state.display.editing) {
                     // Cancel editing BACKLIGHT or CONTRAST - return focus to title
@@ -4337,6 +4514,21 @@
                     console.log('[FSM] SOFT2 pressed → Navigating to cal_menu');
                     _state.previousViewId = _state.viewId;
                     _state.viewId = "cal_menu";
+                    // Initialize calibration menu selectedIndex to 0 (CALIBRATE)
+                    // Ensure calibration state exists
+                    if (!_state.calibration) {
+                        _state.calibration = {
+                            lastCalibration: {
+                                preCalValue: 114.1,
+                                timestamp: "2025-11-06 11:48:44",
+                                date: "2025-11-06",
+                                time: "11:48:44"
+                            },
+                            selectedIndex: 0
+                        };
+                    } else {
+                        _state.calibration.selectedIndex = 0;
+                    }
                     _emit();
                 } else {
                     console.log('[FSM] SOFT2 pressed → Ignored (not on SLM, Home, Battery, DOW, or Date)');
