@@ -27,20 +27,20 @@ Based on: `PRD.md`
 
 ## Tasks
 
-- [ ] 1.0 Device Structure & Visual Layout
-  - [ ] 1.1 Create HTML structure in `index.html` with 1920×1080 device container div
-  - [ ] 1.2 Add colored background to device container and set device photo image element (not background-image) with alt text
-  - [ ] 1.2 Style device photo to center horizontally, fit screen height with padding top/bottom (photo may be smaller than 1920×1080 with alpha channel)
-  - [ ] 1.3 Create LCD display region div (~1400×640px) positioned as overlay where LCD appears in photo
-  - [ ] 1.4 Create LCD content structure with main display area, status area, and soft key labels area
-  - [ ] 1.5 Create soft key button elements (1-4) positioned as overlays matching photo button locations (match photo button sizes exactly)
-  - [ ] 1.6 Create navigation cluster (Up/Down/Left/Right/Enter) positioned as overlay matching photo (match photo button sizes exactly)
-  - [ ] 1.7 Create function button elements (Alt f, Backlight, Run/Pause, Stop, On/Off) positioned as overlays matching photo (match photo button sizes exactly)
-  - [ ] 1.8 Create dialog overlay system HTML structure for warnings and confirmations
-  - [ ] 1.9 Build CSS layout in `styles.css` using Grid/Flexbox for proper positioning of all overlays
-  - [ ] 1.10 Style device container with colored background and scale properly in 1920×1080 canvas, style initial state to match powered off state
-  - [ ] 1.11 Position all interactive elements (buttons, LCD) as overlays using absolute positioning to match photo exactly, add semi-transparent overlay indicators for testing
-  - [ ] 1.12 Add CSS :hover/:active states, perform user testing, adjust positioning, create reference documentation, remove testing overlays
+- [x] 1.0 Device Structure & Visual Layout ✅ COMPLETE
+  - [x] 1.1 Create HTML structure in `index.html` with 1920×1080 device container div
+  - [x] 1.2 Add colored background to device container and set device photo image element (not background-image) with alt text
+  - [x] 1.2 Style device photo to center horizontally, fit screen height with padding top/bottom (photo may be smaller than 1920×1080 with alpha channel)
+  - [x] 1.3 Create LCD display region div (~1400×640px) positioned as overlay where LCD appears in photo
+  - [x] 1.4 Create LCD content structure with main display area, status area, and soft key labels area
+  - [x] 1.5 Create soft key button elements (1-4) positioned as overlays matching photo button locations (match photo button sizes exactly)
+  - [x] 1.6 Create navigation cluster (Up/Down/Left/Right/Enter) positioned as overlay matching photo (match photo button sizes exactly)
+  - [x] 1.7 Create function button elements (Alt f, Backlight, Run/Pause, Stop, On/Off) positioned as overlays matching photo (match photo button sizes exactly)
+  - [x] 1.8 Create dialog overlay system HTML structure for warnings and confirmations
+  - [x] 1.9 Build CSS layout in `styles.css` using Grid/Flexbox for proper positioning of all overlays
+  - [x] 1.10 Style device container with colored background and scale properly in 1920×1080 canvas, style initial state to match powered off state
+  - [x] 1.11 Position all interactive elements (buttons, LCD) as overlays using absolute positioning to match photo exactly, add semi-transparent overlay indicators for testing
+  - [x] 1.12 Add CSS :hover/:active states, perform user testing, adjust positioning, create reference documentation, remove testing overlays
 
 - [x] 2.0 Core Interaction System
   - [x] 2.1 Create `js/device.js` module with device state object (power on/off, initialization)
@@ -63,92 +63,92 @@ Based on: `PRD.md`
   - [x] 2.12.5 Create display refresh function that triggers on state changes (menu navigation, config changes, etc.)
   - [x] 2.12.6 Ensure display.js reads navigation state from menu.js (remove duplicate state, display.js is presentation only)
 
-- [ ] 3.0 Menu System Implementation
-  - [ ] 3.1 Extract menu structure from firmware R.13J manuals (main menu items and hierarchy)
-  - [ ] 3.2 Create menu data structure in `js/menu.js` with main menu items and sub-menus
-  - [ ] 3.3 Implement menu navigation state machine with current menu, selected item, and navigation history
-  - [ ] 3.4 Build menu rendering function to display menu items on LCD
-  - [ ] 3.5 Implement sub-menu navigation with hierarchical menu tree following firmware structure
-  - [ ] 3.6 Create soft key label system that updates labels (1-4) based on current screen context
-  - [ ] 3.7 Map soft key labels to menu actions for each screen (home, menu, settings, measurement, etc.)
-  - [ ] 3.8 Implement Alt f alternate menu functionality that reveals additional soft-key options
-  - [ ] 3.9 Create dialog/warning screen system using existing dialog overlay structure
-  - [ ] 3.10 Extract exact dialog text, warning messages, and confirmation prompts from firmware manuals
-  - [ ] 3.11 Implement dialog display functions for prompts, confirmations, and error messages
-  - [ ] 3.12 Test menu navigation flow matches firmware R.13J behavior
+- [x] 3.0 Menu System Implementation ✅ COMPLETE
+  - [x] 3.1 Extract menu structure from firmware R.13J manuals (main menu items and hierarchy)
+  - [x] 3.2 Create menu data structure in `js/menu.js` with main menu items and sub-menus
+  - [x] 3.3 Implement menu navigation state machine with current menu, selected item, and navigation history
+  - [x] 3.4 Build menu rendering function to display menu items on LCD
+  - [x] 3.5 Implement sub-menu navigation with hierarchical menu tree following firmware structure
+  - [x] 3.6 Create soft key label system that updates labels (1-4) based on current screen context
+  - [x] 3.7 Map soft key labels to menu actions for each screen (home, menu, settings, measurement, etc.)
+  - [x] 3.8 Implement Alt f alternate menu functionality that reveals additional soft-key options
+  - [x] 3.9 Create dialog/warning screen system using existing dialog overlay structure
+  - [x] 3.10 Extract exact dialog text, warning messages, and confirmation prompts from firmware manuals
+  - [x] 3.11 Implement dialog display functions for prompts, confirmations, and error messages
+  - [x] 3.12 Test menu navigation flow matches firmware R.13J behavior
 
-- [ ] 4.0 Configuration & Settings System
-  - [ ] 4.1 Update `js/config.js` with Weighting options (A, C, Z) and selection methods
-  - [ ] 4.2 Implement Weighting selection through menu navigation with current value display
-  - [ ] 4.3 Add Time Constant options (Slow, Fast, Impulse) to config module
-  - [ ] 4.4 Implement Time Constant selection through menu system
-  - [ ] 4.5 Add Range selection logic with values from 30 dB to 130 dB
-  - [ ] 4.6 Implement Range adjustment through menu controls (up/down arrows or direct input)
-  - [ ] 4.7 Build Dose configuration with Exchange Rate (3-6 dB), Threshold (50-100 dB), and Criterion Level (70-100 dB)
-  - [ ] 4.8 Implement Dose menu settings with validation for each parameter range
-  - [ ] 4.9 Implement Backlight settings with Manual mode (toggle on/off) and Timed mode (1-60 seconds)
-  - [ ] 4.10 Add backlight timeout logic for Timed mode with configurable duration
-  - [ ] 4.11 Create configuration display function showing current settings (Weighting, Time Constant, Range) on home screen
-  - [ ] 4.12 Integrate configuration menu items into main menu structure
+- [x] 4.0 Configuration & Settings System ✅ COMPLETE
+  - [x] 4.1 Update `js/config.js` with Weighting options (A, C, Z) and selection methods
+  - [x] 4.2 Implement Weighting selection through menu navigation with current value display
+  - [x] 4.3 Add Time Constant options (Slow, Fast, Impulse) to config module
+  - [x] 4.4 Implement Time Constant selection through menu system
+  - [x] 4.5 Add Range selection logic with values from 30 dB to 130 dB
+  - [x] 4.6 Implement Range adjustment through menu controls (up/down arrows or direct input)
+  - [x] 4.7 Build Dose configuration with Exchange Rate (3-6 dB), Threshold (50-100 dB), and Criterion Level (70-100 dB)
+  - [x] 4.8 Implement Dose menu settings with validation for each parameter range
+  - [x] 4.9 Implement Backlight settings with Manual mode (toggle on/off) and Timed mode (1-60 seconds)
+  - [x] 4.10 Add backlight timeout logic for Timed mode with configurable duration
+  - [x] 4.11 Create configuration display function showing current settings (Weighting, Time Constant, Range) on home screen
+  - [x] 4.12 Integrate configuration menu items into main menu structure
 
-- [ ] 5.0 Measurement Engine
-  - [ ] 5.1 Create `js/simulator.js` module for SPL data generation
-  - [ ] 5.2 Implement deterministic random number generator using seed value for reproducible readings
-  - [ ] 5.3 Create SPL data generator function that produces realistic sound level readings
-  - [ ] 5.4 Create `js/measurement.js` module for Run/Pause/Stop functionality
-  - [ ] 5.5 Implement Run state that starts measurement session and begins data generation
-  - [ ] 5.6 Implement Pause state that suspends measurement without clearing data
-  - [ ] 5.7 Implement Stop state that ends measurement session
-  - [ ] 5.8 Build measurement display update system showing Leq (equivalent continuous sound level)
-  - [ ] 5.9 Add Lmax (maximum level) tracking and display
-  - [ ] 5.10 Add Lmin (minimum level) tracking and display
-  - [ ] 5.11 Add SEL (Sound Exposure Level) calculation and display
-  - [ ] 5.12 Add Peak measurement tracking and display
-  - [ ] 5.13 Add Dose calculation and display based on configured parameters
-  - [ ] 5.14 Implement weighting calculations (A/C/Z) applied to simulated SPL data
-  - [ ] 5.15 Implement time-constant calculations (Slow/Fast/Impulse) applied to SPL data
-  - [ ] 5.16 Create range logic that detects when measurements exceed selected range
-  - [ ] 5.17 Implement over-range warning display when measurements exceed range
-  - [ ] 5.18 Implement real-time display updates during active measurement reflecting selected time constant behavior
-  - [ ] 5.19 Test measurement calculations with different weighting and time constant combinations
+- [x] 5.0 Measurement Engine ✅ COMPLETE
+  - [x] 5.1 Create `js/simulator.js` module for SPL data generation
+  - [x] 5.2 Implement deterministic random number generator using seed value for reproducible readings
+  - [x] 5.3 Create SPL data generator function that produces realistic sound level readings
+  - [x] 5.4 Create `js/measurement.js` module for Run/Pause/Stop functionality
+  - [x] 5.5 Implement Run state that starts measurement session and begins data generation
+  - [x] 5.6 Implement Pause state that suspends measurement without clearing data
+  - [x] 5.7 Implement Stop state that ends measurement session
+  - [x] 5.8 Build measurement display update system showing Leq (equivalent continuous sound level)
+  - [x] 5.9 Add Lmax (maximum level) tracking and display
+  - [x] 5.10 Add Lmin (minimum level) tracking and display
+  - [x] 5.11 Add SEL (Sound Exposure Level) calculation and display
+  - [x] 5.12 Add Peak measurement tracking and display
+  - [x] 5.13 Add Dose calculation and display based on configured parameters
+  - [x] 5.14 Implement weighting calculations (A/C/Z) applied to simulated SPL data
+  - [x] 5.15 Implement time-constant calculations (Slow/Fast/Impulse) applied to SPL data
+  - [x] 5.16 Create range logic that detects when measurements exceed selected range
+  - [x] 5.17 Implement over-range warning display when measurements exceed range
+  - [x] 5.18 Implement real-time display updates during active measurement reflecting selected time constant behavior
+  - [x] 5.19 Test measurement calculations with different weighting and time constant combinations ✅ TESTING COMPLETE
 
-- [ ] 6.0 Display Enhancements & Formatting (Advanced display features)
+- [x] 6.0 Display Enhancements & Formatting (Advanced display features) ✅ COMPLETE
   - [x] 6.1 Create `js/display.js` module for LCD rendering and display management (completed in Task 2.0)
   - [x] 6.2 Implement LCD rendering with green tint overlay when backlight is ON (completed in Task 2.0)
   - [x] 6.3 Implement LCD rendering with gray tint overlay when backlight is OFF (completed in Task 2.0)
   - [x] 6.4 Create display renderer for home screen with device name and firmware version (moved to Task 2.12)
   - [x] 6.5 Implement soft key label display at bottom of LCD showing labels for buttons 1-4 (moved to Task 2.12)
-  - [ ] 6.6 Create status indicator display showing current configuration (Weighting, Time Constant, Range) on home screen
-  - [ ] 6.7 Extract measurement display format specifications from firmware R.13J manuals
-  - [ ] 6.8 Implement measurement reading display with proper decimal precision and unit display
-  - [ ] 6.9 Format Leq, Lmax, Lmin, SEL, Peak, and Dose according to firmware specifications
-  - [ ] 6.10 Implement battery indicator display (simulated 10% runtime reduction when backlight ON)
+  - [x] 6.6 Create status indicator display showing current configuration (Weighting, Time Constant, Range) on home screen (already visible in SLM screens)
+  - [x] 6.7 Extract measurement display format specifications from firmware R.13J manuals (--.- format for null, X.X dB)
+  - [x] 6.8 Implement measurement reading display with proper decimal precision and unit display
+  - [x] 6.9 Format Leq, Lmax, Lmin, SEL, Peak, and Dose according to firmware specifications
+  - [x] 6.10 Implement battery indicator display (simulated 10% runtime reduction when backlight ON)
   - [x] 6.11 Create display update function that refreshes LCD content based on current state (moved to Task 2.12)
   - [x] 6.12 Implement display refresh on state changes (menu navigation, measurement updates, config changes) (moved to Task 2.12)
 
-- [ ] 7.0 Data Logging & Advanced Features
-  - [ ] 7.1 Extract data logging interval options and default values from firmware documentation
-  - [ ] 7.2 Add logging mode functionality to config module
-  - [ ] 7.3 Implement logging mode toggle through menu system
-  - [ ] 7.4 Create interval settings configuration for data logging (extracted from firmware specs)
-  - [ ] 7.5 Implement interval selection and validation in logging configuration menu
-  - [ ] 7.6 Create logging data storage structure in memory during measurement sessions
-  - [ ] 7.7 Implement logging indicators that display when data logging is active
-  - [ ] 7.8 Add visual indicator on LCD when logging is in progress
-  - [ ] 7.9 Implement TWA (Time-Weighted Average) calculation for dose measurements
-  - [ ] 7.10 Integrate TWA calculation into measurement display system
-  - [ ] 7.11 Test logging functionality with different interval settings
-  - [ ] 7.12 Test all measurement scenarios to ensure readings behave correctly under different configurations
+- [x] 7.0 Data Logging & Advanced Features ✅ COMPLETE
+  - [x] 7.1 Extract data logging interval options and default values from firmware documentation
+  - [x] 7.2 Add logging mode functionality to config module
+  - [x] 7.3 Implement logging mode toggle through menu system
+  - [x] 7.4 Create interval settings configuration for data logging (extracted from firmware specs)
+  - [x] 7.5 Implement interval selection and validation in logging configuration menu
+  - [x] 7.6 Create logging data storage structure in memory during measurement sessions
+  - [x] 7.7 Implement logging indicators that display when data logging is active
+  - [x] 7.8 Add visual indicator on LCD when logging is in progress
+  - [x] 7.9 Implement TWA (Time-Weighted Average) calculation for dose measurements
+  - [x] 7.10 Integrate TWA calculation into measurement display system
+  - [x] 7.11 Test logging functionality with different interval settings
+  - [x] 7.12 Test all measurement scenarios to ensure readings behave correctly under different configurations
 
-- [ ] 8.0 Calibration Features
-  - [ ] 8.1 Extract calibration procedures from firmware R.13J documentation
-  - [ ] 8.2 Extract calibration prompts and confirmation messages from firmware manuals
-  - [ ] 8.3 Create calibration menu structure integrated into main menu system
-  - [ ] 8.4 Implement calibration procedure flow matching firmware R.13J specifications
-  - [ ] 8.5 Reference "Quest Sound Dosimeter.png" image for calibration machine context during calibration procedures
-  - [ ] 8.6 Implement calibration status tracking (not started, in progress, completed, failed)
-  - [ ] 8.7 Extract calibration result display format from firmware documentation
-  - [ ] 8.8 Implement calibration results display showing status and results in firmware-specified format
-  - [ ] 8.9 Create calibration dialog/prompts matching exact firmware text
-  - [ ] 8.10 Test calibration procedure end-to-end matching firmware behavior
+- [x] 8.0 Calibration Features ✅ COMPLETE
+  - [x] 8.1 Extract calibration procedures from firmware R.13J documentation
+  - [x] 8.2 Extract calibration prompts and confirmation messages from firmware manuals
+  - [x] 8.3 Create calibration menu structure integrated into main menu system
+  - [x] 8.4 Implement calibration procedure flow matching firmware R.13J specifications
+  - [x] 8.5 Reference "Quest Sound Dosimeter.png" image for calibration machine context during calibration procedures
+  - [x] 8.6 Implement calibration status tracking (not started, in progress, completed, failed)
+  - [x] 8.7 Extract calibration result display format from firmware documentation
+  - [x] 8.8 Implement calibration results display showing status and results in firmware-specified format
+  - [x] 8.9 Create calibration dialog/prompts matching exact firmware text
+  - [x] 8.10 Test calibration procedure end-to-end matching firmware behavior
 

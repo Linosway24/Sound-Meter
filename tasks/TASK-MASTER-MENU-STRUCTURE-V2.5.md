@@ -18,7 +18,7 @@ This document breaks down all implementation tasks required to complete the Ques
 - ✅ Phase 3: Setup Menu - Batch 1 (AUTO RUN, DATETIME, DIGITAL OUT - Complete)
 - ✅ Phase 3: Setup Menu - Batch 2 (OPTIONS, SIG INPUT, LOGGING, COMM-SET, BATTERY - Complete)
 - ⏸️ Phase 3: Setup Menu - Batch 3 (Advanced Features - Pending)
-- ⏸️ Phase 4: SLM Multi-Page Views & Advanced Features (Pending)
+- ✅ Phase 4: SLM Multi-Page Views & Advanced Features (Complete)
 - ✅ Phase 5: Files Menu Enhancements (Complete)
 - ✅ Phase 6: Lock & Calibration Enhancements (Complete)
 - ⏸️ Phase 7: Alerts & Edge Cases (Pending)
@@ -73,8 +73,8 @@ This document breaks down all implementation tasks required to complete the Ques
 - ✅ Softkey 1 (VIEW) opens `slm_view_menu`
 
 **Remaining:**
-- ⏸️ Multi-page navigation (pages 2-4) - Phase 4
-- ⏸️ Softkey 2-4 handlers (F/S/I, R/C/Z/F, Meter 1/2) - Phase 4
+- ✅ Multi-page navigation (pages 2-4) - Phase 4 (Complete)
+- ✅ Softkey 2-4 handlers (F/S/I, R/C/Z/F, Meter 1/2) - Phase 4 (Complete)
 
 ### 2.2 SLM View Menu (`slm_view_menu`)
 **Status:** ✅ Complete  
@@ -269,64 +269,80 @@ This document breaks down all implementation tasks required to complete the Ques
 
 ---
 
-## Phase 4: SLM Multi-Page Views & Advanced Features ⏸️ PENDING
+## Phase 4: SLM Multi-Page Views & Advanced Features ✅ COMPLETE
 
 ### 4.1 SLM Multi-Page Navigation
-**Status:** ⏸️ Pending  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 5.3
 
-**Required Implementation:**
-- [ ] Page 2-4 screen definitions (running/paused states)
-- [ ] UP/DOWN cycles pages 1-4
-- [ ] Page-specific content rendering
-- [ ] State management for current page
+**Implementation:**
+- ✅ Page 2-4 screen definitions (running/paused/stopped states)
+- ✅ ENTER cycles pages 1-4 (UP/DOWN have no effect on page navigation)
+- ✅ Page-specific content rendering (Leq, Lmax, Lmin on pages 2-4)
+- ✅ State management for current page
+- ✅ Page state persistence across run/pause/stop cycles
 
-**Screens Needed:**
-- `slm_home_page2_running`, `slm_home_page2_paused`
-- `slm_home_page3_running`, `slm_home_page3_paused`
-- `slm_home_page4_running`, `slm_home_page4_paused`
+**Screens Implemented:**
+- ✅ `slm_home_page2_running`, `slm_home_page2_paused`, `slm_home_page2_stopped`
+- ✅ `slm_home_page3_running`, `slm_home_page3_paused`, `slm_home_page3_stopped`
+- ✅ `slm_home_page4_running`, `slm_home_page4_paused`, `slm_home_page4_stopped`
 
 ### 4.2 SLM 1/1 Octave Graph Views
-**Status:** ⏸️ Pending  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 5.5
 
-**Required Implementation:**
-- [ ] Screen definitions for 1/1 graph pages 1-4 (running/paused)
-- [ ] Graph rendering (deferred to measurement engine phase)
-- [ ] Page navigation (UP/DOWN)
-- [ ] Mode switching via softkey
+**Implementation:**
+- ✅ Screen definitions for 1/1 graph pages 1-4 (running/paused/stopped)
+- ✅ Graph placeholder rendering (graph rendering deferred to measurement engine phase)
+- ✅ Page navigation (UP/DOWN cycles pages 1-4)
+- ✅ Mode switching via home screen SOFT1 (SLM → 1/1 → 1/3 → SLM)
+- ✅ Mode switching resets to page 1 when changing modes
 
-**Screens Needed:**
-- `slm_graph_1of1_page1_running`, `slm_graph_1of1_page1_paused`
-- `slm_graph_1of1_page2_running`, `slm_graph_1of1_page2_paused`
-- `slm_graph_1of1_page3_running`, `slm_graph_1of1_page3_paused`
-- `slm_graph_1of1_page4_running`, `slm_graph_1of1_page4_paused`
+**Screens Implemented:**
+- ✅ `slm_graph_1of1_page1_running`, `slm_graph_1of1_page1_paused`, `slm_graph_1of1_page1_stopped`
+- ✅ `slm_graph_1of1_page2_running`, `slm_graph_1of1_page2_paused`, `slm_graph_1of1_page2_stopped`
+- ✅ `slm_graph_1of1_page3_running`, `slm_graph_1of1_page3_paused`, `slm_graph_1of1_page3_stopped`
+- ✅ `slm_graph_1of1_page4_running`, `slm_graph_1of1_page4_paused`, `slm_graph_1of1_page4_stopped`
 
 ### 4.3 SLM 1/3 Octave Graph Views
-**Status:** ⏸️ Pending  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 5.5
 
-**Required Implementation:**
-- [ ] Screen definitions for 1/3 graph pages 1-4 (running/paused)
-- [ ] Graph rendering (deferred to measurement engine phase)
-- [ ] Page navigation (UP/DOWN)
-- [ ] Mode switching via softkey
+**Implementation:**
+- ✅ Screen definitions for 1/3 graph pages 1-4 (running/paused/stopped)
+- ✅ Graph placeholder rendering (graph rendering deferred to measurement engine phase)
+- ✅ Page navigation (UP/DOWN cycles pages 1-4)
+- ✅ Mode switching via home screen SOFT1
 
-**Screens Needed:**
-- `slm_graph_1of3_page1_running`, `slm_graph_1of3_page1_paused`
-- `slm_graph_1of3_page2_running`, `slm_graph_1of3_page2_paused`
-- `slm_graph_1of3_page3_running`, `slm_graph_1of3_page3_paused`
-- `slm_graph_1of3_page4_running`, `slm_graph_1of3_page4_paused`
+**Screens Implemented:**
+- ✅ `slm_graph_1of3_page1_running`, `slm_graph_1of3_page1_paused`, `slm_graph_1of3_page1_stopped`
+- ✅ `slm_graph_1of3_page2_running`, `slm_graph_1of3_page2_paused`, `slm_graph_1of3_page2_stopped`
+- ✅ `slm_graph_1of3_page3_running`, `slm_graph_1of3_page3_paused`, `slm_graph_1of3_page3_stopped`
+- ✅ `slm_graph_1of3_page4_running`, `slm_graph_1of3_page4_paused`, `slm_graph_1of3_page4_stopped`
 
 ### 4.4 SLM Softkey Handlers
-**Status:** ⏸️ Pending  
+**Status:** ✅ Complete  
 **Reference:** Menu-Structure-v2.5.md Section 5.3
 
-**Required Implementation:**
-- [ ] Softkey 2: F/S/I cycling with underline movement
-- [ ] Softkey 3: R/C/Z/F cycling with underline movement
-- [ ] Softkey 4: Meter 1/2 toggle
-- [ ] Visual feedback for active selections
+**Implementation:**
+- ✅ Softkey 2: F/S/I cycling with underline movement (Fast/Slow/Impulse time constant)
+- ✅ Softkey 3: R/C/Z/F cycling with underline movement (Linear/C/Z/F weighting)
+- ✅ Softkey 4: Meter 1/2 toggle
+- ✅ Visual feedback for active selections (underlines on SOFT2 and SOFT3)
+- ✅ Units display updates based on weighting and time constant selections
+- ✅ Softkey states persist across page navigation
+- ✅ All softkeys work in numeric, 1/1, and 1/3 graph modes
+
+### 4.5 SLM Home Screen Layout
+**Status:** ✅ Complete  
+**Reference:** Menu-Structure-v2.5.md Section 5.3
+
+**Implementation:**
+- ✅ Status bar with battery icon, play/pause icon, and timer
+- ✅ Horizontal bar graph with "-20" and "70" labels
+- ✅ Main readout display with large numeric value and units
+- ✅ Softkey labels at bottom (VIEW, F-S-I, R-C-Z-F, METER 1)
+- ✅ Proper layout positioning and spacing
 
 ---
 
@@ -482,11 +498,11 @@ This document breaks down all implementation tasks required to complete the Ques
 - [ ] LOGGING full editing functionality
 - [ ] COMMS full editing functionality
 
-### Batch 4: SLM Multi-Page & Graph Views ⏸️ FUTURE
-- [ ] SLM pages 2-4 (numeric)
-- [ ] SLM 1/1 octave graph views
-- [ ] SLM 1/3 octave graph views
-- [ ] SLM softkey handlers (F/S/I, R/C/Z/F, Meter 1/2)
+### Batch 4: SLM Multi-Page & Graph Views ✅ COMPLETE
+- ✅ SLM pages 2-4 (numeric)
+- ✅ SLM 1/1 octave graph views
+- ✅ SLM 1/3 octave graph views
+- ✅ SLM softkey handlers (F/S/I, R/C/Z/F, Meter 1/2)
 
 ### Batch 5: Files Menu Enhancements ⏸️ FUTURE
 - [ ] File list rendering
@@ -522,7 +538,9 @@ Each batch should have a dedicated testing guide:
 - `tasks/PHASE-3-BATCH-1-TESTING-GUIDE.md` ✅ Complete
 - `tasks/PHASE-3-BATCH-2-TESTING-GUIDE.md` ✅ Complete
 - `tasks/PHASE-3-BATCH-3-TESTING-GUIDE.md` ⏸️ Pending
-- etc.
+- `tasks/PHASE-4-TESTING-GUIDE.md` ✅ Complete
+- `tasks/PHASE-5-TESTING-GUIDE.md` ✅ Complete
+- `tasks/PHASE-6-TESTING-GUIDE.md` ✅ Complete
 
 ### Test Coverage
 - Navigation (UP/DOWN/ENTER/ESC)
@@ -560,6 +578,7 @@ Each batch should have a dedicated testing guide:
 | Date       | Version | Changes                                    |
 |------------|---------|--------------------------------------------|
 | [Date]     | 1.0     | Initial master task document creation      |
+| [Date]     | 1.1     | Updated Phase 4 status to Complete based on PHASE-4-TESTING-GUIDE.md |
 
 ---
 
@@ -567,5 +586,8 @@ Each batch should have a dedicated testing guide:
 1. ✅ Complete Batch 2: OPTIONS, SIG INPUT, LOGGING, COMM-SET, BATTERY menus
 2. ✅ Create PHASE-3-BATCH-2-TESTING-GUIDE.md
 3. ✅ Test Batch 2 implementation
-4. **NEXT:** Proceed to Phase 4 (SLM Multi-Page Views & Advanced Features) OR Batch 3 (Setup Menu Advanced Features)
+4. ✅ Complete Phase 4: SLM Multi-Page Views & Advanced Features
+5. ✅ Create PHASE-4-TESTING-GUIDE.md
+6. ✅ Test Phase 4 implementation
+7. **NEXT:** Proceed to Batch 3 (Setup Menu Advanced Features) OR Phase 7 (Alerts & Edge Cases)
 

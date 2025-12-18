@@ -996,13 +996,30 @@ body {
 }
 
 .status-bar__battery {
-    width: 1.4em; /* Horizontal width - almost as wide as green bar (1.5em) */
-    height: 1.0em; /* Vertical height - doubled from 0.5em */
-    background-color: #4ade80; /* Green for full battery */
-    border: 1px solid #3a8a5a; /* Slightly darker green border */
-    border-radius: 0.1em; /* Slight rounding */
-    flex-shrink: 0; /* Prevent shrinking */
+    width: 1.4em; /* Horizontal width */
+    height: 1.0em; /* Vertical height */
+    border: 1px solid #3a8a5a;
+    border-radius: 0.1em;
+    flex-shrink: 0;
     display: block;
+    position: relative;
+    background: linear-gradient(to right, 
+        var(--battery-color, #4ade80) 0%, 
+        var(--battery-color, #4ade80) var(--battery-level, 100%), 
+        transparent var(--battery-level, 100%));
+}
+
+/* Battery level colors */
+.status-bar__battery--full {
+    --battery-color: #4ade80; /* Green */
+}
+
+.status-bar__battery--medium {
+    --battery-color: #fbbf24; /* Yellow/amber */
+}
+
+.status-bar__battery--low {
+    --battery-color: #ef4444; /* Red */
 }
 
 .status-bar__play-icon,
@@ -1084,11 +1101,344 @@ body {
     vertical-align: baseline;
 }
 
+/* Data Table (Page 2 & 3) */
+.screen-element--data-table {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0.3em 0.5em;
+    font-family: 'Courier New', monospace;
+}
+
+.data-table__row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.15em 0;
+    border-bottom: 1px dotted #444;
+}
+
+.data-table__row:last-child {
+    border-bottom: none;
+}
+
+.data-table__cell {
+    display: flex;
+    align-items: baseline;
+    width: 48%;
+}
+
+.data-table__cell--left {
+    justify-content: flex-start;
+}
+
+.data-table__cell--right {
+    justify-content: flex-start;
+}
+
+.data-table__cell--empty {
+    visibility: hidden;
+}
+
+.data-table__label {
+    font-size: 0.85em;
+    color: #888888;
+    min-width: 3em;
+    margin-right: 0.5em;
+}
+
+.data-table__value {
+    font-size: 0.9em;
+    color: #e6e6e6;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+/* Time History Graph (Page 4) */
+.screen-element--time-history-graph {
+    display: flex;
+    width: 100%;
+    height: 180px;
+    padding: 0.3em;
+}
+
+.time-history__y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 35px;
+    padding-right: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75em;
+    color: #888888;
+}
+
+.time-history__y-label {
+    line-height: 1;
+}
+
+.time-history__y-unit {
+    font-size: 0.7em;
+    margin-top: 0.5em;
+    color: #666;
+}
+
+.time-history__graph-area {
+    flex: 1;
+    position: relative;
+    border: 1px solid #444;
+    background: #1a1a1a;
+}
+
+.time-history__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.time-history__grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.time-history__grid-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    border-top: 1px dotted #444;
+}
+
+.time-history__grid-line--max {
+    top: 0;
+}
+
+.time-history__grid-line--mid {
+    top: 50%;
+}
+
+.time-history__grid-line--min {
+    bottom: 0;
+}
+
+.time-history__x-axis {
+    display: flex;
+    justify-content: space-between;
+    padding-left: 35px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7em;
+    color: #666;
+}
+
 /* Timer positioning */
 .screen-element--timer {
     font-size: 0.9em;
     color: #e6e6e6;
     font-family: 'Courier New', monospace;
+}
+
+/* ========================================
+   1/1 Octave Bar Graph (Page 1)
+   ======================================== */
+.screen-element--octave-bar-graph {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 0.3em;
+    font-family: 'Courier New', monospace;
+}
+
+.octave-bar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.2em 0.5em;
+    margin-bottom: 0.3em;
+}
+
+.octave-bar__selected {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.octave-bar__freq-label {
+    font-size: 0.8em;
+    color: #888;
+}
+
+.octave-bar__freq-value {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: #e6e6e6;
+}
+
+.octave-bar__overall {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.octave-bar__overall-label {
+    font-size: 0.8em;
+    color: #888;
+}
+
+.octave-bar__overall-value {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #e6e6e6;
+}
+
+.octave-bar__graph-container {
+    display: flex;
+    flex: 1;
+    min-height: 120px;
+}
+
+.octave-bar__y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 25px;
+    padding-right: 0.3em;
+    font-size: 0.7em;
+    color: #888;
+}
+
+.octave-bar__y-label {
+    line-height: 1;
+}
+
+.octave-bar__bars-area {
+    flex: 1;
+    position: relative;
+    border: 1px solid #444;
+    background: #1a1a1a;
+}
+
+.octave-bar__grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.octave-bar__grid-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px dotted #444;
+}
+
+.octave-bar__bars {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-evenly;
+    padding: 2px 4px;
+}
+
+.octave-bar__bar {
+    width: 8%;
+    max-width: 20px;
+    background: #e6e6e6;
+    min-height: 2px;
+    transition: height 0.1s ease;
+}
+
+.octave-bar__bar--selected {
+    background: #fff;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================
+   1/1 Octave Band Table (Page 2)
+   ======================================== */
+.screen-element--octave-band-table {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    padding: 0.3em 0.5em;
+    font-family: 'Courier New', monospace;
+}
+
+.octave-band__vertical-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-right: 0.4em;
+    font-size: 0.8em;
+    color: #888;
+    width: 1.2em;
+}
+
+.octave-band__vertical-label span {
+    display: block;
+    line-height: 1.5;
+    height: 1.5em;
+}
+
+.octave-band__table-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.octave-band__row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.15em 0;
+    border-bottom: 1px dotted #444;
+}
+
+.octave-band__row:last-child {
+    border-bottom: none;
+}
+
+.octave-band__cell {
+    display: flex;
+    align-items: baseline;
+    width: 48%;
+}
+
+.octave-band__cell--left {
+    justify-content: flex-start;
+}
+
+.octave-band__cell--right {
+    justify-content: flex-start;
+}
+
+.octave-band__freq {
+    font-size: 0.8em;
+    color: #888;
+    min-width: 4em;
+    margin-right: 0.3em;
+}
+
+.octave-band__value {
+    font-size: 0.9em;
+    color: #e6e6e6;
+    font-weight: 700;
 }
 
 .screen-element--timer-top-right {

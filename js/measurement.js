@@ -37,7 +37,15 @@
             peak: 0,                 // Peak level
             dose: 0,                 // Dose percentage
             overRange: false,        // Over-range flag
-            overRangeWarning: false  // Over-range warning flag
+            overRangeWarning: false, // Over-range warning flag
+            // Percentile statistics (Page 3)
+            L99: null,               // L99 percentile (exceeded 99% of time)
+            L08: null,               // L08 percentile (exceeded 8% of time)
+            L50: null,               // L50 percentile (median)
+            L90: null,               // L90 percentile (background level)
+            Ldn: null,               // Day-night average
+            Cnel: null,              // Community noise equivalent level
+            Tk3: null                // Taktmaximal (German standard)
         },
 
         /**
@@ -107,6 +115,13 @@
             this._results.dose = 0;
             this._results.overRange = false;
             this._results.overRangeWarning = false;
+            this._results.L99 = null;
+            this._results.L08 = null;
+            this._results.L50 = null;
+            this._results.L90 = null;
+            this._results.Ldn = null;
+            this._results.Cnel = null;
+            this._results.Tk3 = null;
         },
 
         /**
@@ -318,6 +333,66 @@
 
             // Task 5.13: Dose calculation
             this._calculateDose();
+
+            // Percentile statistics (Page 3)
+            this._calculatePercentiles();
+        },
+
+        /**
+         * Calculate percentile statistics (Ln values)
+         * Ln = level exceeded n% of measurement time
+         */
+        _calculatePercentiles() {
+            if (this._state.samples.length < 3) {
+                return; // Need minimum samples for meaningful percentiles
+            }
+
+            const filteredSamples = this._state.samples.map(s => s.filtered);
+            const sorted = [...filteredSamples].sort((a, b) => b - a); // Descending order
+            const n = sorted.length;
+
+            // Ln = level exceeded n% of time (index = n% from top)
+            this._results.L99 = sorted[Math.floor(n * 0.99)] || sorted[n - 1];
+            this._results.L08 = sorted[Math.floor(n * 0.08)] || sorted[0];
+            this._results.L50 = sorted[Math.floor(n * 0.50)];
+            this._results.L90 = sorted[Math.floor(n * 0.90)] || sorted[n - 1];
+
+            // Ldn (Day-Night Level) - simplified: Leq + 10dB penalty for night
+            // For training, approximate as Leq + small adjustment
+            this._results.Ldn = this._results.leq + 3;
+
+            // CNEL (Community Noise Equivalent Level) - similar to Ldn with evening penalty
+            this._results.Cnel = this._results.leq + 4;
+
+            // Tk3 (Taktmaximal) - German standard, average of max values in 3-second intervals
+            this._results.Tk3 = this._calculateTk3();
+        },
+
+        /**
+         * Calculate Tk3 (Taktmaximal) - average of max values in 3-second intervals
+         */
+        _calculateTk3() {
+            if (this._state.samples.length < 30) {
+                return this._results.lmax; // Not enough data, use Lmax
+            }
+
+            const samplesPerInterval = Math.floor(3 * this._state.updateRate); // 3 seconds worth
+            const intervals = Math.floor(this._state.samples.length / samplesPerInterval);
+            
+            if (intervals === 0) {
+                return this._results.lmax;
+            }
+
+            let sumMaxEnergy = 0;
+            for (let i = 0; i < intervals; i++) {
+                const start = i * samplesPerInterval;
+                const end = start + samplesPerInterval;
+                const intervalSamples = this._state.samples.slice(start, end).map(s => s.filtered);
+                const intervalMax = Math.max(...intervalSamples);
+                sumMaxEnergy += Math.pow(10, intervalMax / 10);
+            }
+
+            return 10 * Math.log10(sumMaxEnergy / intervals);
         },
 
         /**
@@ -410,7 +485,15 @@
                 running: this._state.running,
                 paused: this._state.paused,
                 duration: this._getMeasurementDuration(),
-                sampleCount: this._state.sampleCount
+                sampleCount: this._state.sampleCount,
+                // Percentile statistics (Page 3)
+                L99: this._results.L99,
+                L08: this._results.L08,
+                L50: this._results.L50,
+                L90: this._results.L90,
+                Ldn: this._results.Ldn,
+                Cnel: this._results.Cnel,
+                Tk3: this._results.Tk3
             };
         },
 

@@ -296,9 +296,68 @@
         sigInput: { editing: false, focus: "title", selectedIndex: 0, items: SIG_INPUT_MENU_ITEMS.map(item => ({ ...item })) },
         logging: { editing: false, focus: "title", selectedIndex: 0, meter: "meter1", items: LOGGING_MENU_ITEMS.map(item => ({ ...item })) },
             comms: { editing: false, selectedIndex: 0, usbMode: "Mass Storage", usbModeIndex: 0, rs232Mode: "Serial", rs232ModeIndex: 0, baudRate: 9600, baudRateIndex: 1 }, // baudRateIndex 1 = 9600 (second option in BAUD_RATE_OPTIONS)
-        battery: { type: "ALK" }, // "ALK" or "NiMH"
+        battery: { type: "ALK", level: 100, lastUpdateTime: null }, // "ALK" or "NiMH", level 0-100
         flags: { locked: false },
-        measurement: { runtime: 0, state: "stopped", isRunning: false, currentSPL: 0 },
+        measurement: { 
+            runtime: 0, 
+            state: "stopped", 
+            isRunning: false, 
+            currentSPL: null,
+            seed: 12345,
+            leq: null,
+            lmax: null,
+            lmin: null,
+            sel: null,
+            peak: null,
+            dose: null,
+            overRange: false,
+            overRangeWarning: false,
+            // Page 2 (Dose/Statistics) fields
+            twa: null,
+            pdse: null,
+            ptwa: null,
+            overloadPercent: null,
+            exchangeRate: null,
+            timeLimit: null,
+            // Page 3 (Percentile Statistics) fields
+            L99: null,
+            L08: null,
+            L50: null,
+            L90: null,
+            Ldn: null,
+            Cnel: null,
+            Tk3: null,
+            LcMinusA: null,
+            // Page 4 (Time History) fields
+            splHistory: [],
+            splHistoryMaxSamples: 300,
+            // 1/1 Octave band data
+            octaveBands: {
+                'quarter': null,
+                '16': null,
+                '31.5': null,
+                '63': null,
+                '125': null,
+                '250': null,
+                '500': null,
+                '1k': null,
+                '2k': null,
+                '4k': null,
+                '8k': null,
+                '16k': null
+            },
+            selectedOctaveBand: '125',
+            // 1/3 Octave band data (31 bands)
+            octaveBands1of3: {
+                '12.5': null, '16': null, '20': null, '25': null, '31.5': null, '40': null,
+                '50': null, '63': null, '80': null, '100': null, '125': null, '160': null,
+                '200': null, '250': null, '315': null, '400': null, '500': null, '630': null,
+                '800': null, '1k': null, '1.25k': null, '1.6k': null, '2k': null, '2.5k': null,
+                '3.15k': null, '4k': null, '5k': null, '6.3k': null, '8k': null, '10k': null,
+                '12.5k': null, '16k': null
+            },
+            selectedOctaveBand1of3: '1k'
+        },
         slm: {
             currentPage: 1,           // 1-4
             mode: 'numeric',          // 'numeric', '1of1', '1of3'
@@ -394,7 +453,7 @@
     // Timer management
     function _clearTimer(timerName) {
         if (_state.timers[timerName]) {
-            if (timerName === 'measurementRuntime') {
+            if (timerName === 'measurementRuntime' || timerName === 'measurementUpdate') {
                 clearInterval(_state.timers[timerName]);
             } else {
                 clearTimeout(_state.timers[timerName]);
@@ -405,6 +464,13 @@
 
     function _clearAllTimers() {
         Object.keys(_state.timers).forEach(key => _clearTimer(key));
+    }
+
+    // Helper function to map FSM weighting to Measurement module weighting
+    function _mapWeighting(w) {
+        // Map FSM weighting to Measurement module weighting: R→A, C→C, Z→Z, F→A
+        const mapping = { 'R': 'A', 'C': 'C', 'Z': 'Z', 'F': 'A' };
+        return mapping[w] || 'A';
     }
 
     // Measurement runtime timer
@@ -420,6 +486,146 @@
 
     function _stopMeasurementTimer() {
         _clearTimer('measurementRuntime');
+    }
+
+    // Measurement update loop (10Hz - 100ms intervals)
+    function _startMeasurementUpdateLoop() {
+        _stopMeasurementUpdateLoop();
+        
+        if (!window.Simulator || !window.Measurement) {
+            console.warn('[FSM] Simulator or Measurement module not available');
+            return;
+        }
+        
+        _state.timers.measurementUpdate = setInterval(() => {
+            if (!_state.measurement.isRunning) {
+                return; // Don't update if not running
+            }
+            
+            // Generate SPL sample
+            const spl = window.Simulator.generateSample();
+            
+            // Process sample
+            window.Measurement.processSample(spl);
+            
+            // Get results
+            const results = window.Measurement.getResults();
+            
+            // Sync to FSM state
+            _state.measurement.currentSPL = results.currentSPL;
+            _state.measurement.leq = results.leq;
+            _state.measurement.lmax = results.lmax;
+            _state.measurement.lmin = results.lmin;
+            _state.measurement.sel = results.sel;
+            _state.measurement.peak = results.peak;
+            _state.measurement.dose = results.dose;
+            _state.measurement.overRange = results.overRange;
+            _state.measurement.overRangeWarning = results.overRangeWarning;
+            // Percentile statistics (Page 3)
+            _state.measurement.L99 = results.L99;
+            _state.measurement.L08 = results.L08;
+            _state.measurement.L50 = results.L50;
+            _state.measurement.L90 = results.L90;
+            _state.measurement.Ldn = results.Ldn;
+            _state.measurement.Cnel = results.Cnel;
+            _state.measurement.Tk3 = results.Tk3;
+            
+            // Generate simulated octave band data (for 1/1 mode)
+            // In real device, this would come from FFT analysis
+            const baseSPL = results.currentSPL || 40;
+            _state.measurement.octaveBands = {
+                'quarter': baseSPL + (Math.random() * 10 - 5),
+                '16': baseSPL - 20 + (Math.random() * 6 - 3),
+                '31.5': baseSPL - 15 + (Math.random() * 6 - 3),
+                '63': baseSPL - 10 + (Math.random() * 6 - 3),
+                '125': baseSPL - 5 + (Math.random() * 6 - 3),
+                '250': baseSPL - 2 + (Math.random() * 6 - 3),
+                '500': baseSPL + (Math.random() * 6 - 3),
+                '1k': baseSPL + 2 + (Math.random() * 6 - 3),
+                '2k': baseSPL + 5 + (Math.random() * 6 - 3),
+                '4k': baseSPL + 8 + (Math.random() * 6 - 3),
+                '8k': baseSPL + 10 + (Math.random() * 6 - 3),
+                '16k': baseSPL + 15 + (Math.random() * 6 - 3)
+            };
+            
+            // Generate simulated 1/3 octave band data
+            _state.measurement.octaveBands1of3 = {
+                '12.5': baseSPL - 25 + (Math.random() * 6 - 3),
+                '16': baseSPL - 22 + (Math.random() * 6 - 3),
+                '20': baseSPL - 20 + (Math.random() * 6 - 3),
+                '25': baseSPL - 18 + (Math.random() * 6 - 3),
+                '31.5': baseSPL - 15 + (Math.random() * 6 - 3),
+                '40': baseSPL - 13 + (Math.random() * 6 - 3),
+                '50': baseSPL - 11 + (Math.random() * 6 - 3),
+                '63': baseSPL - 10 + (Math.random() * 6 - 3),
+                '80': baseSPL - 8 + (Math.random() * 6 - 3),
+                '100': baseSPL - 6 + (Math.random() * 6 - 3),
+                '125': baseSPL - 5 + (Math.random() * 6 - 3),
+                '160': baseSPL - 4 + (Math.random() * 6 - 3),
+                '200': baseSPL - 3 + (Math.random() * 6 - 3),
+                '250': baseSPL - 2 + (Math.random() * 6 - 3),
+                '315': baseSPL - 1 + (Math.random() * 6 - 3),
+                '400': baseSPL + (Math.random() * 6 - 3),
+                '500': baseSPL + (Math.random() * 6 - 3),
+                '630': baseSPL + 1 + (Math.random() * 6 - 3),
+                '800': baseSPL + 2 + (Math.random() * 6 - 3),
+                '1k': baseSPL + 2 + (Math.random() * 6 - 3),
+                '1.25k': baseSPL + 3 + (Math.random() * 6 - 3),
+                '1.6k': baseSPL + 4 + (Math.random() * 6 - 3),
+                '2k': baseSPL + 5 + (Math.random() * 6 - 3),
+                '2.5k': baseSPL + 6 + (Math.random() * 6 - 3),
+                '3.15k': baseSPL + 7 + (Math.random() * 6 - 3),
+                '4k': baseSPL + 8 + (Math.random() * 6 - 3),
+                '5k': baseSPL + 9 + (Math.random() * 6 - 3),
+                '6.3k': baseSPL + 10 + (Math.random() * 6 - 3),
+                '8k': baseSPL + 10 + (Math.random() * 6 - 3),
+                '10k': baseSPL + 12 + (Math.random() * 6 - 3),
+                '12.5k': baseSPL + 14 + (Math.random() * 6 - 3),
+                '16k': baseSPL + 15 + (Math.random() * 6 - 3)
+            };
+            
+            // Update splHistory for Page 4 time history graph
+            _state.measurement.splHistory.push({
+                time: Date.now(),
+                spl: results.currentSPL
+            });
+            // Keep only last N samples (circular buffer)
+            const maxSamples = _state.measurement.splHistoryMaxSamples || 300;
+            if (_state.measurement.splHistory.length > maxSamples) {
+                _state.measurement.splHistory.shift();
+            }
+            
+            // Update battery drain (simulated)
+            _updateBatteryDrain();
+            
+            // Trigger display update
+            _emit();
+        }, 100); // 10Hz update rate (1000ms / 10 = 100ms)
+    }
+
+    function _stopMeasurementUpdateLoop() {
+        _clearTimer('measurementUpdate');
+    }
+
+    // Battery drain simulation
+    // Simulates ~8 hours of battery life, 10% faster drain when backlight ON
+    function _updateBatteryDrain() {
+        const now = Date.now();
+        if (!_state.battery.lastUpdateTime) {
+            _state.battery.lastUpdateTime = now;
+            return;
+        }
+        
+        const elapsed = now - _state.battery.lastUpdateTime;
+        _state.battery.lastUpdateTime = now;
+        
+        // Base drain: 100% over 8 hours = 0.00347% per second
+        // With backlight: 10% faster = 0.00382% per second
+        const baseDrainPerSecond = 100 / (8 * 60 * 60); // ~0.00347%
+        const drainMultiplier = _state.backlight ? 1.1 : 1.0;
+        const drainAmount = (elapsed / 1000) * baseDrainPerSecond * drainMultiplier;
+        
+        _state.battery.level = Math.max(0, _state.battery.level - drainAmount);
     }
 
     // Toast management
@@ -511,7 +717,7 @@
             menu: { selectedIndex: 0 },
             toast: null,
             slmLabelIndex: 0, // 0 = "SLM", 1 = "1/1", 2 = "1/3"
-            timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null },
+            timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null, measurementUpdate: null },
             files: {
                 cursor: 0,
                 sessionFiles: [
@@ -610,7 +816,7 @@
             sigInput: { editing: false, focus: "title", selectedIndex: 0, items: SIG_INPUT_MENU_ITEMS.map(item => ({ ...item })) },
             logging: { editing: false, focus: "title", selectedIndex: 0, meter: "meter1", items: LOGGING_MENU_ITEMS.map(item => ({ ...item })) },
             comms: { editing: false, selectedIndex: 0, usbMode: "Mass Storage", usbModeIndex: 0, rs232Mode: "Serial", rs232ModeIndex: 0, baudRate: 9600, baudRateIndex: 1 }, // baudRateIndex 1 = 9600 (second option in BAUD_RATE_OPTIONS)
-            battery: { type: "ALK" },
+            battery: { type: "ALK", level: 100, lastUpdateTime: null },
             digitalOut: { 
                 editing: false, 
                 focus: "title", 
@@ -655,7 +861,40 @@
                 levelFocus: "title" // "title" | "upper" | "lower" - which part of LEVEL is focused
             },
             flags: { locked: false },
-            measurement: { runtime: 0, state: "stopped", isRunning: false, currentSPL: 0 },
+            measurement: { 
+                runtime: 0, 
+                state: "stopped", 
+                isRunning: false, 
+                currentSPL: null,
+                seed: 12345,
+                leq: null,
+                lmax: null,
+                lmin: null,
+                sel: null,
+                peak: null,
+                dose: null,
+                overRange: false,
+                overRangeWarning: false,
+                // Page 2 (Dose/Statistics) fields
+                twa: null,
+                pdse: null,
+                ptwa: null,
+                overloadPercent: null,
+                exchangeRate: 'P2S',
+                timeLimit: '00:00:00',
+                // Page 3 (Percentile Statistics) fields
+                L01: null,
+                L10: null,
+                L50: null,
+                L90: null,
+                Ldn: null,
+                Cnel: null,
+                Tk3: null,
+                LcMinusA: null,
+                // Page 4 (Time History) fields
+                splHistory: [],
+                splHistoryMaxSamples: 300
+            },
             slm: {
                 currentPage: 1,           // 1-4
                 mode: 'numeric',          // 'numeric', '1of1', '1of3'
@@ -681,6 +920,27 @@
             })()
         };
         _clearAllTimers();
+        
+        // Initialize Simulator module
+        if (window.Simulator) {
+            const seed = _state.measurement.seed || 12345;
+            window.Simulator.init(seed, { baseLevel: 70, variation: 5 });
+        }
+        
+        // Initialize Measurement module
+        if (window.Measurement) {
+            window.Measurement.init({
+                weighting: _mapWeighting(_state.slm.weighting),
+                timeConstant: _state.slm.timeConstant,
+                range: 80, // Default range (can be updated if range is stored in state)
+                dose: {
+                    exchangeRate: 3,
+                    threshold: 50,
+                    criterionLevel: 70
+                }
+            });
+        }
+        
         _emit();
     }
 
@@ -712,6 +972,14 @@
         _emit();
 
         _state.timers.stopHold = setTimeout(() => {
+            // Stop Measurement and reset Simulator
+            if (window.Measurement) {
+                window.Measurement.stop();
+            }
+            if (window.Simulator) {
+                window.Simulator.reset();
+            }
+            _stopMeasurementUpdateLoop();
             _state.measurement.state = "stopped";
             _state.measurement.isRunning = false;
             _stopMeasurementTimer();
@@ -3843,10 +4111,18 @@
                         // _showToast("No studies yet");
                         return; // Explicitly do nothing
                     } else if (item === "VIEW CURRENT STUDY") {
+                        // Initialize Simulator and start Measurement
+                        if (window.Simulator) {
+                            window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 70, variation: 5 });
+                        }
+                        if (window.Measurement) {
+                            window.Measurement.start();
+                        }
                         _state.measurement.state = "running";
                         _state.measurement.isRunning = true;
                         _state.measurement.runtime = 0; // Reset runtime when starting new measurement
                         _startMeasurementTimer();
+                        _startMeasurementUpdateLoop();
                         _state.viewId = "home_screen_running";
                         _emit();
                     } else if (item === "VIEW SESSION") {
@@ -3882,14 +4158,24 @@
                     updateSlmScreen();
                     _emit();
                 } else if (isSlm() && _state.measurement.state === "running") {
+                    // Pause measurement
+                    if (window.Measurement) {
+                        window.Measurement.pause();
+                    }
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
+                    _stopMeasurementUpdateLoop();
                     // Timer keeps running but won't increment (checks isRunning)
                     updateSlmScreen();
                     _emit();
                 } else if (isSlm() && _state.measurement.state === "paused") {
+                    // Resume measurement
+                    if (window.Measurement) {
+                        window.Measurement.start();
+                    }
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
+                    _startMeasurementUpdateLoop();
                     // Timer already running, will resume incrementing
                     updateSlmScreen();
                     _emit();
@@ -4297,6 +4583,13 @@
                         _state.viewId = backlight ? "home_screen" : "home_screen_dim";
                     } else {
                         // Stopped - stop timer and use home_screen or home_screen_dim
+                        if (window.Measurement) {
+                            window.Measurement.stop();
+                        }
+                        if (window.Simulator) {
+                            window.Simulator.reset();
+                        }
+                        _stopMeasurementUpdateLoop();
                         _state.measurement.state = "stopped";
                         _state.measurement.isRunning = false;
                         _stopMeasurementTimer();
@@ -4311,38 +4604,73 @@
                 if (isHome()) {
                     // Toggle play/pause on home screen - stay on home screen
                     if (_state.measurement.state === "stopped") {
+                        // Initialize Simulator and start Measurement
+                        if (window.Simulator) {
+                            window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 70, variation: 5 });
+                        }
+                        if (window.Measurement) {
+                            window.Measurement.start();
+                        }
                         _state.measurement.state = "running";
                         _state.measurement.isRunning = true;
                         _state.measurement.runtime = 0; // Reset runtime when starting new measurement
                         _startMeasurementTimer();
+                        _startMeasurementUpdateLoop();
                     } else if (_state.measurement.state === "running") {
+                        // Pause measurement
+                        if (window.Measurement) {
+                            window.Measurement.pause();
+                        }
                         _state.measurement.state = "paused";
                         _state.measurement.isRunning = false;
+                        _stopMeasurementUpdateLoop();
                         // Timer keeps running but won't increment (checks isRunning)
                     } else if (_state.measurement.state === "paused") {
+                        // Resume measurement
+                        if (window.Measurement) {
+                            window.Measurement.start();
+                        }
                         _state.measurement.state = "running";
                         _state.measurement.isRunning = true;
+                        _startMeasurementUpdateLoop();
                         // Timer already running, will resume incrementing
                     }
                     // Stay on home screen - don't call updateSlmScreen()
                     _emit();
                 } else if (isSlm() && _state.measurement.state === "stopped") {
+                    // Initialize Simulator and start Measurement
+                    if (window.Simulator) {
+                        window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 70, variation: 5 });
+                    }
+                    if (window.Measurement) {
+                        window.Measurement.start();
+                    }
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
                     _state.measurement.runtime = 0; // Reset runtime when starting new measurement
                     _startMeasurementTimer();
+                    _startMeasurementUpdateLoop();
                     updateSlmScreen();
                     _emit();
                 } else if (isSlm() && _state.measurement.state === "running") {
                     // Toggle to paused on SLM screen
+                    if (window.Measurement) {
+                        window.Measurement.pause();
+                    }
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
+                    _stopMeasurementUpdateLoop();
                     // Timer keeps running but won't increment (checks isRunning)
                     updateSlmScreen();
                     _emit();
                 } else if (isSlm() && _state.measurement.state === "paused") {
+                    // Resume measurement
+                    if (window.Measurement) {
+                        window.Measurement.start();
+                    }
                     _state.measurement.state = "running";
                     _state.measurement.isRunning = true;
+                    _startMeasurementUpdateLoop();
                     // Timer already running, will resume incrementing
                     updateSlmScreen();
                     _emit();
@@ -4351,8 +4679,13 @@
 
             case "PAUSE":
                 if (isSlm() && _state.measurement.state === "running") {
+                    // Pause measurement
+                    if (window.Measurement) {
+                        window.Measurement.pause();
+                    }
                     _state.measurement.state = "paused";
                     _state.measurement.isRunning = false;
+                    _stopMeasurementUpdateLoop();
                     // Timer keeps running but won't increment (checks isRunning)
                     updateSlmScreen();
                     _emit();
@@ -4473,6 +4806,10 @@
                     _state.slm.timeConstant = timeConstants[nextIndex];
                     // Update units format
                     _state.slm.units = `L${_state.slm.timeConstant}S`;
+                    // Update Measurement module config
+                    if (window.Measurement) {
+                        window.Measurement.updateConfig({ timeConstant: _state.slm.timeConstant });
+                    }
                     console.log(`[SLM] SOFT2: Time constant = ${_state.slm.timeConstant}`);
                     _emit();
                     break;
@@ -4557,6 +4894,10 @@
                     const w = weightingMap[_state.slm.weighting] || 'L';
                     const tc = _state.slm.timeConstant || 'S';
                     _state.slm.units = `${w}${tc}S`;
+                    // Update Measurement module config (map R→A, C→C, Z→Z, F→A)
+                    if (window.Measurement) {
+                        window.Measurement.updateConfig({ weighting: _mapWeighting(_state.slm.weighting) });
+                    }
                     console.log(`[SLM] SOFT3: Weighting = ${_state.slm.weighting}`);
                     _emit();
                     break;

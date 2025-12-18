@@ -10,6 +10,119 @@
     let isInitialized = false;
 
     /**
+     * Helper: Get value from state using dot-notation bind path
+     * @param {Object} state - FSM state
+     * @param {string} bindPath - Dot-notation path (e.g., "measurement.leq")
+     * @returns {*} Value at path or null
+     */
+    function _getBindValue(state, bindPath) {
+        if (!bindPath || !state) return null;
+        const parts = bindPath.split('.');
+        let value = state;
+        for (const part of parts) {
+            value = value?.[part];
+            if (value === undefined) return null;
+        }
+        return value;
+    }
+
+    /**
+     * Helper: Format data value for display
+     * Matches firmware R.13J display format specifications
+     * @param {*} value - Value to format
+     * @param {string} unit - Unit (dB, %)
+     * @returns {string} Formatted display string
+     */
+    function _formatDataValue(value, unit) {
+        if (value === null || value === undefined) {
+            // Firmware uses "--.-" for unavailable values
+            return `--.- ${unit}`;
+        }
+        if (typeof value === 'number') {
+            // Show actual number with 1 decimal place (firmware standard)
+            return `${value.toFixed(1)} ${unit}`;
+        }
+        return `${value} ${unit}`;
+    }
+
+    /**
+     * Helper: Render time history canvas
+     */
+    function _renderTimeHistoryCanvas() {
+        if (!window._pendingTimeHistoryData) return;
+        
+        const { canvasId, data, yAxis } = window._pendingTimeHistoryData;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.offsetWidth || 280;
+        const height = canvas.offsetHeight || 180;
+        
+        // Set canvas size
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+        
+        // Draw grid lines (dotted)
+        ctx.strokeStyle = '#666';
+        ctx.setLineDash([2, 4]);
+        ctx.lineWidth = 1;
+        
+        const yRange = yAxis.max - yAxis.min;
+        const yMidPos = height * (yAxis.max - yAxis.mid) / yRange;
+        const yMaxPos = 0;
+        const yMinPos = height;
+        
+        // Max line
+        ctx.beginPath();
+        ctx.moveTo(0, yMaxPos);
+        ctx.lineTo(width, yMaxPos);
+        ctx.stroke();
+        
+        // Mid line
+        ctx.beginPath();
+        ctx.moveTo(0, yMidPos);
+        ctx.lineTo(width, yMidPos);
+        ctx.stroke();
+        
+        // Min line
+        ctx.beginPath();
+        ctx.moveTo(0, yMinPos);
+        ctx.lineTo(width, yMinPos);
+        ctx.stroke();
+        
+        // Draw data line if we have data
+        if (data && data.length > 1) {
+            ctx.setLineDash([4, 3]); // Dashed line: 4px dash, 3px gap
+            ctx.strokeStyle = '#e6e6e6'; // Bright white/grey
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const xStep = width / Math.max(data.length - 1, 1);
+            
+            for (let i = 0; i < data.length; i++) {
+                const sample = data[i];
+                const spl = typeof sample === 'object' ? sample.spl : sample;
+                const y = height - ((spl - yAxis.min) / yRange) * height;
+                const x = i * xStep;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+        
+        // Clear pending data
+        window._pendingTimeHistoryData = null;
+    }
+
+    /**
      * Load screen-atlas.json
      */
     async function loadScreenAtlas() {
@@ -308,6 +421,14 @@
                         html += `<div class="menu-item screen-element--centered-label menu-item--dow-time menu-item--date-tight"><span class="menu-item__value">${startTimeStr} ${stopTimeStr}</span></div>`;
                     }
                     return `<div id="${element.id}" class="screen-element screen-element--label screen-element--date-display">${html}</div>`;
+                }
+                // Special handling for EXP label on Page 2
+                if (element.id === "exp_label") {
+                    return `<div id="${element.id}" class="screen-element screen-element--label screen-element--exp-label">EXP ---- P2S</div>`;
+                }
+                // Special handling for T/L (Time Limit) label on Page 2
+                if (element.id === "time_limit_label") {
+                    return `<div id="${element.id}" class="screen-element screen-element--label screen-element--tl-label">V.L.  --:--:--</div>`;
                 }
                 // Default label rendering - support highlighted and align properties
                 const labelText = element.text || '';
@@ -1256,7 +1377,10 @@
                 
                 let statusBarHtml = `<div id="${element.id}" class="screen-element screen-element--status-bar">`;
                 if (element.batteryIcon) {
-                    statusBarHtml += `<div class="status-bar__battery"></div>`;
+                    // Get battery level from state (default 100%)
+                    const batteryLevel = state?.battery?.level ?? 100;
+                    const batteryClass = batteryLevel > 50 ? 'full' : batteryLevel > 20 ? 'medium' : 'low';
+                    statusBarHtml += `<div class="status-bar__battery status-bar__battery--${batteryClass}" style="--battery-level: ${batteryLevel}%"></div>`;
                 }
                 if (showPlayIcon) {
                     statusBarHtml += `<span class="status-bar__play-icon">▶</span>`;
@@ -1343,6 +1467,232 @@
             case 'softKeyRow':
                 // Metadata element, not rendered (soft keys rendered separately)
                 return '';
+            
+            case 'dataTable':
+                // Data table for Page 2 (dose/stats) and Page 3 (percentile stats)
+                const rows = element.rows || [];
+                let tableHtml = `<div id="${element.id}" class="screen-element screen-element--data-table">`;
+                
+                for (const row of rows) {
+                    tableHtml += '<div class="data-table__row">';
+                    
+                    // Left cell
+                    if (row.left) {
+                        const leftValue = _getBindValue(state, row.left.bind);
+                        const leftDisplay = _formatDataValue(leftValue, row.left.unit);
+                        tableHtml += `<div class="data-table__cell data-table__cell--left">`;
+                        tableHtml += `<span class="data-table__label">${row.left.label}</span>`;
+                        tableHtml += `<span class="data-table__value">${leftDisplay}</span>`;
+                        tableHtml += `</div>`;
+                    }
+                    
+                    // Right cell
+                    if (row.right) {
+                        const rightValue = _getBindValue(state, row.right.bind);
+                        const rightDisplay = _formatDataValue(rightValue, row.right.unit);
+                        tableHtml += `<div class="data-table__cell data-table__cell--right">`;
+                        tableHtml += `<span class="data-table__label">${row.right.label}</span>`;
+                        tableHtml += `<span class="data-table__value">${rightDisplay}</span>`;
+                        tableHtml += `</div>`;
+                    } else {
+                        // Empty right cell
+                        tableHtml += `<div class="data-table__cell data-table__cell--right data-table__cell--empty"></div>`;
+                    }
+                    
+                    tableHtml += '</div>';
+                }
+                
+                tableHtml += '</div>';
+                return tableHtml;
+            
+            case 'timeHistoryGraph':
+                // Time history graph for Page 4
+                const historyData = _getBindValue(state, element.bind) || [];
+                const yAxis = element.yAxis || { min: -10, mid: 30, max: 70, label: 'dB SEG' };
+                
+                let graphHtml = `<div id="${element.id}" class="screen-element screen-element--time-history-graph">`;
+                graphHtml += `<div class="time-history__y-axis">`;
+                graphHtml += `<span class="time-history__y-label time-history__y-label--max">${yAxis.max}</span>`;
+                graphHtml += `<span class="time-history__y-label time-history__y-label--mid">${yAxis.mid}</span>`;
+                graphHtml += `<span class="time-history__y-label time-history__y-label--min">${yAxis.min}</span>`;
+                graphHtml += `<span class="time-history__y-unit">${yAxis.label}</span>`;
+                graphHtml += `</div>`;
+                graphHtml += `<div class="time-history__graph-area">`;
+                graphHtml += `<canvas id="${element.id}_canvas" class="time-history__canvas"></canvas>`;
+                graphHtml += `<div class="time-history__grid">`;
+                graphHtml += `<div class="time-history__grid-line time-history__grid-line--max"></div>`;
+                graphHtml += `<div class="time-history__grid-line time-history__grid-line--mid"></div>`;
+                graphHtml += `<div class="time-history__grid-line time-history__grid-line--min"></div>`;
+                graphHtml += `</div>`;
+                graphHtml += `</div>`;
+                graphHtml += `<div class="time-history__x-axis">`;
+                graphHtml += `<span class="time-history__x-label">0</span>`;
+                graphHtml += `</div>`;
+                graphHtml += `</div>`;
+                
+                // Store data for canvas rendering after DOM update
+                if (typeof window !== 'undefined') {
+                    window._pendingTimeHistoryData = {
+                        canvasId: `${element.id}_canvas`,
+                        data: historyData,
+                        yAxis: yAxis
+                    };
+                    // Schedule canvas rendering
+                    setTimeout(() => _renderTimeHistoryCanvas(), 0);
+                }
+                
+                return graphHtml;
+            
+            case 'octaveBarGraph':
+                // 1/1 Octave bar graph (Page 1)
+                const octaveBands = element.bands || ['16', '31.5', '63', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
+                const octaveData = _getBindValue(state, element.bind) || {};
+                const octaveYAxis = element.yAxis || { min: 10, max: 70 };
+                const selectedBand = _getBindValue(state, element.selectedBand) || '125';
+                const selectedBandValue = octaveData[selectedBand] || null;
+                const overallLevel = _getBindValue(state, element.overallBind) || null;
+                const weightingLabel = state?.slm?.weighting || 'Z';
+                const timeConstantLabel = state?.slm?.timeConstant || 'F';
+                
+                let octaveHtml = `<div id="${element.id}" class="screen-element screen-element--octave-bar-graph">`;
+                
+                // Top row: selected frequency info and overall level
+                octaveHtml += `<div class="octave-bar__header">`;
+                octaveHtml += `<div class="octave-bar__selected">`;
+                octaveHtml += `<span class="octave-bar__freq-label">${selectedBand}Hz</span>`;
+                octaveHtml += `<span class="octave-bar__freq-value">${selectedBandValue !== null ? selectedBandValue.toFixed(1) : '- - -.-'} dB</span>`;
+                octaveHtml += `</div>`;
+                octaveHtml += `<div class="octave-bar__overall">`;
+                octaveHtml += `<span class="octave-bar__overall-label">L${weightingLabel}${timeConstantLabel}</span>`;
+                octaveHtml += `<span class="octave-bar__overall-value">${overallLevel !== null ? overallLevel.toFixed(1) : '- - -.-'} dB</span>`;
+                octaveHtml += `</div>`;
+                octaveHtml += `</div>`;
+                
+                // Graph area with Y-axis and bars
+                octaveHtml += `<div class="octave-bar__graph-container">`;
+                
+                // Y-axis labels
+                octaveHtml += `<div class="octave-bar__y-axis">`;
+                octaveHtml += `<span class="octave-bar__y-label">${octaveYAxis.max}</span>`;
+                octaveHtml += `<span class="octave-bar__y-label">${Math.round((octaveYAxis.max + octaveYAxis.min) * 0.75)}</span>`;
+                octaveHtml += `<span class="octave-bar__y-label">${Math.round((octaveYAxis.max + octaveYAxis.min) / 2)}</span>`;
+                octaveHtml += `<span class="octave-bar__y-label">${Math.round((octaveYAxis.max + octaveYAxis.min) * 0.25)}</span>`;
+                octaveHtml += `<span class="octave-bar__y-label">${octaveYAxis.min}</span>`;
+                octaveHtml += `</div>`;
+                
+                // Bar graph area
+                octaveHtml += `<div class="octave-bar__bars-area">`;
+                // Grid lines
+                octaveHtml += `<div class="octave-bar__grid">`;
+                octaveHtml += `<div class="octave-bar__grid-line" style="top: 0%"></div>`;
+                octaveHtml += `<div class="octave-bar__grid-line" style="top: 25%"></div>`;
+                octaveHtml += `<div class="octave-bar__grid-line" style="top: 50%"></div>`;
+                octaveHtml += `<div class="octave-bar__grid-line" style="top: 75%"></div>`;
+                octaveHtml += `<div class="octave-bar__grid-line" style="top: 100%"></div>`;
+                octaveHtml += `</div>`;
+                
+                // Bars
+                octaveHtml += `<div class="octave-bar__bars">`;
+                const yRange = octaveYAxis.max - octaveYAxis.min;
+                for (const band of octaveBands) {
+                    const value = octaveData[band];
+                    const heightPercent = value !== null && value !== undefined 
+                        ? Math.max(0, Math.min(100, ((value - octaveYAxis.min) / yRange) * 100))
+                        : 0;
+                    const isSelected = band === selectedBand;
+                    octaveHtml += `<div class="octave-bar__bar${isSelected ? ' octave-bar__bar--selected' : ''}" style="height: ${heightPercent}%"></div>`;
+                }
+                octaveHtml += `</div>`;
+                octaveHtml += `</div>`;
+                octaveHtml += `</div>`;
+                
+                octaveHtml += `</div>`;
+                return octaveHtml;
+            
+            case 'octaveBandTable':
+                // 1/1 Octave band data table (Page 2)
+                const tableBands = element.bands || [];
+                const verticalLabel = element.verticalLabel || 'METER 1';
+                // Vertical indicators: 1, →, M, E, T, E, R, space, 1
+                const verticalChars = ['1', '→', 'M', 'E', 'T', 'E', 'R', ' ', '1'];
+                
+                let bandTableHtml = `<div id="${element.id}" class="screen-element screen-element--octave-band-table">`;
+                
+                // Vertical label column on left side
+                bandTableHtml += `<div class="octave-band__vertical-label">`;
+                for (const char of verticalChars) {
+                    bandTableHtml += `<span>${char === ' ' ? '&nbsp;' : char}</span>`;
+                }
+                bandTableHtml += `</div>`;
+                
+                bandTableHtml += `<div class="octave-band__table-content">`;
+                
+                // Split into two columns (6 rows each), skip first two bands (they're in vertical label)
+                const dataBands = tableBands.slice(2); // Skip 1→LZF and →16Hz
+                const leftBands = dataBands.slice(0, 6);
+                const rightBands = dataBands.slice(6, 12);
+                
+                // First two rows show LZF and 16Hz labels with values
+                const firstRowValue = _getBindValue(state, tableBands[0]?.bind);
+                const firstRowDisplay = firstRowValue !== null && firstRowValue !== undefined ? firstRowValue.toFixed(1) : '- - -.-';
+                bandTableHtml += `<div class="octave-band__row">`;
+                bandTableHtml += `<div class="octave-band__cell octave-band__cell--left">`;
+                bandTableHtml += `<span class="octave-band__freq">LZF</span>`;
+                bandTableHtml += `<span class="octave-band__value">${firstRowDisplay}</span>`;
+                bandTableHtml += `</div>`;
+                const rightCol1Value = _getBindValue(state, tableBands[6]?.bind);
+                const rightCol1Display = rightCol1Value !== null && rightCol1Value !== undefined ? rightCol1Value.toFixed(1) : '- - -.-';
+                bandTableHtml += `<div class="octave-band__cell octave-band__cell--right">`;
+                bandTableHtml += `<span class="octave-band__freq">${tableBands[6]?.freq?.replace('→', '') || '500Hz'}</span>`;
+                bandTableHtml += `<span class="octave-band__value">${rightCol1Display}</span>`;
+                bandTableHtml += `</div>`;
+                bandTableHtml += `</div>`;
+                
+                const secondRowValue = _getBindValue(state, tableBands[1]?.bind);
+                const secondRowDisplay = secondRowValue !== null && secondRowValue !== undefined ? secondRowValue.toFixed(1) : '- - -.-';
+                bandTableHtml += `<div class="octave-band__row">`;
+                bandTableHtml += `<div class="octave-band__cell octave-band__cell--left">`;
+                bandTableHtml += `<span class="octave-band__freq">16Hz</span>`;
+                bandTableHtml += `<span class="octave-band__value">${secondRowDisplay}</span>`;
+                bandTableHtml += `</div>`;
+                const rightCol2Value = _getBindValue(state, tableBands[7]?.bind);
+                const rightCol2Display = rightCol2Value !== null && rightCol2Value !== undefined ? rightCol2Value.toFixed(1) : '- - -.-';
+                bandTableHtml += `<div class="octave-band__cell octave-band__cell--right">`;
+                bandTableHtml += `<span class="octave-band__freq">${tableBands[7]?.freq?.replace('→', '') || '1KHz'}</span>`;
+                bandTableHtml += `<span class="octave-band__value">${rightCol2Display}</span>`;
+                bandTableHtml += `</div>`;
+                bandTableHtml += `</div>`;
+                
+                // Remaining rows (31.5Hz through 250Hz on left, 2KHz through 16KHz on right)
+                for (let i = 2; i < 6; i++) {
+                    bandTableHtml += `<div class="octave-band__row">`;
+                    
+                    // Left column
+                    if (tableBands[i]) {
+                        const leftValue = _getBindValue(state, tableBands[i].bind);
+                        const leftDisplay = leftValue !== null && leftValue !== undefined ? leftValue.toFixed(1) : '- - -.-';
+                        bandTableHtml += `<div class="octave-band__cell octave-band__cell--left">`;
+                        bandTableHtml += `<span class="octave-band__freq">${tableBands[i].freq?.replace('→', '') || ''}</span>`;
+                        bandTableHtml += `<span class="octave-band__value">${leftDisplay}</span>`;
+                        bandTableHtml += `</div>`;
+                    }
+                    
+                    // Right column
+                    if (tableBands[i + 6]) {
+                        const rightValue = _getBindValue(state, tableBands[i + 6].bind);
+                        const rightDisplay = rightValue !== null && rightValue !== undefined ? rightValue.toFixed(1) : '- - -.-';
+                        bandTableHtml += `<div class="octave-band__cell octave-band__cell--right">`;
+                        bandTableHtml += `<span class="octave-band__freq">${tableBands[i + 6].freq?.replace('→', '') || ''}</span>`;
+                        bandTableHtml += `<span class="octave-band__value">${rightDisplay}</span>`;
+                        bandTableHtml += `</div>`;
+                    }
+                    
+                    bandTableHtml += `</div>`;
+                }
+                
+                bandTableHtml += `</div>`;
+                bandTableHtml += `</div>`;
+                return bandTableHtml;
             
             case 'fileList':
                 // File list rendering for session/config directories
