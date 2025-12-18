@@ -63,6 +63,59 @@
             </div>
         </div>
     </div>
+
+    <!-- Audio Control Panel -->
+    <div id="audio-panel" class="audio-panel">
+        <div class="audio-panel__header">
+            <span class="audio-panel__title">🔊 Sound Simulator</span>
+            <button class="audio-panel__toggle" onclick="toggleAudioPanel()">−</button>
+        </div>
+        <div class="audio-panel__content">
+            <div class="audio-panel__section">
+                <div class="audio-panel__label">Steady Sounds</div>
+                <button class="audio-btn" onclick="window.Audio.playPreset('fan')">🌀 Fan</button>
+                <button class="audio-btn" onclick="window.Audio.playPreset('engine')">🚗 Engine</button>
+                <button class="audio-btn" onclick="window.Audio.playPreset('office')">🏢 Office</button>
+            </div>
+            <div class="audio-panel__section">
+                <div class="audio-panel__label">Intermittent Sounds</div>
+                <button class="audio-btn" onclick="window.Audio.playPreset('hammering')">🔨 Hammering</button>
+                <button class="audio-btn" onclick="window.Audio.playPreset('clapping')">👏 Clapping</button>
+            </div>
+            <div class="audio-panel__section">
+                <div class="audio-panel__label">Industrial</div>
+                <button class="audio-btn" onclick="window.Audio.playPreset('machinery')">⚙️ Machinery</button>
+            </div>
+            <div class="audio-panel__section">
+                <div class="audio-panel__label">Calibration</div>
+                <button class="audio-btn audio-btn--calibration" onclick="window.Audio.playPreset('calibration')">🎵 1kHz Tone</button>
+            </div>
+            <div class="audio-panel__controls">
+                <button class="audio-btn audio-btn--stop" onclick="window.Audio.stop()">⏹ Stop</button>
+                <div class="audio-panel__volume">
+                    <label>Vol:</label>
+                    <input type="range" min="0" max="100" value="50" onchange="window.Audio.setVolume(this.value/100)">
+                </div>
+            </div>
+            <div class="audio-panel__status" id="audio-status">Ready</div>
+        </div>
+    </div>
+
+    <script>
+        function toggleAudioPanel() {
+            const panel = document.getElementById('audio-panel');
+            const content = panel.querySelector('.audio-panel__content');
+            const toggle = panel.querySelector('.audio-panel__toggle');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '−';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '+';
+            }
+        }
+    </script>
+
     <!-- Core modules (Task 2.0) -->
     <script src="js/utils.js"></script>
     <script src="js/config.js"></script>

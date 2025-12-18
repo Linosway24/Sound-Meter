@@ -125,10 +125,12 @@
                 .then(() => {
                     isPlaying = true;
                     console.log(`[AUDIO] Playing: ${preset.name}`);
+                    updateStatus(`▶ ${preset.name} (${preset.baseLevel} dB ±${preset.variation})`);
                 })
                 .catch(e => {
                     console.warn(`[AUDIO] Playback failed: ${e.message}`);
                     console.log('[AUDIO] Note: Audio files may need to be added to assets/audio/');
+                    updateStatus(`⚠ Playback failed`);
                 });
         });
 
@@ -136,6 +138,8 @@
             console.warn(`[AUDIO] Error loading ${preset.file}:`, e);
             console.log('[AUDIO] Simulator settings applied, but audio file not found');
             console.log('[AUDIO] Add audio files to assets/audio/ directory');
+            // Still update simulator even if audio fails
+            updateStatus(`⚠ No audio - Sim: ${preset.baseLevel} dB ±${preset.variation}`);
         });
 
         currentAudio.load();
@@ -170,6 +174,16 @@
     }
 
     /**
+     * Update status display
+     */
+    function updateStatus(message) {
+        const statusEl = document.getElementById('audio-status');
+        if (statusEl) {
+            statusEl.textContent = message;
+        }
+    }
+
+    /**
      * Stop current audio playback
      */
     function stop() {
@@ -180,6 +194,7 @@
         }
         isPlaying = false;
         console.log('[AUDIO] Stopped');
+        updateStatus('⏹ Stopped');
     }
 
     /**
