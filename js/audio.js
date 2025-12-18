@@ -62,7 +62,7 @@
         // Calibration tone
         calibration: {
             name: 'Calibration Tone (1kHz)',
-            file: 'assets/audio/calibration_1khz.wav',
+            file: 'assets/audio/Calibration_1khz.wav',
             baseLevel: 114,
             variation: 0.5,
             description: '1000 Hz calibration tone at 114 dB'
