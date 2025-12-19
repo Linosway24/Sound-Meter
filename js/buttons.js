@@ -306,8 +306,11 @@
         // Use mainFSM dispatch if available
         if (window.dispatch) {
             stopButtonState.pressStart = Date.now();
+            stopButtonState.activeButton = element;
             addPressFeedback(element);
             console.log('[BUTTON] Stop: Button down (via mainFSM)');
+            
+            // Dispatch STOP_DOWN - FSM will check if paused and start countdown
             window.dispatch({ type: 'STOP_DOWN' });
             return;
         }
@@ -325,6 +328,8 @@
         if (window.dispatch) {
             removePressFeedback(element);
             console.log('[BUTTON] Stop: Button up (via mainFSM)');
+            
+            // Dispatch STOP_UP - FSM will cancel countdown if active
             window.dispatch({ type: 'STOP_UP' });
             stopButtonState.pressStart = null;
             return;
@@ -359,29 +364,51 @@
         // Check if mainFSM is available
         if (window.dispatch) {
             console.log('[BUTTON] Power: mainFSM mode detected');
-            // For mainFSM mode, short press triggers boot sequence
-            // Long press still toggles power off
             const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
             const isOff = !fsmState || fsmState.viewId === 'OFF';
+            const isHome = fsmState && (fsmState.viewId === 'home_screen' || fsmState.viewId === 'home_screen_dim');
             
-            // Start long press timer
-            pressState.activePressTimer = setTimeout(() => {
-                const duration = Date.now() - pressState.powerPressStart;
-                console.log(`[BUTTON] Power: LONG PRESS (${duration}ms) - Power OFF`);
+            // If on home screen, start 3-second countdown for power off
+            if (isHome && !isOff) {
+                console.log('[BUTTON] Power: On home screen, starting 3-second countdown');
+                // Dispatch event to start countdown
+                window.dispatch({ type: 'POWER_HOLD_START' });
                 
-                // Power off via device.js
-                if (window.powerOff) {
-                    window.powerOff();
+                // Start countdown timer (3 seconds = 3000ms)
+                pressState.activePressTimer = setTimeout(() => {
+                    console.log('[BUTTON] Power: 3-second hold complete - Powering OFF');
+                    window.dispatch({ type: 'POWER_HOLD_COMPLETE' });
+                    pressState.powerPressStart = null;
+                    pressState.activePressTimer = null;
+                    removePressFeedback(element);
+                }, 3000);
+            } else if (isOff) {
+                // Device is off, short press will power on (handled in POWER event)
+                // No long press needed when off
+                if (pressState.activePressTimer) {
+                    clearTimeout(pressState.activePressTimer);
+                    pressState.activePressTimer = null;
                 }
-                // Reset mainFSM
-                if (window.initMainFSM) {
-                    window.initMainFSM();
-                }
-                
-                pressState.powerPressStart = null;
-                pressState.activePressTimer = null;
-                removePressFeedback(element);
-            }, pressState.powerPressThreshold);
+            } else {
+                // Not on home screen, use original long press behavior (800ms)
+                pressState.activePressTimer = setTimeout(() => {
+                    const duration = Date.now() - pressState.powerPressStart;
+                    console.log(`[BUTTON] Power: LONG PRESS (${duration}ms) - Power OFF`);
+                    
+                    // Power off via device.js
+                    if (window.powerOff) {
+                        window.powerOff();
+                    }
+                    // Reset mainFSM
+                    if (window.initMainFSM) {
+                        window.initMainFSM();
+                    }
+                    
+                    pressState.powerPressStart = null;
+                    pressState.activePressTimer = null;
+                    removePressFeedback(element);
+                }, pressState.powerPressThreshold);
+            }
         } else {
             // Original behavior
             // Start long press timer
@@ -410,12 +437,21 @@
         console.log('[BUTTON] Power: powerPressStart =', pressState.powerPressStart);
         
         if (pressState.activePressTimer) {
-            // Cancel long press timer
+            // Cancel long press timer or countdown
             clearTimeout(pressState.activePressTimer);
             pressState.activePressTimer = null;
 
             const duration = Date.now() - pressState.powerPressStart;
             console.log('[BUTTON] Power: Press duration =', duration, 'ms');
+            
+            // If we were in countdown mode, cancel it
+            if (window.dispatch && window.getMainFSMState) {
+                const fsmState = window.getMainFSMState();
+                if (fsmState && fsmState.viewId === 'power_off_countdown') {
+                    console.log('[BUTTON] Power: Cancelling countdown');
+                    window.dispatch({ type: 'POWER_HOLD_CANCEL' });
+                }
+            }
             
             if (duration < pressState.powerPressThreshold) {
                 // Short press
@@ -459,7 +495,31 @@
             pressState.powerPressStart = null;
             removePressFeedback(element);
         } else {
-            console.log('[BUTTON] Power: No activePressTimer - button may have been released too quickly or not pressed correctly');
+            // No timer was set - this happens when device is OFF
+            const duration = Date.now() - pressState.powerPressStart;
+            console.log('[BUTTON] Power: No activePressTimer, duration:', duration, 'ms');
+            
+            if (window.dispatch && window.getMainFSMState) {
+                const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
+                const isOff = !fsmState || fsmState.viewId === 'OFF';
+                
+                if (isOff && duration < 1000) {
+                    // Device is OFF and button was released quickly - power on
+                    console.log('[BUTTON] Power: Device is OFF, treating as short press to power on');
+                    window.dispatch({ type: 'POWER' });
+                } else if (!isOff && duration < pressState.powerPressThreshold) {
+                    // Device is on, short press = ESC/BACK
+                    console.log('[BUTTON] Power: SHORT PRESS - ESC/BACK (via mainFSM)');
+                    window.dispatch({ type: 'ESC' });
+                } else {
+                    console.log('[BUTTON] Power: No activePressTimer - button may have been released too quickly or not pressed correctly');
+                }
+            } else {
+                console.log('[BUTTON] Power: No activePressTimer - button may have been released too quickly or not pressed correctly');
+            }
+            
+            pressState.powerPressStart = null;
+            removePressFeedback(element);
         }
     }
 

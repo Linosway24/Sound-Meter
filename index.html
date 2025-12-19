@@ -182,6 +182,10 @@
                                     lcd.classList.add('lcd--powered-off');
                                 } else {
                                     lcd.classList.remove('lcd--powered-off');
+                                    // Ensure LCD is visible when not OFF
+                                    lcd.style.display = '';
+                                    lcd.style.visibility = '';
+                                    lcd.style.opacity = '';
                                 }
                             }
                             

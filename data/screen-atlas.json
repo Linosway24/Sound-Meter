@@ -59,6 +59,22 @@
       "display": { "backlight": true }
     },
     {
+      "id": "power_off_countdown",
+      "title": "Power Off",
+      "mode": "POWER_OFF",
+      "referenceImage": "capture/startup/home_screen_dim.jpg",
+      "elements": [
+        {
+          "type": "countdown",
+          "id": "power_off_countdown",
+          "bind": "powerOff.countdown"
+        }
+      ],
+      "softkeys": [],
+      "keys": [],
+      "display": { "backlight": true }
+    },
+    {
       "id": "slm_home",
       "title": "SLM Running",
       "mode": "SLM",
@@ -949,7 +965,18 @@
       "title": "Stop Confirm",
       "mode": "SLM",
       "referenceImage": "Capture/operational/stop_confirm.jpeg",
-      "elements": [],
+      "elements": [
+        {
+          "type": "label",
+          "id": "save_clear_label",
+          "text": "Save & Clear"
+        },
+        {
+          "type": "countdown",
+          "id": "stop_countdown",
+          "bind": "stopCountdown.countdown"
+        }
+      ],
       "softkeys": ["", "", "", ""],
       "keys": ["enter", "esc", "stop"],
       "display": { "backlight": true }

@@ -467,6 +467,11 @@
                         highlightedClass += ' screen-element--selected';
                     }
                 }
+                // Special handling for save_clear_label - ensure it's centered and visible
+                if (element.id === "save_clear_label") {
+                    const text = element.text || 'Save & Clear';
+                    return `<div id="${element.id}" class="screen-element screen-element--label" style="text-align: center !important; width: 100% !important; display: block !important; font-size: 1.2em !important; margin-bottom: 1em !important; color: #e6e6e6 !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 10 !important;">${text}</div>`;
+                }
                 const alignClass = element.align === 'left' ? ' screen-element--label-left' : 
                                   element.align === 'right' ? ' screen-element--label-right' : '';
                 return `<div id="${element.id}" class="screen-element screen-element--label${highlightedClass}${alignClass}">${labelText}</div>`;
@@ -486,6 +491,23 @@
             
             case 'divider':
                 return `<div id="${element.id}" class="screen-element screen-element--divider"></div>`;
+            
+            case 'countdown':
+                const countdownValue = element.bind ? 
+                    (() => {
+                        const bindPath = element.bind.split('.');
+                        let value = state;
+                        for (const key of bindPath) {
+                            value = value?.[key];
+                        }
+                        return value !== null && value !== undefined ? value : null;
+                    })() : null;
+                
+                if (countdownValue !== null) {
+                    return `<div id="${element.id}" class="screen-element screen-element--countdown"><span class="countdown-box">${countdownValue}</span></div>`;
+                } else {
+                    return `<div id="${element.id}" class="screen-element screen-element--countdown"></div>`;
+                }
             
             case 'graph':
                 // Simple graph rendering for delete status screen (timeline style)
@@ -2150,6 +2172,9 @@
                 if (screenId === 'slm_sound_settings_overlay') {
                     console.log('[OVERLAY] Rendering element:', element.id, element.type, 'rendered:', rendered);
                 }
+                if (screenId === 'stop_confirm') {
+                    console.log('[STOP_CONFIRM] Rendering element:', element.id, element.type, 'rendered length:', rendered ? rendered.length : 0, 'preview:', rendered ? rendered.substring(0, 100) : 'null');
+                }
                 mainHTML += rendered;
             });
             
@@ -2165,6 +2190,13 @@
         // Wrap delete/load status screens in flexbox container to position graph at bottom
         if (screenId === "files_delete_status" || screenId === "files_load_status") {
             mainHTML = `<div style="display: flex; flex-direction: column; height: 100%; min-height: 100%; justify-content: space-between; padding: 0; margin: 0;">${mainHTML}</div>`;
+        }
+        
+        // Wrap stop_confirm and power_off_countdown screens in centered container
+        if (screenId === "stop_confirm") {
+            mainHTML = `<div id="stop_confirm_wrapper" style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: flex-start !important; min-height: 100% !important; width: 100% !important; padding-top: 1.5em !important; box-sizing: border-box !important; position: relative !important;">${mainHTML}</div>`;
+        } else if (screenId === "power_off_countdown") {
+            mainHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%;">${mainHTML}</div>`;
         }
 
         // #region agent log

@@ -1878,4 +1878,75 @@ body {
     font-size: 22px;
 }
 
+.screen-element--countdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 120px;
+    font-weight: bold;
+    color: #e6e6e6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.countdown-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #e6e6e6 !important;
+    box-sizing: border-box;
+    width: 150px;
+    height: 150px;
+    line-height: 1;
+    color: #e6e6e6;
+    font-size: inherit;
+    font-weight: inherit;
+    font-family: inherit;
+}
+
+/* Stop confirm screen - "Save & Clear" label above countdown */
+#save_clear_label {
+    text-align: center !important;
+    font-size: 1.2em !important;
+    margin-bottom: 1em !important;
+    margin-top: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    color: #e6e6e6 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-weight: normal !important;
+    line-height: 1.5 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    height: auto !important;
+    min-height: 1.5em !important;
+    padding: 0 !important;
+}
+
+/* Stop confirm wrapper - ensure proper layout */
+#stop_confirm_wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-height: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+}
+
+/* Ensure stop_confirm screen displays properly in lcd__main */
+.lcd__main:has(#stop_confirm_wrapper) {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
+.lcd__main:has(#stop_confirm_wrapper) > #stop_confirm_wrapper {
+    flex: 1 !important;
+    display: flex !important;
+}
+
 

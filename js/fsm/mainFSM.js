@@ -184,7 +184,16 @@
             stopHold: null,
             formatting: null,
             cal: null,
-            measurementRuntime: null
+            measurementRuntime: null,
+            powerOffCountdown: null
+        },
+        powerOff: {
+            countdown: null, // 3, 2, 1, or null
+            previousViewId: null // Store the view we came from
+        },
+        stopCountdown: {
+            countdown: null, // 3, 2, 1, or null
+            previousViewId: null // Store the view we came from
         },
         files: {
             cursor: 0,
@@ -722,7 +731,20 @@
             menu: { selectedIndex: 0 },
             toast: null,
             slmLabelIndex: 0, // 0 = "SLM", 1 = "1/1", 2 = "1/3"
-            timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null, measurementUpdate: null },
+            slmSoundSettings: {
+                visible: false,
+                selectedIndex: 0,
+                selectedType: null // Stores the selected measurement type: 'L_', 'L_AVG', 'L_PK', 'L_Mx', 'L_Mn'
+            },
+            timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null, measurementUpdate: null, powerOffCountdown: null, stopCountdown: null },
+            powerOff: {
+                countdown: null, // 3, 2, 1, or null
+                previousViewId: null // Store the view we came from
+            },
+            stopCountdown: {
+                countdown: null, // 3, 2, 1, or null
+                previousViewId: null // Store the view we came from
+            },
             files: {
                 cursor: 0,
                 sessionFiles: [
@@ -973,10 +995,37 @@
     // Stop hold timer
     function _startStopHoldTimer() {
         _clearTimer('stopHold');
+        _clearTimer('stopCountdown');
+        
+        console.log('[FSM] STOP_HOLD_START: Starting stop countdown');
+        _state.stopCountdown.previousViewId = _state.viewId;
+        _state.stopCountdown.countdown = 3;
         _state.viewId = "stop_confirm";
+        // Preserve current backlight state - don't change it
         _emit();
+        
+        // Start countdown timer (update every second)
+        let countdownValue = 3;
+        const countdownInterval = setInterval(() => {
+            countdownValue--;
+            if (countdownValue > 0) {
+                _state.stopCountdown.countdown = countdownValue;
+                _emit();
+            } else {
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
+        
+        // Store interval ID for cleanup
+        _state.timers.stopCountdown = countdownInterval;
 
         _state.timers.stopHold = setTimeout(() => {
+            // Clear countdown timer
+            if (_state.timers.stopCountdown) {
+                clearInterval(_state.timers.stopCountdown);
+                _state.timers.stopCountdown = null;
+            }
+            
             // Stop Measurement and reset Simulator
             if (window.Measurement) {
                 window.Measurement.stop();
@@ -990,9 +1039,9 @@
             _stopMeasurementTimer();
             updateSlmScreen();
             _clearTimer('stopHold');
-            if (window.Config && window.Config.ENABLE_TOASTS) {
-                _showToast("Saved & cleared", 2000);
-            }
+            _state.stopCountdown.countdown = null;
+            _state.stopCountdown.previousViewId = null;
+            // Don't show toast - "Save & Clear" is already shown during countdown
             _emit();
         }, 3000);
     }
@@ -1029,6 +1078,83 @@
                 }
                 break;
 
+            case "POWER_HOLD_START":
+                // Start 3-second countdown for power off
+                if (isHome()) {
+                    console.log('[FSM] POWER_HOLD_START: Starting power-off countdown');
+                    _state.powerOff.previousViewId = _state.viewId;
+                    _state.powerOff.countdown = 3;
+                    _state.viewId = "power_off_countdown";
+                    // Preserve current backlight state - don't change it
+                    _emit();
+                    
+                    // Start countdown timer (update every second)
+                    let countdownValue = 3;
+                    const countdownInterval = setInterval(() => {
+                        countdownValue--;
+                        if (countdownValue > 0) {
+                            _state.powerOff.countdown = countdownValue;
+                            _emit();
+                        } else {
+                            clearInterval(countdownInterval);
+                        }
+                    }, 1000);
+                    
+                    // Store interval ID for cleanup
+                    _state.timers.powerOffCountdown = countdownInterval;
+                }
+                break;
+
+            case "POWER_HOLD_COMPLETE":
+                // Countdown completed, power off
+                console.log('[FSM] POWER_HOLD_COMPLETE: Powering off device');
+                
+                // Clear countdown timer if still running
+                if (_state.timers.powerOffCountdown) {
+                    clearInterval(_state.timers.powerOffCountdown);
+                    _state.timers.powerOffCountdown = null;
+                }
+                
+                // Power off via device.js
+                if (window.powerOff) {
+                    window.powerOff();
+                }
+                
+                // Reset state
+                _state.viewId = "OFF";
+                _state.backlight = false;
+                _state.powerOff.countdown = null;
+                _state.powerOff.previousViewId = null;
+                _emit();
+                
+                // Reset mainFSM
+                if (window.initMainFSM) {
+                    window.initMainFSM();
+                }
+                break;
+
+            case "POWER_HOLD_CANCEL":
+                // Cancel countdown, return to previous screen
+                console.log('[FSM] POWER_HOLD_CANCEL: Cancelling power-off countdown');
+                
+                // Clear countdown timer if still running
+                if (_state.timers.powerOffCountdown) {
+                    clearInterval(_state.timers.powerOffCountdown);
+                    _state.timers.powerOffCountdown = null;
+                }
+                
+                // Return to previous screen
+                if (_state.powerOff.previousViewId) {
+                    _state.viewId = _state.powerOff.previousViewId;
+                    _state.powerOff.previousViewId = null;
+                } else {
+                    // Fallback to home screen
+                    _state.viewId = "home_screen_dim";
+                }
+                _state.powerOff.countdown = null;
+                _emit();
+                break;
+
             case "BACKLIGHT":
                 if (_state.viewId === "home_screen_dim") {
                     _state.viewId = "home_screen";
@@ -1052,6 +1178,22 @@
                 // UP/DOWN do not handle SLM page navigation - ENTER cycles pages
                 if (isSlm()) {
                     // UP/DOWN have no effect on page navigation in SLM mode
+                    break;
+                }
+                // Handle UP arrow on calibration running screen - increase SPL value
+                if (_state.viewId === "cal_running") {
+                    // Mark as manually adjusted to stop all automatic variation and adjustment
+                    if (!_state.calibration.adjustment) {
+                        _state.calibration.adjustment = {};
+                    }
+                    _state.calibration.adjustment.manuallyAdjusted = true;
+                    _state.calibration.adjustment.stabilized = true; // Also mark as stabilized
+                    
+                    // Increase SPL by 0.1dB, capped at 140dB
+                    const current = _state.measurement.currentSPL || 114;
+                    _state.measurement.currentSPL = Math.min(140, Math.round((current + 0.1) * 10) / 10);
+                    console.log(`[CAL] UP: SPL = ${_state.measurement.currentSPL.toFixed(1)}dB (manual control - no variation)`);
+                    _emit();
                     break;
                 }
                 if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
@@ -1700,6 +1842,22 @@
                     fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1147',message:'DOWN blocked by isSlm',data:{viewId:_state.viewId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
                     // #endregion
                     // UP/DOWN have no effect on page navigation in SLM mode
+                    break;
+                }
+                // Handle DOWN arrow on calibration running screen - decrease SPL value
+                if (_state.viewId === "cal_running") {
+                    // Mark as manually adjusted to stop all automatic variation and adjustment
+                    if (!_state.calibration.adjustment) {
+                        _state.calibration.adjustment = {};
+                    }
+                    _state.calibration.adjustment.manuallyAdjusted = true;
+                    _state.calibration.adjustment.stabilized = true; // Also mark as stabilized
+                    
+                    // Decrease SPL by 0.1dB, minimum at 50dB (matching bar meter range)
+                    const current = _state.measurement.currentSPL || 114;
+                    _state.measurement.currentSPL = Math.max(50, Math.round((current - 0.1) * 10) / 10);
+                    console.log(`[CAL] DOWN: SPL = ${_state.measurement.currentSPL.toFixed(1)}dB (manual control - no variation)`);
+                    _emit();
                     break;
                 }
                 if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
@@ -4109,16 +4267,100 @@
                         _state.previousViewId = isSlm() ? _state.viewId : (isInSetup() ? _state.viewId : "home_screen");
                         _state.viewId = "cal_running";
                         
-                        // Start the simulator reading calibration tone level (114 dB)
-                        if (window.Simulator) {
-                            window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 114, variation: 0.5 });
+                        // Initialize calibration at a value between 120-130dB (random variation)
+                        const startValue = 120 + Math.random() * 10; // Random between 120-130dB
+                        _state.measurement.currentSPL = Math.round(startValue * 10) / 10;
+                        
+                        // Initialize calibration adjustment state
+                        if (!_state.calibration.adjustment) {
+                            _state.calibration.adjustment = {};
                         }
+                        _state.calibration.adjustment.startTime = null; // Will be set when tone starts
+                        _state.calibration.adjustment.toneStarted = false; // Track if calibration tone is playing
+                        _state.calibration.adjustment.manuallyAdjusted = false;
+                        _state.calibration.adjustment.targetValue = 114.2; // Target around 114.2dB
                         
                         // Start measurement update loop for calibration
                         _clearTimer('cal');
                         _state.timers.cal = setInterval(() => {
-                            if (window.Simulator && _state.viewId === "cal_running") {
-                                _state.measurement.currentSPL = window.Simulator.generateSample();
+                            if (_state.viewId === "cal_running") {
+                                // Check if calibration tone is playing
+                                if (!_state.calibration.adjustment.toneStarted) {
+                                    const audioState = window.AudioPlayer?.getState?.();
+                                    if (audioState && audioState.isPlaying) {
+                                        // Check if calibration tone is playing (check if URL contains calibration file)
+                                        const presetSrc = audioState.currentPreset || '';
+                                        if (presetSrc.includes('Calibration_1khz') || presetSrc.includes('calibration')) {
+                                            _state.calibration.adjustment.toneStarted = true;
+                                            _state.calibration.adjustment.startTime = Date.now();
+                                            console.log('[CAL] Calibration tone detected - starting adjustment timer');
+                                        }
+                                    }
+                                    // If tone not started yet, just add small variation around starting value
+                                    if (!_state.calibration.adjustment.toneStarted) {
+                                        const variation = (Math.random() * 0.2 - 0.1);
+                                        _state.measurement.currentSPL = Math.round((_state.measurement.currentSPL + variation) * 10) / 10;
+                                        // Clamp to ensure it stays in reasonable range
+                                        _state.measurement.currentSPL = Math.max(50, Math.min(140, _state.measurement.currentSPL));
+                                        _emit();
+                                        return; // Exit early until tone starts
+                                    }
+                                }
+                                
+                                const now = Date.now();
+                                const elapsed = _state.calibration.adjustment.startTime ? 
+                                    (now - _state.calibration.adjustment.startTime) : 0;
+                                
+                                // If manually adjusted (arrow pressed), completely stop all automatic changes
+                                // User has full control - no variation, no auto-adjustment
+                                if (_state.calibration.adjustment.manuallyAdjusted) {
+                                    // Do nothing - value is completely stable and controlled by arrow keys only
+                                    // The value was set by the arrow key handler and should not change
+                                    return; // Exit early - don't update anything
+                                }
+                                
+                                // After 10 seconds since tone started, automatically adjust towards 114.2dB (faster adjustment)
+                                if (elapsed >= 10000) {
+                                    const current = _state.measurement.currentSPL || 120;
+                                    const target = _state.calibration.adjustment.targetValue;
+                                    const diff = target - current;
+                                    
+                                    // If not at target, move towards it faster (0.2-0.3dB per update)
+                                    if (Math.abs(diff) > 0.15) {
+                                        // Faster adjustment: 0.2-0.3dB per update depending on distance
+                                        const stepSize = Math.abs(diff) > 5 ? 0.3 : 0.2;
+                                        const step = diff > 0 ? stepSize : -stepSize;
+                                        _state.measurement.currentSPL = Math.round((current + step) * 10) / 10;
+                                        // Add small variation during auto-adjustment to simulate real measurement (±0.05dB)
+                                        const variation = (Math.random() * 0.1 - 0.05);
+                                        _state.measurement.currentSPL = Math.round((_state.measurement.currentSPL + variation) * 10) / 10;
+                                    } else {
+                                        // Close enough to target - stabilize around 114.0-114.5dB with small variation
+                                        // Check if we're in the stable range (113.5-114.5dB)
+                                        if (current >= 113.5 && current <= 114.5) {
+                                            // We're stabilized - mark as stabilized but keep small variation until user presses arrow
+                                            if (!_state.calibration.adjustment.stabilized) {
+                                                _state.calibration.adjustment.stabilized = true;
+                                            }
+                                            // Keep small variation until user presses arrow (manuallyAdjusted will stop this)
+                                            const variation = (Math.random() * 0.3 - 0.15); // ±0.15dB variation
+                                            _state.measurement.currentSPL = Math.round((target + variation) * 10) / 10;
+                                        } else {
+                                            // Still adjusting towards stable range
+                                            const stepSize = 0.2;
+                                            const step = diff > 0 ? stepSize : -stepSize;
+                                            _state.measurement.currentSPL = Math.round((current + step) * 10) / 10;
+                                        }
+                                    }
+                                } else if (elapsed > 0) {
+                                    // Tone has started but not yet 10 seconds - add small variation around current value
+                                    // This is the "waiting for stabilization" period
+                                    const variation = (Math.random() * 0.2 - 0.1);
+                                    _state.measurement.currentSPL = Math.round((_state.measurement.currentSPL + variation) * 10) / 10;
+                                    // Clamp to ensure it stays in reasonable range
+                                    _state.measurement.currentSPL = Math.max(50, Math.min(140, _state.measurement.currentSPL));
+                                }
+                                
                                 _emit();
                             }
                         }, 100); // Update every 100ms
@@ -4727,15 +4969,33 @@
                 break;
 
             case "STOP_DOWN":
-                if (isSlm() && (_state.measurement.state === "paused" || _state.measurement.state === "running")) {
+                // Stop only works when paused (not running)
+                if (isSlm() && _state.measurement.state === "paused") {
                     _startStopHoldTimer();
                 }
                 break;
 
             case "STOP_UP":
                 if (_state.viewId === "stop_confirm") {
+                    console.log('[FSM] STOP_UP: Cancelling stop countdown');
+                    
+                    // Clear countdown timer if still running
+                    if (_state.timers.stopCountdown) {
+                        clearInterval(_state.timers.stopCountdown);
+                        _state.timers.stopCountdown = null;
+                    }
+                    
                     _clearTimer('stopHold');
-                    updateSlmScreen();
+                    
+                    // Return to previous screen
+                    if (_state.stopCountdown.previousViewId) {
+                        _state.viewId = _state.stopCountdown.previousViewId;
+                        _state.stopCountdown.previousViewId = null;
+                    } else {
+                        // Fallback to paused SLM screen
+                        updateSlmScreen();
+                    }
+                    _state.stopCountdown.countdown = null;
                     _emit();
                 }
                 break;
@@ -4832,6 +5092,22 @@
                 break;
 
             case "SOFT2":
+                // Handle SOFT2 on calibration running screen - increase SPL (same as UP arrow)
+                if (_state.viewId === "cal_running") {
+                    // Mark as manually adjusted to stop all automatic variation and adjustment
+                    if (!_state.calibration.adjustment) {
+                        _state.calibration.adjustment = {};
+                    }
+                    _state.calibration.adjustment.manuallyAdjusted = true;
+                    _state.calibration.adjustment.stabilized = true;
+                    
+                    // Increase SPL by 0.1dB, capped at 140dB
+                    const current = _state.measurement.currentSPL || 114;
+                    _state.measurement.currentSPL = Math.min(140, Math.round((current + 0.1) * 10) / 10);
+                    console.log(`[CAL] SOFT2 (UP): SPL = ${_state.measurement.currentSPL.toFixed(1)}dB (manual control - no variation)`);
+                    _emit();
+                    break;
+                }
                 if ((_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) ||
                     (_state.viewId === "files_save_config" && _state.files.saveConfig.editing)) {
                     if (_state.viewId === "files_rename_last") {
@@ -4917,6 +5193,22 @@
                 break;
 
             case "SOFT3":
+                // Handle SOFT3 on calibration running screen - decrease SPL (same as DOWN arrow)
+                if (_state.viewId === "cal_running") {
+                    // Mark as manually adjusted to stop all automatic variation and adjustment
+                    if (!_state.calibration.adjustment) {
+                        _state.calibration.adjustment = {};
+                    }
+                    _state.calibration.adjustment.manuallyAdjusted = true;
+                    _state.calibration.adjustment.stabilized = true;
+                    
+                    // Decrease SPL by 0.1dB, minimum at 50dB (matching bar meter range)
+                    const current = _state.measurement.currentSPL || 114;
+                    _state.measurement.currentSPL = Math.max(50, Math.round((current - 0.1) * 10) / 10);
+                    console.log(`[CAL] SOFT3 (DOWN): SPL = ${_state.measurement.currentSPL.toFixed(1)}dB (manual control - no variation)`);
+                    _emit();
+                    break;
+                }
                 if ((_state.viewId === "files_rename_last" && _state.files.renameLastSession.editing) ||
                     (_state.viewId === "files_save_config" && _state.files.saveConfig.editing)) {
                     if (_state.viewId === "files_rename_last") {
