@@ -620,6 +620,40 @@ body {
     gap: 0.05em; /* Scale relative to LCD base font size - minimal spacing */
 }
 
+/* SLM Sound Settings Overlay Menu - Popup Box Style */
+.slm-overlay-menu {
+    position: absolute;
+    background: rgba(29, 35, 43, 1); /* Fully solid background */
+    border: 1px solid rgba(255, 0, 0, 0.5); /* Red border to match photo */
+    z-index: 1000;
+    padding: 1.2em 1.5em;
+    overflow-y: auto; /* Allow scrolling if needed, but don't clip content */
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    /* Centered horizontally */
+    left: 50%;
+    transform: translateX(-50%);
+    /* Ensure content is visible */
+    min-height: fit-content;
+}
+
+.slm-overlay-menu .screen-element--textList {
+    padding-left: 0.5em; /* Add left padding to menu items to align properly */
+}
+
+.slm-overlay-menu .screen-element--label {
+    color: #fff !important; /* Ensure labels are white and visible */
+    padding: 0.2em 0 !important; /* Add some vertical spacing */
+    display: block !important; /* Ensure labels are block elements */
+    visibility: visible !important; /* Force visibility */
+    opacity: 1 !important; /* Ensure not transparent */
+    height: auto !important; /* Allow natural height */
+    min-height: 1em !important; /* Ensure minimum height */
+    margin: 0 !important;
+}
+
 /* Even tighter spacing for Level-Triggered list */
 #level_triggered_list {
     gap: 0.02em !important; /* Very minimal gap to fit all 5 lines */
@@ -1750,6 +1784,98 @@ body {
     font-size: 11px;
     color: #8b949e;
     text-align: center;
+}
+
+/* ========================================
+   Calibration Screen - Bar Meter & SPL Display
+   ======================================== */
+
+.screen-element--bar-meter {
+    width: 100%;
+    padding: 8px 12px;
+}
+
+.bar-meter__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.bar-meter__min,
+.bar-meter__max {
+    font-weight: bold;
+}
+
+.bar-meter__title {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.bar-meter__scale {
+    position: relative;
+    height: 20px;
+    background: transparent;
+    border: 1px solid currentColor;
+}
+
+.bar-meter__ticks {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        to right,
+        currentColor 0px,
+        currentColor 1px,
+        transparent 1px,
+        transparent 10px
+    );
+    opacity: 0.3;
+}
+
+.bar-meter__fill {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    bottom: 2px;
+    background: currentColor;
+    transition: width 0.1s ease-out;
+}
+
+.screen-element--spl-display {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    padding: 16px 12px;
+    font-family: 'Courier New', monospace;
+}
+
+.screen-element--spl-display.spl-display--large {
+    padding: 24px 12px;
+}
+
+.spl-display__value {
+    font-size: 48px;
+    font-weight: bold;
+    letter-spacing: -2px;
+}
+
+.spl-display--large .spl-display__value {
+    font-size: 64px;
+}
+
+.spl-display__unit {
+    font-size: 18px;
+    margin-left: 8px;
+    opacity: 0.9;
+}
+
+.spl-display--large .spl-display__unit {
+    font-size: 22px;
 }
 
 

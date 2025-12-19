@@ -175,6 +175,11 @@
         menu: { selectedIndex: 0 },
         toast: null,
         slmLabelIndex: 0, // 0 = "SLM", 1 = "1/1", 2 = "1/3"
+        slmSoundSettings: {
+            visible: false,
+            selectedIndex: 0,
+            selectedType: null // Stores the selected measurement type: 'L_', 'L_AVG', 'L_PK', 'L_Mx', 'L_Mn'
+        },
         timers: {
             stopHold: null,
             formatting: null,
@@ -1037,6 +1042,13 @@
                 break;
 
             case "UP":
+                // Handle overlay menu navigation
+                if (isSlm() && _state.slmSoundSettings && _state.slmSoundSettings.visible) {
+                    // 5 items: L_, L_AVG, L_PK, L_Mx, L_Mn
+                    _state.slmSoundSettings.selectedIndex = (_state.slmSoundSettings.selectedIndex - 1 + 5) % 5;
+                    _emit();
+                    break;
+                }
                 // UP/DOWN do not handle SLM page navigation - ENTER cycles pages
                 if (isSlm()) {
                     // UP/DOWN have no effect on page navigation in SLM mode
@@ -1675,6 +1687,13 @@
                 // #region agent log
                 fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:1145',message:'DOWN case entry',data:{viewId:_state.viewId,isSlm:isSlm(),isHome:isHome(),selectedIndex:_state.menu?.selectedIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
                 // #endregion
+                // Handle overlay menu navigation
+                if (isSlm() && _state.slmSoundSettings && _state.slmSoundSettings.visible) {
+                    // 5 items: L_, L_AVG, L_PK, L_Mx, L_Mn
+                    _state.slmSoundSettings.selectedIndex = (_state.slmSoundSettings.selectedIndex + 1) % 5;
+                    _emit();
+                    break;
+                }
                 // UP/DOWN do not handle SLM page navigation - ENTER cycles pages
                 if (isSlm()) {
                     // #region agent log
@@ -3000,6 +3019,23 @@
                 break;
 
             case "ENTER":
+                // Handle ENTER when sound settings overlay is visible
+                if (isSlm() && _state.slmSoundSettings && _state.slmSoundSettings.visible) {
+                    // Get the selected item (L_ is index 0, then L_AVG, L_PK, L_Mx, L_Mn)
+                    const selectedIndex = _state.slmSoundSettings.selectedIndex || 0;
+                    const items = ['L_', 'L_AVG', 'L_PK', 'L_Mx', 'L_Mn'];
+                    const selectedType = items[selectedIndex] || 'L_';
+                    
+                    // Save the selected measurement type to state
+                    _state.slmSoundSettings.selectedType = selectedType;
+                    console.log(`[FSM] ENTER: Selected measurement type: ${selectedType}`);
+                    
+                    // Close the overlay
+                    _state.slmSoundSettings.visible = false;
+                    _state.slmSoundSettings.selectedIndex = 0; // Reset for next time
+                    _emit();
+                    break;
+                }
                 // SLM page navigation (ENTER cycles pages 1-4)
                 if (isSlm() && _state.viewId !== "stop_confirm") {
                     // Cycle to next page: 1→2, 2→3, 3→4, 4→1
@@ -4072,33 +4108,23 @@
                     if (isCalibrateSelected) {
                         _state.previousViewId = isSlm() ? _state.viewId : (isInSetup() ? _state.viewId : "home_screen");
                         _state.viewId = "cal_running";
+                        
+                        // Start the simulator reading calibration tone level (114 dB)
+                        if (window.Simulator) {
+                            window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 114, variation: 0.5 });
+                        }
+                        
+                        // Start measurement update loop for calibration
+                        _clearTimer('cal');
+                        _state.timers.cal = setInterval(() => {
+                            if (window.Simulator && _state.viewId === "cal_running") {
+                                _state.measurement.currentSPL = window.Simulator.generateSample();
+                                _emit();
+                            }
+                        }, 100); // Update every 100ms
+                        
                         _emit();
-                        const calDuration = 4000 + Math.random() * 2000; // 4000-6000ms
-                        _state.timers.cal = setTimeout(() => {
-                            // Log calibration completion - add to history
-                            const now = new Date();
-                            const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-                            const timeStr = now.toTimeString().split(' ')[0]; // HH:MM:SS
-                            const timestamp = `${dateStr} ${timeStr}`;
-                            
-                            // Get Pre-Cal value from current measurement or use default
-                            const preCalValue = _state.measurement.currentSPL || 85.2;
-                            
-                            // Update lastCalibration
-                            _state.calibration.lastCalibration = {
-                                preCalValue: preCalValue,
-                                timestamp: timestamp,
-                                date: dateStr,
-                                time: timeStr
-                            };
-                            // Save to localStorage
-                            _saveCalibrationToStorage(_state.calibration.lastCalibration);
-                            console.log(`[CAL] Calibration completed: PRE-CAL ${_state.calibration.lastCalibration.preCalValue.toFixed(1)}dB`);
-                            
-                            _state.viewId = "cal_menu";
-                            _clearTimer('cal');
-                            _emit();
-                        }, calDuration);
+                        // Calibration stays on screen until user presses ENTER to complete or ESC to cancel
                     } else {
                         // History entry selected - do nothing (or could show details in future)
                         console.log(`[CAL] Last calibration entry selected - no action`);
@@ -4184,6 +4210,14 @@
 
             case "ESC":
                 console.log(`[FSM] ESC pressed - viewId: ${_state.viewId}, sigInput.editing: ${_state.sigInput?.editing}, sigInput.focus: ${_state.sigInput?.focus}`);
+                // Close sound settings overlay if visible
+                if (isSlm() && _state.slmSoundSettings && _state.slmSoundSettings.visible) {
+                    _state.slmSoundSettings.visible = false;
+                    _state.slmSoundSettings.selectedIndex = 0;
+                    console.log('[FSM] ESC: Closing sound settings overlay');
+                    _emit();
+                    break;
+                }
                 if (_state.viewId === "stop_confirm") {
                     _clearTimer('stopHold');
                     updateSlmScreen();
@@ -4723,8 +4757,18 @@
                     console.log('[FSM] SOFT1 pressed on home → Cycling SLM label, index:', _state.slmLabelIndex);
                     _emit();
                 } else if (isSlm()) {
-                    _state.viewId = "slm_view_menu";
-                    _state.menu.selectedIndex = 0;
+                    // SOFT1 on SLM screens - toggle sound settings overlay
+                    // Ensure slmSoundSettings exists
+                    if (!_state.slmSoundSettings) {
+                        _state.slmSoundSettings = { visible: false, selectedIndex: 0 };
+                    }
+                    _state.slmSoundSettings.visible = !_state.slmSoundSettings.visible;
+                    if (_state.slmSoundSettings.visible) {
+                        _state.slmSoundSettings.selectedIndex = 0;
+                        console.log('[FSM] SOFT1 pressed on SLM screen - opening sound settings overlay');
+                    } else {
+                        console.log('[FSM] SOFT1 pressed on SLM screen - closing sound settings overlay');
+                    }
                     _emit();
                 } else if (_state.viewId === "battery_menu") {
                     // SOFT1 = ALK on battery menu

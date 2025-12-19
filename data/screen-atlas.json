@@ -93,7 +93,7 @@
           }
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -132,7 +132,7 @@
           }
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -171,7 +171,7 @@
           }
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -368,7 +368,7 @@
           "bands": ["16", "31.5", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"]
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -378,7 +378,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page1_paused.jpeg",
       "elementsRef": "slm_graph_1of1_page1_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -418,7 +418,7 @@
           ]
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -428,7 +428,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page2_paused.jpeg",
       "elementsRef": "slm_graph_1of1_page2_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -460,7 +460,7 @@
           ]
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -470,7 +470,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page3_paused.jpeg",
       "elementsRef": "slm_graph_1of1_page3_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -497,7 +497,7 @@
           "yAxis": { "min": -10, "mid": 30, "max": 70, "label": "dB SEG" }
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -507,7 +507,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page4_paused.jpeg",
       "elementsRef": "slm_graph_1of1_page4_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -517,7 +517,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page1_stopped.jpeg",
       "elementsRef": "slm_graph_1of1_page1_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -527,7 +527,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page2_stopped.jpeg",
       "elementsRef": "slm_graph_1of1_page2_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -537,7 +537,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page3_stopped.jpeg",
       "elementsRef": "slm_graph_1of1_page3_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -547,7 +547,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of1_page4_stopped.jpeg",
       "elementsRef": "slm_graph_1of1_page4_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -577,7 +577,7 @@
           "bands": ["12.5", "16", "20", "25", "31.5", "40", "50", "63", "80", "100", "125", "160", "200", "250", "315", "400", "500", "630", "800", "1k", "1.25k", "1.6k", "2k", "2.5k", "3.15k", "4k", "5k", "6.3k", "8k", "10k", "12.5k", "16k"]
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -587,7 +587,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page1_paused.jpeg",
       "elementsRef": "slm_graph_1of3_page1_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -626,7 +626,7 @@
           ]
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -636,7 +636,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page2_paused.jpeg",
       "elementsRef": "slm_graph_1of3_page2_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -668,7 +668,7 @@
           ]
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -678,7 +678,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page3_paused.jpeg",
       "elementsRef": "slm_graph_1of3_page3_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -705,7 +705,7 @@
           "yAxis": { "min": -10, "mid": 30, "max": 70, "label": "dB SEG" }
         }
       ],
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -715,7 +715,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page4_paused.jpeg",
       "elementsRef": "slm_graph_1of3_page4_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "stop", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -725,7 +725,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page1_stopped.jpeg",
       "elementsRef": "slm_graph_1of3_page1_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -735,7 +735,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page2_stopped.jpeg",
       "elementsRef": "slm_graph_1of3_page2_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -745,7 +745,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page3_stopped.jpeg",
       "elementsRef": "slm_graph_1of3_page3_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -755,7 +755,7 @@
       "mode": "SLM",
       "referenceImage": "capture/operational/slm_graph_1of3_page4_stopped.jpeg",
       "elementsRef": "slm_graph_1of3_page4_running",
-      "softkeys": ["VIEW", "F-S-I", "A-C-Z-F", "METER 1"],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "F-S-I", "A-C-Z-F", "METER 1"],
       "keys": ["up", "down", "runpause", "esc", "soft1", "soft2", "soft3", "soft4"],
       "display": { "backlight": true }
     },
@@ -780,6 +780,39 @@
       ],
       "softkeys": ["OK", "Cancel", "", ""],
       "keys": ["up", "down", "enter", "esc"],
+      "display": { "backlight": true }
+    },
+    {
+      "id": "slm_sound_settings_overlay",
+      "title": "Sound Settings Overlay",
+      "mode": "OVERLAY",
+      "referenceImage": "capture/operational/slm_sound_settings_overlay.jpeg",
+      "elements": [
+        {
+          "type": "label",
+          "id": "overlay_mode_label",
+          "text": "<SLM 1>"
+        },
+        {
+          "type": "label",
+          "id": "overlay_l_prefix",
+          "text": "L_"
+        },
+        {
+          "type": "textList",
+          "id": "sound_settings_list",
+          "items": [
+            "L_",
+            "L_AVG",
+            "L_PK",
+            "L_Mx",
+            "L_Mn"
+          ],
+          "bind": "slmSoundSettings.selectedIndex"
+        }
+      ],
+      "softkeys": ["F-5-1", "A-C-Z-F", "METER 1", ""],
+      "keys": ["up", "down", "esc"],
       "display": { "backlight": true }
     },
     {
@@ -884,7 +917,7 @@
         { "type": "title", "id": "screen_title", "text": "VIEW SESSION" },
         { "type": "label", "id": "content", "text": "No session data" }
       ],
-      "softkeys": ["", "", "", ""],
+      "softkeys": ["<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>", "", "", ""],
       "keys": ["esc"],
       "display": { "backlight": true }
     },
@@ -1778,23 +1811,22 @@
           "batteryIcon": true
         },
         {
-          "type": "title",
-          "id": "cal_running_title",
-          "text": "PRE-CAL"
+          "type": "barMeter",
+          "id": "cal_bar_meter",
+          "title": "PRE-CAL",
+          "minValue": 50,
+          "maxValue": 140,
+          "bind": "measurement.currentSPL"
         },
         {
-          "type": "divider",
-          "id": "cal_running_divider"
-        },
-        {
-          "type": "label",
+          "type": "splDisplay",
           "id": "cal_running_spl",
           "bind": "measurement.currentSPL",
-          "format": "value",
-          "unit": "dB LZS"
+          "unit": "dB Lzs",
+          "large": true
         }
       ],
-      "softkeys": ["", "", "", ""],
+      "softkeys": ["", "▲", "▼", ""],
       "keys": ["esc", "enter"],
       "display": { "backlight": true }
     }

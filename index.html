@@ -73,29 +73,25 @@
         <div class="audio-panel__content">
             <div class="audio-panel__section">
                 <div class="audio-panel__label">Steady Sounds</div>
-                <button class="audio-btn" onclick="window.Audio.playPreset('fan')">🌀 Fan</button>
-                <button class="audio-btn" onclick="window.Audio.playPreset('engine')">🚗 Engine</button>
-                <button class="audio-btn" onclick="window.Audio.playPreset('office')">🏢 Office</button>
+                <button class="audio-btn" onclick="window.AudioPlayer.playPreset('fan')">🌀 Fan</button>
+                <button class="audio-btn" onclick="window.AudioPlayer.playPreset('engine')">🚗 Engine</button>
+                <button class="audio-btn" onclick="window.AudioPlayer.playPreset('office')">🏢 Office</button>
             </div>
             <div class="audio-panel__section">
                 <div class="audio-panel__label">Intermittent Sounds</div>
-                <button class="audio-btn" onclick="window.Audio.playPreset('hammering')">🔨 Hammering</button>
-                <button class="audio-btn" onclick="window.Audio.playPreset('clapping')">👏 Clapping</button>
+                <button class="audio-btn" onclick="window.AudioPlayer.playPreset('hammering')">🔨 Hammering</button>
+                <button class="audio-btn" onclick="window.AudioPlayer.playPreset('clapping')">👏 Clapping</button>
             </div>
             <div class="audio-panel__section">
                 <div class="audio-panel__label">Industrial</div>
-                <button class="audio-btn" onclick="window.Audio.playPreset('machinery')">⚙️ Machinery</button>
+                <button class="audio-btn" onclick="window.AudioPlayer.playPreset('machinery')">⚙️ Machinery</button>
             </div>
             <div class="audio-panel__section">
                 <div class="audio-panel__label">Calibration</div>
-                <button class="audio-btn audio-btn--calibration" onclick="window.Audio.playPreset('calibration')">🎵 1kHz Tone</button>
+                <button class="audio-btn audio-btn--calibration" onclick="window.AudioPlayer.playPreset('calibration')">🎵 1kHz Tone</button>
             </div>
             <div class="audio-panel__controls">
-                <button class="audio-btn audio-btn--stop" onclick="window.Audio.stop()">⏹ Stop</button>
-                <div class="audio-panel__volume">
-                    <label>Vol:</label>
-                    <input type="range" min="0" max="100" value="50" onchange="window.Audio.setVolume(this.value/100)">
-                </div>
+                <button class="audio-btn audio-btn--stop" onclick="window.AudioPlayer.stop()">⏹ Stop</button>
             </div>
             <div class="audio-panel__status" id="audio-status">Ready</div>
         </div>
@@ -242,8 +238,73 @@
                                 if (window.updateStatusArea) {
                                     window.updateStatusArea(rendered.statusHTML || '');
                                 }
-                                if (window.updateSoftKeyLabels) {
-                                    window.updateSoftKeyLabels(rendered.softkeys);
+                                
+                                // Handle overlay menu for SLM screens
+                                if (state.slmSoundSettings?.visible && window.renderScreen) {
+                                    const overlayRendered = window.renderScreen('slm_sound_settings_overlay', state);
+                                    console.log('[OVERLAY] Rendered HTML:', overlayRendered.mainHTML);
+                                    console.log('[OVERLAY] HTML length:', overlayRendered.mainHTML.length);
+                                    // Render overlay as a popup box on top of main content
+                                    const lcdMain = document.querySelector('.lcd__main');
+                                    if (lcdMain) {
+                                        // Remove existing overlay if present
+                                        const existingOverlay = lcdMain.querySelector('.slm-overlay-menu');
+                                        if (existingOverlay) {
+                                            existingOverlay.remove();
+                                        }
+                                        // Create overlay element as a positioned box (not full screen)
+                                        const overlayEl = document.createElement('div');
+                                        overlayEl.className = 'slm-overlay-menu';
+                                        overlayEl.innerHTML = overlayRendered.mainHTML;
+                                        // Position as a centered box, stopping just above softkeys
+                                        // Get the height of the softkeys area to position above it
+                                        const lcdSoftkeys = document.querySelector('.lcd__softkeys');
+                                        const softkeysHeight = lcdSoftkeys ? lcdSoftkeys.offsetHeight : 0;
+                                        const lcdMainHeight = lcdMain.offsetHeight;
+                                        // Center horizontally, position from top, use max-height instead of bottom to prevent clipping
+                                        const maxHeight = lcdMainHeight - (lcdMainHeight * 0.1) - softkeysHeight - 10; // 10% from top, space for softkeys, 10px margin
+                                        overlayEl.style.cssText = `position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 50%; max-height: ${maxHeight}px; background: rgba(29, 35, 43, 1); border: 1px solid rgba(255, 0, 0, 0.5); z-index: 1000; padding: 1.2em 1.5em; overflow-y: auto; overflow-x: hidden;`;
+                                        lcdMain.appendChild(overlayEl);
+                                        // Keep original SLM softkeys when overlay is visible (don't replace them)
+                                        // Get the original SLM screen softkeys
+                                        const originalSlmScreen = window.renderScreen ? window.renderScreen(state.viewId, state) : null;
+                                        if (window.updateSoftKeyLabels && originalSlmScreen && originalSlmScreen.softkeys) {
+                                            // Use the original SLM screen softkeys (glasses, F-S-I, A-C-Z-F, METER 1)
+                                            const softkeys = Array.isArray(originalSlmScreen.softkeys) ? originalSlmScreen.softkeys : [];
+                                            while (softkeys.length < 4) {
+                                                softkeys.push('');
+                                            }
+                                            window.updateSoftKeyLabels(softkeys.slice(0, 4));
+                                        }
+                                    }
+                                } else {
+                                    // Remove overlay if not visible
+                                    const lcdMain = document.querySelector('.lcd__main');
+                                    if (lcdMain) {
+                                        const existingOverlay = lcdMain.querySelector('.slm-overlay-menu');
+                                        if (existingOverlay) {
+                                            existingOverlay.remove();
+                                        }
+                                    }
+                                    // For view menu, keep original SLM softkeys instead of view menu softkeys
+                                    if (state.viewId === "slm_view_menu") {
+                                        // Use default SLM home screen softkeys (glasses, F-S-I, A-C-Z-F, METER 1)
+                                        // These should match the SLM home screen softkeys
+                                        if (window.updateSoftKeyLabels) {
+                                            const defaultSlmSoftkeys = [
+                                                "<svg width='20' height='12' viewBox='0 0 20 12' xmlns='http://www.w3.org/2000/svg' style='display:inline-block;vertical-align:middle;'><ellipse cx='5' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><ellipse cx='15' cy='6' rx='3.5' ry='3' fill='none' stroke='currentColor' stroke-width='1.5'/><line x1='8.5' y1='6' x2='11.5' y2='6' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>",
+                                                "F-S-I",
+                                                "A-C-Z-F",
+                                                "METER 1"
+                                            ];
+                                            window.updateSoftKeyLabels(defaultSlmSoftkeys);
+                                        }
+                                    } else {
+                                        // Restore original softkeys when overlay is closed
+                                        if (window.updateSoftKeyLabels) {
+                                            window.updateSoftKeyLabels(rendered.softkeys);
+                                        }
+                                    }
                                 }
                             } else {
                                 console.error('[SUBSCRIBE] window.renderScreen is not available!');
@@ -262,10 +323,11 @@
                             
                             // Debug: Show selected index in status area (temporary until highlighting is implemented)
                             // Only add debug text if statusHTML is empty (so it doesn't overwrite actual content)
+                            // NOTE: Removed slm_view_menu from debug text - it should have a clean status area
                             if (window.updateStatusArea) {
                                 const statusEl = document.querySelector('.lcd__status');
                                 if (statusEl && (state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' || 
-                                    state.viewId === 'setup_menu' || state.viewId === 'files_menu' || state.viewId === 'slm_view_menu')) {
+                                    state.viewId === 'setup_menu' || state.viewId === 'files_menu')) {
                                     // Only show debug text if status area is empty (no actual status content)
                                     const hasStatusContent = statusEl.innerHTML.trim().length > 0;
                                     if (!hasStatusContent) {
@@ -273,9 +335,7 @@
                                             ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION', 'SETUP', 'UNIT INFO'] :
                                             state.viewId === 'setup_menu' ? 
                                             ['METER SET', 'MEASURE', 'AUTO RUN', 'DATETIME', 'DIGITAL OUT', 'OPTIONS', 'SIG INPUT', 'LOGGING', 'COMMS', 'BATTERY', 'DISPLAY'] :
-                                            state.viewId === 'files_menu' ?
-                                            ['SESSION DIRECTORY', 'CONFIG DIRECTORY', 'RENAME LAST SESSION', 'SAVE CONFIG FILE', 'FORMAT CARD'] :
-                                            ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION'];
+                                            ['SESSION DIRECTORY', 'CONFIG DIRECTORY', 'RENAME LAST SESSION', 'SAVE CONFIG FILE', 'FORMAT CARD'];
                                         const selectedItem = menuItems[state.menu.selectedIndex] || 'N/A';
                                         statusEl.innerHTML = `<span style="font-size: 10px; opacity: 0.7;">[${state.menu.selectedIndex}] ${selectedItem}</span>`;
                                     }

@@ -103,6 +103,14 @@
         // #endregion
         console.log('[DISPLAY] updateMainArea called, html length:', html ? html.length : 0, 'lcdMain:', !!lcdMain);
         if (lcdMain) {
+            // Clear previous content completely before setting new content
+            // This ensures no overlay effect - previous screen content is fully removed
+            while (lcdMain.firstChild) {
+                lcdMain.removeChild(lcdMain.firstChild);
+            }
+            // Force a reflow to ensure the clear is processed
+            void lcdMain.offsetHeight;
+            // Now set the new content
             lcdMain.innerHTML = html;
             // #region agent log
             fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'display.js:updateMainArea',message:'updateMainArea after innerHTML',data:{innerHTMLLength:lcdMain.innerHTML.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
@@ -131,10 +139,17 @@
             }, 50);
             
             // Add class if this is an SLM screen (has status bar)
+            // For menu screens, ensure SLM class is removed to prevent overlay appearance
             if (html.includes('screen-element--status-bar')) {
                 lcdMain.classList.add('lcd__main--slm');
             } else {
                 lcdMain.classList.remove('lcd__main--slm');
+                // For menu screens, ensure background is solid and content fills the area
+                if (html.includes('screen-element--textList') || html.includes('screen-element--title')) {
+                    // Menu screen - ensure it's not transparent
+                    lcdMain.style.background = 'var(--lcd-bg)';
+                    lcdMain.style.position = 'relative';
+                }
             }
             // Add class if this is delete status screen (has delete graph)
             if (html.includes('id="delete_graph"')) {

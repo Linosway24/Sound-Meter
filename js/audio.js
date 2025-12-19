@@ -9,9 +9,12 @@
     // Audio context and elements
     let audioContext = null;
     let currentAudio = null;
+    let gainNode = null;
+    let sourceNode = null;
     let isPlaying = false;
 
     // Sound presets with corresponding simulator settings
+    // gain: volume boost multiplier (1.0 = normal, 2.0 = 2x louder, etc.)
     const SOUND_PRESETS = {
         // Steady sounds
         fan: {
@@ -19,6 +22,7 @@
             file: 'assets/audio/fan.wav',
             baseLevel: 65,
             variation: 2,
+            gain: 1.0,
             description: 'Steady fan or HVAC hum'
         },
         engine: {
@@ -26,6 +30,7 @@
             file: 'assets/audio/engine.wav',
             baseLevel: 75,
             variation: 3,
+            gain: 3.0,  // Boosted - quiet source file
             description: 'Steady engine/motor sound'
         },
         // Intermittent/burst sounds
@@ -34,6 +39,7 @@
             file: 'assets/audio/hammering.wav',
             baseLevel: 85,
             variation: 15,
+            gain: 1.0,
             description: 'Intermittent hammering/impacts'
         },
         clapping: {
@@ -41,6 +47,7 @@
             file: 'assets/audio/clapping.wav',
             baseLevel: 80,
             variation: 12,
+            gain: 1.0,
             description: 'Intermittent claps/bursts'
         },
         // Industrial sounds
@@ -49,6 +56,7 @@
             file: 'assets/audio/machinery.wav',
             baseLevel: 90,
             variation: 8,
+            gain: 1.0,
             description: 'Loud industrial equipment'
         },
         // Quiet environments
@@ -57,6 +65,7 @@
             file: 'assets/audio/office.wav',
             baseLevel: 50,
             variation: 3,
+            gain: 4.0,  // Boosted - very quiet source file
             description: 'Quiet office background'
         },
         // Calibration tone
@@ -65,6 +74,7 @@
             file: 'assets/audio/Calibration_1khz.wav',
             baseLevel: 114,
             variation: 0.5,
+            gain: 1.0,
             description: '1000 Hz calibration tone at 114 dB'
         }
     };
@@ -116,18 +126,34 @@
             console.log(`[AUDIO] Simulator set to baseLevel: ${preset.baseLevel}, variation: ${preset.variation}`);
         }
 
-        // Create and play audio element
+        // Create and play audio element with gain boost via Web Audio API
         currentAudio = new Audio(preset.file);
         currentAudio.loop = loop;
         
+        // Route through Web Audio API for gain control
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        sourceNode = audioContext.createMediaElementSource(currentAudio);
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = preset.gain || 1.0;
+        
+        sourceNode.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        const audioElement = currentAudio;  // Capture reference for closure
         currentAudio.addEventListener('canplaythrough', () => {
+            if (!currentAudio || currentAudio !== audioElement) return;  // Guard against race condition
             currentAudio.play()
                 .then(() => {
+                    if (!currentAudio || currentAudio !== audioElement) return;
                     isPlaying = true;
-                    console.log(`[AUDIO] Playing: ${preset.name}`);
+                    console.log(`[AUDIO] Playing: ${preset.name} (gain: ${preset.gain || 1.0}x)`);
                     updateStatus(`▶ ${preset.name} (${preset.baseLevel} dB ±${preset.variation})`);
                 })
                 .catch(e => {
+                    if (!currentAudio || currentAudio !== audioElement) return;
                     console.warn(`[AUDIO] Playback failed: ${e.message}`);
                     console.log('[AUDIO] Note: Audio files may need to be added to assets/audio/');
                     updateStatus(`⚠ Playback failed`);
@@ -264,8 +290,8 @@
             console.log(`  Base Level: ${preset.baseLevel} dB`);
             console.log(`  Variation: ±${preset.variation} dB`);
         });
-        console.log('\nUsage: window.Audio.playPreset("fan")');
-        console.log('       window.Audio.stop()');
+        console.log('\nUsage: window.AudioPlayer.playPreset("fan")');
+        console.log('       window.AudioPlayer.stop()');
     }
 
     // Initialize on load
@@ -276,7 +302,7 @@
     }
 
     // Export to window
-    window.Audio = {
+    window.AudioPlayer = {
         playPreset,
         playCustom,
         stop,

@@ -430,6 +430,25 @@
                 if (element.id === "time_limit_label") {
                     return `<div id="${element.id}" class="screen-element screen-element--label screen-element--tl-label">V.L.  --:--:--</div>`;
                 }
+                // Special handling for overlay mode label - shows <SLM 1>, <1/1 1>, or <1/3 1>
+                if (element.id === "overlay_mode_label") {
+                    const slmLabelIndex = state?.slmLabelIndex ?? 0;
+                    const modeLabels = ['SLM', '1/1', '1/3'];
+                    const modeLabel = modeLabels[slmLabelIndex] || 'SLM';
+                    const activeMeter = state?.slm?.activeMeter || 1;
+                    return `<div id="${element.id}" class="screen-element screen-element--label">&lt;${modeLabel} ${activeMeter}&gt;</div>`;
+                }
+                // Special handling for overlay L_ prefix label - shows "L_" (simple, readout shows on main screen)
+                if (element.id === "overlay_l_prefix") {
+                    return `<div id="${element.id}" class="screen-element screen-element--label">L_</div>`;
+                }
+                // Special handling for overlay selected label - shows L_AVG, L_PK, L_Mx, or L_Mn based on selection
+                if (element.id === "overlay_selected_label") {
+                    const selectedIndex = state?.slmSoundSettings?.selectedIndex ?? 0;
+                    const items = ['L_AVG', 'L_PK', 'L_Mx', 'L_Mn'];
+                    const selectedItem = items[selectedIndex] || 'L_AVG';
+                    return `<div id="${element.id}" class="screen-element screen-element--label">${selectedItem}</div>`;
+                }
                 // Default label rendering - support highlighted and align properties
                 const labelText = element.text || '';
                 let highlightedClass = element.highlighted ? ' screen-element--highlighted' : '';
@@ -1436,26 +1455,48 @@
                         return typeof value === 'number' ? value.toFixed(1) : (value || '0.0');
                     })() : '0.0';
                 
-                // Format units based on SLM state
+                // Format units based on SLM state and selected measurement type
                 let unitsText = 'dB';
                 if (element.units) {
                     const weighting = state?.slm?.weighting || 'R';
                     const timeConstant = state?.slm?.timeConstant || 'S';
+                    const selectedType = state?.slmSoundSettings?.selectedType;
+                    
                     // Map weighting: R->L (Linear), C->C, Z->Z, F->F
                     const weightingMap = { 'R': 'L', 'C': 'C', 'Z': 'Z', 'F': 'F' };
+                    // Map weighting for display: R->A (A-weighting), C->C, Z->Z, F->F
+                    const weightingDisplayMap = { 'R': 'A', 'C': 'C', 'Z': 'Z', 'F': 'F' };
                     const timeConstantMap = { 'F': 'F', 'S': 'S', 'I': 'I' };
                     const w = weightingMap[weighting] || 'L';
+                    const wDisplay = weightingDisplayMap[weighting] || 'A';
                     const tc = timeConstantMap[timeConstant] || 'S';
-                    // Format: dB LZS (L=weighting, Z=zero/weighting, S=time constant)
-                    // For now, use simple format: dB LZS where L=Linear, Z=Zero, S=Slow
-                    if (w === 'L' && tc === 'S') {
-                        unitsText = 'dB LZS';
-                    } else if (w === 'L' && tc === 'F') {
-                        unitsText = 'dB LZF';
-                    } else if (w === 'L' && tc === 'I') {
-                        unitsText = 'dB LZI';
+                    
+                    // If a measurement type is selected, show the dynamic readout
+                    // Use actual weighting (A, C, Z, F) and timeConstant (F, S, I) values
+                    // Remove underscore after L
+                    if (selectedType === 'L_AVG') {
+                        // L_AVG: L + A-C-Z-F + F-S-I + Av
+                        unitsText = `dB L${wDisplay}${timeConstant}Av`;
+                    } else if (selectedType === 'L_PK') {
+                        // L_PK: L + A-C-Z-F + PK (no F-S-I, no underscore)
+                        unitsText = `dB L${wDisplay}PK`;
+                    } else if (selectedType === 'L_Mx') {
+                        // L_Mx: L + A-C-Z-F + F-S-I + Mx
+                        unitsText = `dB L${wDisplay}${timeConstant}Mx`;
+                    } else if (selectedType === 'L_Mn') {
+                        // L_Mn: L + A-C-Z-F + F-S-I + Mn
+                        unitsText = `dB L${wDisplay}${timeConstant}Mn`;
                     } else {
-                        unitsText = `dB ${w}${tc}`;
+                        // Default format: dB LZS (L=weighting, Z=zero/weighting, S=time constant)
+                        if (w === 'L' && tc === 'S') {
+                            unitsText = 'dB LZS';
+                        } else if (w === 'L' && tc === 'F') {
+                            unitsText = 'dB LZF';
+                        } else if (w === 'L' && tc === 'I') {
+                            unitsText = 'dB LZI';
+                        } else {
+                            unitsText = `dB ${w}${tc}`;
+                        }
                     }
                 }
                 
@@ -1830,6 +1871,36 @@
                 yesNoHtml += '</div>';
                 return yesNoHtml;
 
+            case 'barMeter':
+                // Horizontal bar meter with scale (used in calibration screen)
+                const barValue = _getBindValue(state, element.bind) || 0;
+                const barMin = element.minValue || 50;
+                const barMax = element.maxValue || 140;
+                const barTitle = element.title || '';
+                const barPercent = Math.max(0, Math.min(100, ((barValue - barMin) / (barMax - barMin)) * 100));
+                return `<div id="${element.id}" class="screen-element screen-element--bar-meter">
+                    <div class="bar-meter__header">
+                        <span class="bar-meter__min">${barMin}</span>
+                        <span class="bar-meter__title">${barTitle}</span>
+                        <span class="bar-meter__max">${barMax}</span>
+                    </div>
+                    <div class="bar-meter__scale">
+                        <div class="bar-meter__ticks"></div>
+                        <div class="bar-meter__fill" style="width: ${barPercent}%"></div>
+                    </div>
+                </div>`;
+
+            case 'splDisplay':
+                // Large SPL value display (used in calibration screen)
+                const splValue = _getBindValue(state, element.bind);
+                const splUnit = element.unit || 'dB';
+                const splLarge = element.large ? ' spl-display--large' : '';
+                const displayValue = splValue !== null && splValue !== undefined ? splValue.toFixed(1) : '--.-';
+                return `<div id="${element.id}" class="screen-element screen-element--spl-display${splLarge}">
+                    <span class="spl-display__value">${displayValue}</span>
+                    <span class="spl-display__unit">${splUnit}</span>
+                </div>`;
+
             default:
                 return '';
         }
@@ -1940,6 +2011,10 @@
                 if (i === selectedSoftkeyIndex && label) {
                     label = `<span class="softkey-selected">${label}</span>`;
                 }
+            }
+            // Skip special handling for overlay screens - use softkeys as-is
+            if (state?.viewId === "slm_sound_settings_overlay") {
+                // Use overlay softkeys directly without modification
             }
             // SLM softkey handling with underlines
             else if (isSlmScreen(state?.viewId)) {
@@ -2071,7 +2146,11 @@
             
             // Render regular elements first (title, menu, etc.)
             regularElements.forEach(element => {
-                mainHTML += renderElement(element, state);
+                const rendered = renderElement(element, state);
+                if (screenId === 'slm_sound_settings_overlay') {
+                    console.log('[OVERLAY] Rendering element:', element.id, element.type, 'rendered:', rendered);
+                }
+                mainHTML += rendered;
             });
             
             // Render positioned elements last (so they appear on top)
