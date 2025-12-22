@@ -378,7 +378,7 @@
             timeConstant: 'S',       // 'F', 'S', 'I'
             weighting: 'R',          // 'R', 'C', 'Z', 'F'
             activeMeter: 1,         // 1 or 2
-            units: 'LZS'            // Format string for units display
+            units: 'LAS'            // Format string: L + {A/C/Z/F} + {F/S/I}
         },
         history: [],
         previousViewId: null // For navigation back from cal/files/etc
@@ -928,7 +928,7 @@
                 timeConstant: 'S',       // 'F', 'S', 'I'
                 weighting: 'R',          // 'R', 'C', 'Z', 'F'
                 activeMeter: 1,         // 1 or 2
-                units: 'LZS'            // Format string for units display
+                units: 'LAS'            // Format string: L + {A/C/Z/F} + {F/S/I}
             },
             history: [],
             previousViewId: null,
@@ -951,7 +951,21 @@
         // Initialize Simulator module
         if (window.Simulator) {
             const seed = _state.measurement.seed || 12345;
-            window.Simulator.init(seed, { baseLevel: 70, variation: 5 });
+            // Check if audio is playing - preserve its baseLevel and impulse pattern, otherwise use ambient
+            const audioState = window.AudioPlayer?.getState?.();
+            const simState = window.Simulator.getState();
+            
+            if (audioState && audioState.isPlaying) {
+                // Audio is playing - preserve current simulator settings including impulse pattern
+                window.Simulator.init(seed, { 
+                    baseLevel: simState.baseLevel || 47, 
+                    variation: simState.variation || 3,
+                    impulsePattern: simState.impulsePattern || null
+                });
+            } else {
+                // No audio playing - use ambient levels, no impulse pattern
+                window.Simulator.init(seed, { baseLevel: 47, variation: 3 });
+            }
         }
         
         // Initialize Measurement module
@@ -1036,6 +1050,7 @@
             _stopMeasurementUpdateLoop();
             _state.measurement.state = "stopped";
             _state.measurement.isRunning = false;
+            _state.measurement.runtime = 0; // Reset timer to 0 when stopping
             _stopMeasurementTimer();
             updateSlmScreen();
             _clearTimer('stopHold');
@@ -4379,9 +4394,24 @@
                         // _showToast("No studies yet");
                         return; // Explicitly do nothing
                     } else if (item === "VIEW CURRENT STUDY") {
-                        // Initialize Simulator and start Measurement
+                        // Initialize Simulator and start Measurement if not already running
+                        if (!_state.measurement.isRunning) {
                         if (window.Simulator) {
-                            window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 70, variation: 5 });
+                            // Check if audio is playing - preserve its baseLevel and impulse pattern, otherwise use ambient
+                            const audioState = window.AudioPlayer?.getState?.();
+                            const simState = window.Simulator.getState();
+                            
+                            if (audioState && audioState.isPlaying) {
+                                // Audio is playing - preserve current simulator settings including impulse pattern
+                                window.Simulator.init(_state.measurement.seed || 12345, { 
+                                    baseLevel: simState.baseLevel || 47, 
+                                    variation: simState.variation || 3,
+                                    impulsePattern: simState.impulsePattern || null
+                                });
+                            } else {
+                                // No audio playing - use ambient levels, no impulse pattern
+                                window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 47, variation: 3 });
+                            }
                         }
                         if (window.Measurement) {
                             window.Measurement.start();
@@ -4391,7 +4421,13 @@
                         _state.measurement.runtime = 0; // Reset runtime when starting new measurement
                         _startMeasurementTimer();
                         _startMeasurementUpdateLoop();
-                        _state.viewId = "home_screen_running";
+                        }
+                        // Set SLM mode based on slmLabelIndex (same as VIEW SESSION)
+                        const modeMap = { 0: 'numeric', 1: '1of1', 2: '1of3' };
+                        _state.slm.mode = modeMap[_state.slmLabelIndex] || 'numeric';
+                        _state.slm.currentPage = 1;
+                        updateSlmScreen();
+                        console.log('[FSM] VIEW CURRENT STUDY: mode=', _state.slm.mode, 'page=', _state.slm.currentPage, 'measurement.state=', _state.measurement.state, 'viewId=', _state.viewId);
                         _emit();
                     } else if (item === "VIEW SESSION") {
                         // Don't change measurement state - preserve current state (stopped/running/paused)
@@ -4882,7 +4918,21 @@
                     if (_state.measurement.state === "stopped") {
                         // Initialize Simulator and start Measurement
                         if (window.Simulator) {
-                            window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 70, variation: 5 });
+                            // Check if audio is playing - preserve its baseLevel and impulse pattern, otherwise use ambient
+                            const audioState = window.AudioPlayer?.getState?.();
+                            const simState = window.Simulator.getState();
+                            
+                            if (audioState && audioState.isPlaying) {
+                                // Audio is playing - preserve current simulator settings including impulse pattern
+                                window.Simulator.init(_state.measurement.seed || 12345, { 
+                                    baseLevel: simState.baseLevel || 47, 
+                                    variation: simState.variation || 3,
+                                    impulsePattern: simState.impulsePattern || null
+                                });
+                            } else {
+                                // No audio playing - use ambient levels, no impulse pattern
+                                window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 47, variation: 3 });
+                            }
                         }
                         if (window.Measurement) {
                             window.Measurement.start();
@@ -4916,7 +4966,20 @@
                 } else if (isSlm() && _state.measurement.state === "stopped") {
                     // Initialize Simulator and start Measurement
                     if (window.Simulator) {
-                        window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 70, variation: 5 });
+                        // Check if audio is playing - preserve its baseLevel, otherwise use ambient
+                        const audioState = window.AudioPlayer?.getState?.();
+                        const simState = window.Simulator.getState();
+                        
+                        if (audioState && audioState.isPlaying) {
+                            // Audio is playing - preserve current simulator settings
+                            window.Simulator.init(_state.measurement.seed || 12345, { 
+                                baseLevel: simState.baseLevel || 47, 
+                                variation: simState.variation || 3 
+                            });
+                        } else {
+                            // No audio playing - use ambient levels
+                            window.Simulator.init(_state.measurement.seed || 12345, { baseLevel: 47, variation: 3 });
+                        }
                     }
                     if (window.Measurement) {
                         window.Measurement.start();
@@ -5124,8 +5187,11 @@
                     const currentIndex = timeConstants.indexOf(_state.slm.timeConstant || 'S');
                     const nextIndex = (currentIndex + 1) % timeConstants.length;
                     _state.slm.timeConstant = timeConstants[nextIndex];
-                    // Update units format
-                    _state.slm.units = `L${_state.slm.timeConstant}S`;
+                    // Update units format: L + {A/C/Z/F} + {F/S/I}
+                    // Map weighting state to display letter: R->A, C->C, Z->Z, F->F
+                    const weightingDisplayMap = { 'R': 'A', 'C': 'C', 'Z': 'Z', 'F': 'F' };
+                    const weightingLetter = weightingDisplayMap[_state.slm.weighting || 'R'] || 'A';
+                    _state.slm.units = `L${weightingLetter}${_state.slm.timeConstant}`;
                     // Update Measurement module config
                     if (window.Measurement) {
                         window.Measurement.updateConfig({ timeConstant: _state.slm.timeConstant });
@@ -5225,11 +5291,12 @@
                     const currentIndex = weightings.indexOf(_state.slm.weighting || 'R');
                     const nextIndex = (currentIndex + 1) % weightings.length;
                     _state.slm.weighting = weightings[nextIndex];
-                    // Update units format (R->L, C->C, Z->Z, F->F)
-                    const weightingMap = { 'R': 'L', 'C': 'C', 'Z': 'Z', 'F': 'F' };
-                    const w = weightingMap[_state.slm.weighting] || 'L';
+                    // Update units format: L + {A/C/Z/F} + {F/S/I}
+                    // Map weighting state to display letter: R->A, C->C, Z->Z, F->F
+                    const weightingDisplayMap = { 'R': 'A', 'C': 'C', 'Z': 'Z', 'F': 'F' };
+                    const weightingLetter = weightingDisplayMap[_state.slm.weighting] || 'A';
                     const tc = _state.slm.timeConstant || 'S';
-                    _state.slm.units = `${w}${tc}S`;
+                    _state.slm.units = `L${weightingLetter}${tc}`;
                     // Update Measurement module config (map R→A, C→C, Z→Z, F→A)
                     if (window.Measurement) {
                         window.Measurement.updateConfig({ weighting: _mapWeighting(_state.slm.weighting) });

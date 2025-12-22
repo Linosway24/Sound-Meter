@@ -1509,16 +1509,10 @@
                         // L_Mn: L + A-C-Z-F + F-S-I + Mn
                         unitsText = `dB L${wDisplay}${timeConstant}Mn`;
                     } else {
-                        // Default format: dB LZS (L=weighting, Z=zero/weighting, S=time constant)
-                        if (w === 'L' && tc === 'S') {
-                            unitsText = 'dB LZS';
-                        } else if (w === 'L' && tc === 'F') {
-                            unitsText = 'dB LZF';
-                        } else if (w === 'L' && tc === 'I') {
-                            unitsText = 'dB LZI';
-                        } else {
-                            unitsText = `dB ${w}${tc}`;
-                        }
+                        // Default format: Use slm.units directly (format: L{A/C/Z/F}{F/S/I})
+                        // Always L + weighting letter (A/C/Z/F) + time constant (F/S/I)
+                        const unitsFromState = state?.slm?.units || 'LAS';
+                        unitsText = `dB ${unitsFromState}`;
                     }
                 }
                 
@@ -2051,11 +2045,13 @@
                         }
                         return letter;
                     }).join('-');
-                } else if (i === 2 && label === "R-C-Z-F") {
-                    // Softkey 3: R-C-Z-F with underline
+                } else if (i === 2 && label === "A-C-Z-F") {
+                    // Softkey 3: A-C-Z-F with underline (state uses 'R' but display shows 'A')
                     const weighting = state?.slm?.weighting || 'R';
-                    const letters = ['R', 'C', 'Z', 'F'];
-                    const activeIndex = letters.indexOf(weighting);
+                    const letters = ['A', 'C', 'Z', 'F'];
+                    // Map state 'R' to display index 0 ('A')
+                    const stateToIndex = { 'R': 0, 'C': 1, 'Z': 2, 'F': 3 };
+                    const activeIndex = stateToIndex[weighting] ?? 0;
                     label = letters.map((letter, idx) => {
                         if (idx === activeIndex) {
                             return `<span class="softkey-underline">${letter}</span>`;

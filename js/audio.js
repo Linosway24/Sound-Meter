@@ -40,7 +40,12 @@
             baseLevel: 85,
             variation: 15,
             gain: 1.0,
-            description: 'Intermittent hammering/impacts'
+            description: 'Intermittent hammering/impacts',
+            impulsePattern: {
+                interval: 650,    // Hammer hits every ~650ms (1.5 hits/second)
+                spike: 12,        // +12 dB spike on each hit
+                duration: 150     // Spike decays over 150ms
+            }
         },
         clapping: {
             name: 'Clapping',
@@ -48,7 +53,12 @@
             baseLevel: 80,
             variation: 12,
             gain: 1.0,
-            description: 'Intermittent claps/bursts'
+            description: 'Intermittent claps/bursts',
+            impulsePattern: {
+                interval: 500,    // Claps every ~500ms (2 claps/second)
+                spike: 10,        // +10 dB spike on each clap
+                duration: 120     // Spike decays over 120ms
+            }
         },
         // Industrial sounds
         machinery: {
@@ -123,7 +133,14 @@
         if (window.Simulator) {
             window.Simulator.setBaseLevel(preset.baseLevel);
             window.Simulator.setVariation(preset.variation);
-            console.log(`[AUDIO] Simulator set to baseLevel: ${preset.baseLevel}, variation: ${preset.variation}`);
+            // Set impulse pattern if preset has one (for hammering, clapping, etc.)
+            if (preset.impulsePattern) {
+                window.Simulator.setImpulsePattern(preset.impulsePattern);
+                console.log(`[AUDIO] Simulator set to baseLevel: ${preset.baseLevel}, variation: ${preset.variation}, impulse pattern: ${preset.impulsePattern.interval}ms intervals`);
+            } else {
+                window.Simulator.clearImpulsePattern();
+                console.log(`[AUDIO] Simulator set to baseLevel: ${preset.baseLevel}, variation: ${preset.variation}`);
+            }
         }
 
         // Create and play audio element with gain boost via Web Audio API
@@ -179,7 +196,7 @@
     function playCustom(url, options = {}) {
         stop();
 
-        const baseLevel = options.baseLevel || 70;
+        const baseLevel = options.baseLevel || 47; // Default to ambient if not specified
         const variation = options.variation || 5;
 
         // Update simulator
@@ -219,6 +236,15 @@
             currentAudio = null;
         }
         isPlaying = false;
+        
+        // Reset simulator to ambient levels when audio stops
+        if (window.Simulator) {
+            window.Simulator.setBaseLevel(47); // Ambient sound level (45-50 dB)
+            window.Simulator.setVariation(3);  // Low variation for ambient
+            window.Simulator.clearImpulsePattern(); // Clear any impulse patterns
+            console.log('[AUDIO] Stopped - Simulator reset to ambient (47 dB ±3)');
+        }
+        
         console.log('[AUDIO] Stopped');
         updateStatus('⏹ Stopped');
     }

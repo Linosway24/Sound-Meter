@@ -40,11 +40,12 @@
         _state: {
             seed: 12345,              // Deterministic seed for reproducible readings
             rng: null,                // Random number generator function
-            baseLevel: 70,            // Base SPL level (dB)
+            baseLevel: 47,            // Base SPL level (dB) - ambient sound (45-50 dB)
             variation: 5,             // Variation range (±dB)
             trend: 0,                // Slow trend direction (-1 to 1)
             lastUpdate: null,         // Timestamp of last update
-            sampleCount: 0           // Number of samples generated
+            sampleCount: 0,           // Number of samples generated
+            impulsePattern: null      // Impulse pattern config: { interval: ms, spike: dB, duration: ms }
         },
 
         /**
@@ -53,17 +54,23 @@
          * 
          * @param {number} seed - Seed value for deterministic generation
          * @param {Object} options - Configuration options
-         * @param {number} options.baseLevel - Base SPL level in dB (default: 70)
+         * @param {number} options.baseLevel - Base SPL level in dB (default: 47, ambient)
          * @param {number} options.variation - Variation range in dB (default: 5)
          */
         init(seed = 12345, options = {}) {
             this._state.seed = seed;
             this._state.rng = createRNG(seed);
-            this._state.baseLevel = options.baseLevel || 70;
+            this._state.baseLevel = options.baseLevel || 47;
             this._state.variation = options.variation || 5;
             this._state.trend = 0;
             this._state.lastUpdate = null;
             this._state.sampleCount = 0;
+            this._state.impulsePattern = options.impulsePattern || null;
+            // Reset impulse timing state
+            this._state.lastImpulseTime = null;
+            this._state.currentImpulseStart = null;
+            this._state.currentImpulseAmplitude = 0;
+            this._state.patternStartTime = null;
         },
 
         /**
@@ -110,8 +117,53 @@
             // Additional slow drift (very slow changes over minutes)
             const drift = Math.sin(this._state.sampleCount * 0.0001) * 1; // ±1 dB over ~1000 samples
 
+            // Impulse pattern: periodic spikes (for hammering, clapping, etc.)
+            let impulse = 0;
+            if (this._state.impulsePattern) {
+                const pattern = this._state.impulsePattern;
+                
+                // Initialize pattern start time if needed
+                if (!this._state.patternStartTime) {
+                    this._state.patternStartTime = now;
+                    this._state.lastImpulseTime = now - pattern.interval; // Trigger first impulse immediately
+                }
+                
+                // Check if it's time for a new impulse
+                const timeSinceLastImpulse = now - this._state.lastImpulseTime;
+                if (timeSinceLastImpulse >= pattern.interval) {
+                    this._state.lastImpulseTime = now;
+                    // Create spike - will decay over duration
+                    this._state.currentImpulseStart = now;
+                    this._state.currentImpulseAmplitude = pattern.spike || 15;
+                    console.log(`[SIMULATOR] Impulse spike triggered: +${this._state.currentImpulseAmplitude} dB at sample ${this._state.sampleCount}`);
+                }
+                
+                // Decay impulse over time
+                if (this._state.currentImpulseStart) {
+                    const timeSinceImpulse = (now - this._state.currentImpulseStart) / 1000; // seconds
+                    const impulseDuration = (pattern.duration || 200) / 1000;
+                    if (timeSinceImpulse < impulseDuration) {
+                        // Exponential decay of impulse
+                        const decayFactor = Math.exp(-timeSinceImpulse * 8); // Fast decay (8 = decay rate)
+                        impulse = this._state.currentImpulseAmplitude * decayFactor;
+                    } else {
+                        // Impulse finished
+                        this._state.currentImpulseStart = null;
+                        this._state.currentImpulseAmplitude = 0;
+                    }
+                }
+            } else {
+                // Clear pattern timing when pattern is disabled
+                this._state.patternStartTime = null;
+            }
+
             // Calculate final SPL
-            let spl = this._state.baseLevel + variation + trend + noise + drift;
+            let spl = this._state.baseLevel + variation + trend + noise + drift + impulse;
+            
+            // Debug logging for impulses (only log first few or when impulse is significant)
+            if (impulse > 5 && this._state.sampleCount % 10 === 0) {
+                console.log(`[SIMULATOR] Sample ${this._state.sampleCount}: base=${this._state.baseLevel.toFixed(1)}, impulse=${impulse.toFixed(1)}, total=${spl.toFixed(1)}`);
+            }
 
             // Clamp to realistic range (30-130 dB typical for sound level meters)
             spl = Math.max(30, Math.min(130, spl));
@@ -140,6 +192,32 @@
         },
 
         /**
+         * Set impulse pattern for intermittent sounds (hammering, clapping, etc.)
+         * @param {Object} pattern - Impulse pattern config
+         * @param {number} pattern.interval - Time between impulses in milliseconds
+         * @param {number} pattern.spike - Amplitude of spike in dB above baseLevel
+         * @param {number} pattern.duration - Duration of spike decay in milliseconds
+         */
+        setImpulsePattern(pattern) {
+            this._state.impulsePattern = pattern;
+            this._state.lastImpulseTime = null;
+            this._state.currentImpulseStart = null;
+            this._state.currentImpulseAmplitude = 0;
+            this._state.patternStartTime = null; // Will be set on next generateSample()
+        },
+
+        /**
+         * Clear impulse pattern (for steady sounds)
+         */
+        clearImpulsePattern() {
+            this._state.impulsePattern = null;
+            this._state.lastImpulseTime = null;
+            this._state.currentImpulseStart = null;
+            this._state.currentImpulseAmplitude = 0;
+            this._state.patternStartTime = null;
+        },
+
+        /**
          * Reset simulator (reinitialize with current seed)
          */
         reset() {
@@ -158,7 +236,8 @@
                 seed: this._state.seed,
                 baseLevel: this._state.baseLevel,
                 variation: this._state.variation,
-                sampleCount: this._state.sampleCount
+                sampleCount: this._state.sampleCount,
+                impulsePattern: this._state.impulsePattern
             };
         }
     };
