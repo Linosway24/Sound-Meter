@@ -93,13 +93,11 @@ body {
     border: 2px solid var(--lcd-border);
     background: var(--lcd-bg);
     display: grid;
-    grid-template-rows: 14% 1fr 16%; /* status, main, softkey labels */
+    grid-template-rows: 8% 1fr 16%; /* status, main, softkey labels - reduced status area to give more space to main */
     pointer-events: none;
-    /* Base font size scales with viewport height - LCD scales with device photo which scales with vh */
-    /* Conservative scaling: keep text small and consistent, prevent growth at larger sizes */
-    /* Cap maximum at 0.85rem to keep text small, scale down to 0.4rem for very small windows */
-    /* Use the smaller of vh or vw scaling, but cap at 0.85rem maximum */
-    font-size: clamp(0.4rem, min(1.0vh, 1.5vw), 0.85rem); /* Stays small, doesn't grow beyond 0.85rem */
+    /* Base font size will be set dynamically via JavaScript to scale proportionally with LCD container */
+    /* Initial fallback - will be overridden by JS calculation */
+    font-size: 0.85rem;
 }
 
 .lcd__status { 
@@ -111,8 +109,7 @@ body {
 .lcd__main { 
     background: var(--lcd-bg);
     color: #e6e6e6;
-    overflow-y: auto; /* Allow scrolling if content exceeds visible area */
-    overflow-x: hidden; /* Prevent horizontal scrolling */
+    overflow: hidden; /* No scrolling - content scales proportionally */
     position: relative;
     padding: 1.2em 1.5em 1.2em 0.5em; /* Reduced top/bottom padding to fit more content */
     min-width: 0; /* Allow flex/grid item to shrink below content size */
@@ -496,8 +493,8 @@ body {
 
 /* Smaller title font for AUTO RUN Timed Run to fit on screen */
 .screen-element--title-small {
-    /* Scale relative to LCD base font size and viewport height - split difference between previous sizes */
-    font-size: clamp(0.7em, 1.1vh, 1.1em); /* Middle ground: scales better than original but not as small as before */
+    /* Scale relative to LCD base font size */
+    font-size: 1.0em; /* Scales proportionally with LCD base font size */
     letter-spacing: -0.025em; /* Slightly less tight spacing */
     word-spacing: 0; /* No extra word spacing */
     white-space: nowrap; /* Prevent wrapping */
@@ -991,7 +988,7 @@ body {
 
 /* Responsive font scaling for DOW time display (auto_run_1 and auto_run_2) */
 .menu-item--dow-time {
-    font-size: clamp(0.85em, 1vh, 0.95em); /* Middle ground between small and original size - responsive font size */
+    font-size: 0.9em; /* Scales proportionally with LCD base font size */
     white-space: nowrap; /* Prevent wrapping - text should scale instead */
     overflow: hidden;
     text-overflow: ellipsis; /* Show ellipsis if still too long */

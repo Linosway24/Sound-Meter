@@ -163,6 +163,11 @@
                     window.initMainFSM();
                 }
                 
+                // Update LCD font size after FSM initializes (wait a frame for layout)
+                requestAnimationFrame(() => {
+                    updateLCDFontSize();
+                });
+                
                 // Subscribe display to FSM state changes
                 console.log('[INIT] Checking subscription setup...');
                 console.log('[INIT] window.subscribeMainFSM:', !!window.subscribeMainFSM);
@@ -242,6 +247,11 @@
                                 if (window.updateStatusArea) {
                                     window.updateStatusArea(rendered.statusHTML || '');
                                 }
+                                
+                                // Update font size after content is rendered (wait for layout)
+                                requestAnimationFrame(() => {
+                                    updateLCDFontSize();
+                                });
                                 
                                 // Handle overlay menu for SLM screens
                                 if (state.slmSoundSettings?.visible && window.renderScreen) {
@@ -324,27 +334,6 @@
                             } else if (window.hideToast) {
                                 window.hideToast();
                             }
-                            
-                            // Debug: Show selected index in status area (temporary until highlighting is implemented)
-                            // Only add debug text if statusHTML is empty (so it doesn't overwrite actual content)
-                            // NOTE: Removed slm_view_menu from debug text - it should have a clean status area
-                            if (window.updateStatusArea) {
-                                const statusEl = document.querySelector('.lcd__status');
-                                if (statusEl && (state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' || 
-                                    state.viewId === 'setup_menu' || state.viewId === 'files_menu')) {
-                                    // Only show debug text if status area is empty (no actual status content)
-                                    const hasStatusContent = statusEl.innerHTML.trim().length > 0;
-                                    if (!hasStatusContent) {
-                                        const menuItems = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim' ? 
-                                            ['VIEW PAST STUDIES', 'VIEW CURRENT STUDY', 'VIEW SESSION', 'SETUP', 'UNIT INFO'] :
-                                            state.viewId === 'setup_menu' ? 
-                                            ['METER SET', 'MEASURE', 'AUTO RUN', 'DATETIME', 'DIGITAL OUT', 'OPTIONS', 'SIG INPUT', 'LOGGING', 'COMMS', 'BATTERY', 'DISPLAY'] :
-                                            ['SESSION DIRECTORY', 'CONFIG DIRECTORY', 'RENAME LAST SESSION', 'SAVE CONFIG FILE', 'FORMAT CARD'];
-                                        const selectedItem = menuItems[state.menu.selectedIndex] || 'N/A';
-                                        statusEl.innerHTML = `<span style="font-size: 10px; opacity: 0.7;">[${state.menu.selectedIndex}] ${selectedItem}</span>`;
-                                    }
-                                }
-                            }
                         } catch (error) {
                             console.error('[SUBSCRIBE] Error in subscription callback:', error);
                         }
@@ -386,6 +375,11 @@
                         if (window.updateMainArea) window.updateMainArea(rendered.mainHTML);
                         if (window.updateStatusArea) window.updateStatusArea(rendered.statusHTML || '');
                         if (window.updateSoftKeyLabels) window.updateSoftKeyLabels(rendered.softkeys);
+                        
+                        // Update font size after initial render
+                        requestAnimationFrame(() => {
+                            updateLCDFontSize();
+                        });
                     } else if (initialState.viewId === 'OFF') {
                         if (window.updateMainArea) window.updateMainArea('');
                         if (window.updateStatusArea) window.updateStatusArea('');
@@ -400,7 +394,27 @@
             document.head.appendChild(fsmScript);
         }
         
-        // Handle window resize - ensure overlays stay aligned
+        // Calculate and set LCD font size based on LCD container height for proportional scaling
+        function updateLCDFontSize() {
+            const lcd = document.querySelector('.lcd');
+            if (!lcd) return;
+            
+            // Get the actual LCD container height
+            const lcdHeight = lcd.offsetHeight;
+            
+            // Calculate font size as a percentage of LCD height
+            // Using ~5.5% of LCD height gives good proportional scaling
+            // This ensures font scales proportionally with the LCD container
+            const baseFontSize = lcdHeight * 0.055;
+            
+            // Set the font size directly on the LCD element
+            lcd.style.fontSize = `${baseFontSize}px`;
+        }
+        
+        // Make function globally accessible for debugging
+        window.updateLCDFontSize = updateLCDFontSize;
+        
+        // Handle window resize - ensure overlays stay aligned and font scales proportionally
         let resizeFrameId = null;
         function handleResize() {
             if (resizeFrameId !== null) {
@@ -424,6 +438,9 @@
                     void overlayLayer.offsetHeight;
                 }
                 
+                // Update LCD font size to scale proportionally with container
+                updateLCDFontSize();
+                
                 // Re-render using current FSM state (don't use renderDisplay as it uses old logic)
                 if (window.getMainFSMState && window.renderScreen) {
                     const state = window.getMainFSMState();
@@ -432,6 +449,9 @@
                         if (window.updateMainArea) window.updateMainArea(rendered.mainHTML);
                         if (window.updateStatusArea) window.updateStatusArea(rendered.statusHTML);
                         if (window.updateSoftKeyLabels) window.updateSoftKeyLabels(rendered.softkeys);
+                        
+                        // Update font size after render
+                        updateLCDFontSize();
                     }
                 }
             });
@@ -443,9 +463,19 @@
         
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeApp();
+                // Update font size after initial load (with delay to ensure layout is complete)
+                setTimeout(() => {
+                    updateLCDFontSize();
+                }, 100);
+            });
         } else {
             initializeApp();
+            // Update font size after initial load
+            setTimeout(() => {
+                updateLCDFontSize();
+            }, 100);
         }
     </script>
 </body>
