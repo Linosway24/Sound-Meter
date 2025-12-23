@@ -12,9 +12,9 @@
     --debug-fill: rgba(255, 0, 0, 0.18);
 
     /* LCD base palette (powered off appearance) */
-    --lcd-bg: #1d232b;
-    --lcd-status-bg: #222933;
-    --lcd-softkeys-bg: #212832;
+    --lcd-bg: #808080;
+    --lcd-status-bg: #909090;
+    --lcd-softkeys-bg: #909090;
     --lcd-border: #2a3340;
 
     /* Buttons */
@@ -43,7 +43,7 @@ html, body { height: 100%; }
 
 body {
     background: var(--stage-bg);
-    color: #e6e6e6;
+    color: #000000;
     font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
 }
 
@@ -91,7 +91,7 @@ body {
     width: var(--lcd-w);
     height: var(--lcd-h);
     border: 2px solid var(--lcd-border);
-    background: var(--lcd-bg);
+    background: #808080 !important;
     display: grid;
     grid-template-rows: 8% 1fr 16%; /* status, main, softkey labels - reduced status area to give more space to main */
     pointer-events: none;
@@ -101,14 +101,14 @@ body {
 }
 
 .lcd__status { 
-    background: var(--lcd-status-bg);
-    color: #e6e6e6;
+    background: #909090 !important;
+    color: #000000;
     overflow: hidden;
     padding: 0.6em; /* Scale relative to LCD base font size */
 }
 .lcd__main { 
-    background: var(--lcd-bg);
-    color: #e6e6e6;
+    background: #808080 !important;
+    color: #000000;
     overflow: hidden; /* No scrolling - content scales proportionally */
     position: relative;
     padding: 1.2em 1.5em 1.2em 0.5em; /* Reduced top/bottom padding to fit more content */
@@ -171,12 +171,12 @@ body {
     padding-top: 0.3em !important; /* Minimal top padding for SLM screens */
 }
 .lcd__softkeys { 
-    background: var(--lcd-softkeys-bg);
+    background: #909090 !important;
     display: flex;
     justify-content: space-around;
     align-items: center;
     padding: 0.6em; /* Scale relative to LCD base font size */
-    color: #ccc;
+    color: #000000;
     position: relative; /* Allow graph to overlay */
     z-index: 1; /* Softkey labels above background, below graph */
 }
@@ -184,7 +184,7 @@ body {
 /* Soft key labels */
 .soft-key-label {
     font-size: 0.9em; /* Scale relative to LCD base font size */
-    color: #ccc;
+    color: #000000;
     text-align: center;
     flex: 1;
     white-space: nowrap;
@@ -201,7 +201,19 @@ body {
 /* Backlight states */
 .lcd--backlight-on {
     filter: brightness(1.2) saturate(1.1);
-    background: rgba(0, 255, 0, 0.05); /* Subtle green tint */
+    background: #2d4a2d !important; /* Green background when backlight is on */
+}
+
+.lcd--backlight-on .lcd__main {
+    background: #2d4a2d !important; /* Green background for main area */
+}
+
+.lcd--backlight-on .lcd__status {
+    background: #2a3f2a !important; /* Slightly darker green for status area */
+}
+
+.lcd--backlight-on .lcd__softkeys {
+    background: #2a3f2a !important; /* Slightly darker green for softkeys area */
 }
 
 .lcd--backlight-on .lcd__main,
@@ -374,7 +386,7 @@ body {
 
 .dialog__btn {
     background: #1b2230;
-    color: #e6e6e6;
+    color: #000000;
     border: 1px solid #2a3340;
     padding: 8px 14px;
     border-radius: 8px;
@@ -439,7 +451,7 @@ body {
     border: 1px solid #2a3340;
     border-radius: 8px;
     padding: 10px 12px;
-    color: #e6e6e6;
+    color: #000000;
     display: none;
 }
 
@@ -451,7 +463,7 @@ body {
 .pos-debug__field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .pos-debug__field input {
     background: #1b2230;
-    color: #e6e6e6;
+    color: #000000;
     border: 1px solid #2a3340;
     border-radius: 6px;
     padding: 6px 8px;
@@ -459,7 +471,7 @@ body {
 .pos-debug__actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .pos-debug__btn {
     background: #1b2230;
-    color: #e6e6e6;
+    color: #000000;
     border: 1px solid #2a3340;
     border-radius: 6px;
     padding: 6px 8px;
@@ -482,7 +494,7 @@ body {
 .screen-element--title {
     font-size: clamp(1.1em, 1.3em, 1.3em); /* Scale relative to LCD base font size with responsive clamp */
     font-weight: 600;
-    color: #e6e6e6;
+    color: #000000;
     margin-bottom: 0.5em;
     white-space: nowrap; /* Prevent wrapping */
     padding-left: 0; /* No left padding to align with menu items */
@@ -507,7 +519,7 @@ body {
 .screen-element--title-level-triggered {
     font-size: 1.1em; /* Reduced from 1.3em by ~2 points to make room for LEVEL line */
     font-weight: 600;
-    color: #e6e6e6;
+    color: #000000;
     margin-bottom: 0.15em !important; /* Reduced from 0.5em to move content up */
     white-space: nowrap;
     padding-left: 0;
@@ -562,7 +574,7 @@ body {
     justify-content: space-between;
     width: 100%;
     font-size: 1em;
-    color: #e6e6e6;
+    color: #000000;
     padding: 0.5em 0;
 }
 
@@ -598,7 +610,7 @@ body {
 
 /* Highlighted label for AUTO RUN Timed Run */
 .screen-element--highlighted {
-    color: #e6e6e6; /* Bright white/highlighted color */
+    color: #000000; /* Bright white/highlighted color */
     font-weight: 600;
     margin-top: 0.5em; /* Spacing from divider */
     margin-bottom: 1em; /* One line space before duration */
@@ -674,7 +686,7 @@ body {
 
 /* Highlighted text for DOW "Days" label */
 .screen-element--highlighted {
-    color: #e6e6e6;
+    color: #000000;
     font-weight: bold;
 }
 
@@ -687,14 +699,14 @@ body {
 .screen-element--twoColumns > .menu-columns-wrapper {
     display: flex;
     flex-direction: row;
-    gap: 0.9em; /* Scale relative to LCD base font size */
+    gap: 0.4em; /* Scale relative to LCD base font size - reduced gap to bring columns closer */
     align-items: flex-start;
 }
 
 .menu-column {
     display: flex;
     flex-direction: column;
-    gap: 0.05em; /* Scale relative to LCD base font size - minimal spacing between lines */
+    gap: 0.2em; /* Scale relative to LCD base font size - added line spacing between menu items */
     flex: 1;
 }
 
@@ -704,11 +716,12 @@ body {
 
 .menu-column--right {
     /* Right column styles */
+    padding-right: 1.0em; /* Add padding to prevent right column from touching screen edge (~10-15 points, scales with font size) */
 }
 
 .menu-item {
     font-size: 1em; /* Scale relative to LCD base font size */
-    color: #888888;
+    color: #000000;
     padding: 0.01em 0.6em 0.01em 0; /* Even more minimal vertical padding to fit more items */
     margin-bottom: 0.03em; /* Reduced margin to fit more items */
     cursor: default;
@@ -768,9 +781,14 @@ body {
     white-space: nowrap; /* Prevent wrapping */
 }
 
+/* TIME-DATE screen: constrain width to align with end of "TIME-DATE" in title */
+#datetime_list {
+    max-width: 13.5em; /* Constrain width to align with end of "TIME-DATE" in title (scales with font size) */
+}
+
 .menu-item__value--editing {
     background-color: #4a5568;
-    color: #ffffff;
+    color: #000000;
     padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
@@ -783,11 +801,30 @@ body {
 }
 
 .menu-item--selected .menu-item__title {
-    background-color: #2a3340;
-    color: #ffffff;
+    background-color: #000000; /* Black highlight bar */
+    color: #888888; /* Grey text that looks cut out */
     font-weight: 500;
     padding: 0.15em 0.45em; /* Scale relative to LCD base font size */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
+}
+
+/* When backlight is on, selected text should appear more green */
+.lcd--backlight-on .menu-item--selected .menu-item__title {
+    color: #4a8a4a; /* Green-tinted text when backlight is on */
+}
+
+/* Selected title class (used in JavaScript) */
+.menu-item__title--selected {
+    background-color: #000000; /* Black highlight bar */
+    color: #888888; /* Grey text that looks cut out */
+    font-weight: 500;
+    padding: 0.15em 0.45em; /* Scale relative to LCD base font size */
+    border-radius: 0.2em; /* Scale relative to LCD base font size */
+}
+
+/* When backlight is on, selected text should appear more green */
+.lcd--backlight-on .menu-item__title--selected {
+    color: #4a8a4a; /* Green-tinted text when backlight is on */
 }
 
 /* Center selected title when used in date display */
@@ -810,7 +847,12 @@ body {
 
 #auto_run_list .menu-item--selected .menu-item__title {
     padding: 0.15em 0.2em 0.15em 0; /* Same reduced padding to prevent position shift */
-    background-color: #2a3340; /* Background color for highlight */
+    background-color: #000000; /* Black highlight bar */
+    color: #888888; /* Grey text that looks cut out */
+}
+
+.lcd--backlight-on #auto_run_list .menu-item--selected .menu-item__title {
+    color: #4a8a4a; /* Green-tinted text when backlight is on */
 }
 
 /* Prevent text truncation for AUTO-RUN menu values */
@@ -824,14 +866,14 @@ body {
 /* When value is being edited, don't highlight the title and gray it out like non-selected items */
 .menu-item--selected.menu-item--editing-value .menu-item__title {
     background-color: transparent;
-    color: #888888; /* Same gray color as non-selected menu items */
+    color: #000000; /* Same gray color as non-selected menu items */
     font-weight: normal;
     padding: 0;
     border-radius: 0;
 }
 
 .menu-item--selected .menu-item__value {
-    color: #888888; /* Keep value dimmed when title is selected */
+    color: #000000; /* Keep value dimmed when title is selected */
 }
 
 /* Reduce font size and spacing for Level-Triggered menu to fit all 5 lines */
@@ -852,7 +894,12 @@ body {
 
 #level_triggered_list .menu-item--selected .menu-item__title {
     padding: 0.05em 0.2em 0.05em 0; /* Same padding to prevent position shift */
-    background-color: #2a3340; /* Background color for highlight */
+    background-color: #000000; /* Black highlight bar */
+    color: #888888; /* Grey text that looks cut out */
+}
+
+.lcd--backlight-on #level_triggered_list .menu-item--selected .menu-item__title {
+    color: #4a8a4a; /* Green-tinted text when backlight is on */
 }
 
 /* Two-row layout for TRIGGER and LEVEL (upper/lower) */
@@ -908,7 +955,7 @@ body {
 
 .menu-item--selected .menu-item__value--editing {
     background-color: #5a6578;
-    color: #ffffff;
+    color: #000000;
     padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
@@ -922,7 +969,7 @@ body {
 }
 
 .menu-item__equals {
-    color: #888888;
+    color: #000000;
     margin: 0 0.15em; /* Scale relative to LCD base font size */
 }
 
@@ -951,7 +998,7 @@ body {
 }
 
 .bar-segment-empty {
-    color: #888888;
+    color: #000000;
     opacity: 0.4;
 }
 
@@ -963,7 +1010,7 @@ body {
 }
 
 .menu-item__bar--editing .bar-segment-filled {
-    color: #ffffff;
+    color: #000000;
 }
 
 .menu-item__bar--editing .bar-segment-empty {
@@ -1057,13 +1104,13 @@ body {
 .status-bar__pause-icon,
 .status-bar__stop-icon {
     font-size: 2.2em; /* Doubled from 1.1em */
-    color: #e6e6e6;
+    color: #000000;
     margin-left: 0.5em;
 }
 
 .status-bar__timer {
     font-size: 1.8em; /* Doubled from 0.9em */
-    color: #e6e6e6;
+    color: #000000;
     font-family: 'Courier New', monospace;
 }
 
@@ -1080,7 +1127,7 @@ body {
     display: flex;
     justify-content: space-between;
     font-size: 1.7em; /* Doubled from 0.85em */
-    color: #888888;
+    color: #000000;
     margin-bottom: 0.2em;
 }
 
@@ -1120,7 +1167,7 @@ body {
 .main-readout__value {
     font-size: 3.5em;
     font-weight: 600;
-    color: #e6e6e6;
+    color: #000000;
     line-height: 1;
     font-family: 'Courier New', monospace;
     margin-right: 0.3em;
@@ -1128,7 +1175,7 @@ body {
 
 .main-readout__units {
     font-size: 1.2em;
-    color: #888888;
+    color: #000000;
     vertical-align: baseline;
 }
 
@@ -1173,14 +1220,14 @@ body {
 
 .data-table__label {
     font-size: 0.85em;
-    color: #888888;
+    color: #000000;
     min-width: 3em;
     margin-right: 0.5em;
 }
 
 .data-table__value {
     font-size: 0.9em;
-    color: #e6e6e6;
+    color: #000000;
     font-weight: 700;
     letter-spacing: 0.05em;
 }
@@ -1202,7 +1249,7 @@ body {
     padding-right: 5px;
     font-family: 'Courier New', monospace;
     font-size: 0.75em;
-    color: #888888;
+    color: #000000;
 }
 
 .time-history__y-label {
@@ -1271,7 +1318,7 @@ body {
 /* Timer positioning */
 .screen-element--timer {
     font-size: 0.9em;
-    color: #e6e6e6;
+    color: #000000;
     font-family: 'Courier New', monospace;
 }
 
@@ -1309,7 +1356,7 @@ body {
 .octave-bar__freq-value {
     font-size: 1.1em;
     font-weight: 700;
-    color: #e6e6e6;
+    color: #000000;
 }
 
 .octave-bar__overall {
@@ -1326,7 +1373,7 @@ body {
 .octave-bar__overall-value {
     font-size: 1.4em;
     font-weight: 700;
-    color: #e6e6e6;
+    color: #000000;
 }
 
 .octave-bar__graph-container {
@@ -1468,7 +1515,7 @@ body {
 
 .octave-band__value {
     font-size: 0.9em;
-    color: #e6e6e6;
+    color: #000000;
     font-weight: 700;
 }
 
@@ -1496,14 +1543,19 @@ body {
 /* Format card option styling */
 .format-option {
     padding: 0.2em 0.5em;
-    color: #888888;
+    color: #000000;
     margin: 0.1em 0;
 }
 
 .format-option--selected {
-    background-color: #2a3340;
-    color: #ffffff;
+    background-color: #000000; /* Black highlight bar */
+    color: #888888; /* Grey text that looks cut out */
     padding: 0.2em 0.5em;
+}
+
+.lcd--backlight-on .format-option--selected {
+    color: #4a8a4a; /* Green-tinted text when backlight is on */
+}
     border-radius: 0.2em;
     font-weight: 500;
 }
@@ -1543,7 +1595,7 @@ body {
 
 .file-item {
     font-size: 1em;
-    color: #888888;
+    color: #000000;
     padding: 0.01em 0.6em 0.01em 0;
     margin-bottom: 0.03em;
     cursor: default;
@@ -1559,7 +1611,7 @@ body {
 }
 
 .file-item--selected {
-    color: #e6e6e6;
+    color: #000000;
     background-color: rgba(230, 230, 230, 0.1);
     padding-left: 0.3em;
     border-left: 2px solid #e6e6e6;
@@ -1572,7 +1624,7 @@ body {
 /* Text Input Styles */
 .screen-element--textInput {
     font-size: 1em;
-    color: #e6e6e6;
+    color: #000000;
     padding: 0.5em;
     display: flex;
     align-items: center;
@@ -1607,7 +1659,7 @@ body {
 
 .yes-no-option {
     font-size: 1.2em;
-    color: #888888;
+    color: #000000;
     padding: 0.3em 1em;
     cursor: default;
     transition: color 0.15s ease, background-color 0.15s ease;
@@ -1616,7 +1668,7 @@ body {
 }
 
 .yes-no-option--selected {
-    color: #e6e6e6;
+    color: #000000;
     background-color: rgba(230, 230, 230, 0.2);
     border-color: #e6e6e6;
     font-weight: bold;
@@ -1882,7 +1934,7 @@ body {
     height: 100%;
     font-size: 120px;
     font-weight: bold;
-    color: #e6e6e6;
+    color: #000000;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -1895,7 +1947,7 @@ body {
     width: 150px;
     height: 150px;
     line-height: 1;
-    color: #e6e6e6;
+    color: #000000;
     font-size: inherit;
     font-weight: inherit;
     font-family: inherit;

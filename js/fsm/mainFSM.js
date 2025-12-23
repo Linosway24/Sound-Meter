@@ -15,7 +15,7 @@
         "MEASURE",
         "METER SET",
         "AUTO RUN",
-        "DATETIME",
+        "TIME-DATE",
         "DIGITAL OUT",
         "OPTIONS",
         "SIG INPUT",
@@ -60,10 +60,9 @@
     ];
 
     const DATETIME_MENU_ITEMS = [
-        "YEAR",
-        "MONTH",
-        "DAY",
-        "TIME"
+        "TIME",
+        "DATE",
+        "DAY"
     ];
 
     const DIGITAL_OUT_MENU_ITEMS = [
@@ -506,8 +505,8 @@
     function _startMeasurementUpdateLoop() {
         _stopMeasurementUpdateLoop();
         
-        if (!window.Simulator || !window.Measurement) {
-            console.warn('[FSM] Simulator or Measurement module not available');
+        if (!window.Measurement) {
+            console.warn('[FSM] Measurement module not available');
             return;
         }
         
@@ -516,11 +515,27 @@
                 return; // Don't update if not running
             }
             
-            // Generate SPL sample
-            const spl = window.Simulator.generateSample();
+            // Check if audio analysis is active and providing SPL data
+            const audioState = window.AudioPlayer?.getState?.();
+            const audioAnalysisActive = audioState?.isPlaying && 
+                                      window.AudioPlayer?._audioAnalysisState?.enabled;
             
-            // Process sample
-            window.Measurement.processSample(spl);
+            if (audioAnalysisActive) {
+                // Audio analysis loop is feeding Measurement directly via requestAnimationFrame
+                // Just sync results to FSM state (skip simulator)
+            } else {
+                // Fallback to simulator
+                if (!window.Simulator) {
+                    console.warn('[FSM] Simulator not available');
+                    return;
+                }
+                
+                // Generate SPL sample
+                const spl = window.Simulator.generateSample();
+                
+                // Process sample
+                window.Measurement.processSample(spl);
+            }
             
             // Get results
             const results = window.Measurement.getResults();
@@ -1393,7 +1408,18 @@
                         console.log(`[DATETIME] UP: ${subField} adjusted`);
                         _emit();
                     } else {
-                        _state.datetime.selectedIndex = (_state.datetime.selectedIndex + DATETIME_MENU_ITEMS.length - 1) % DATETIME_MENU_ITEMS.length;
+                        // Cycle through TIME and DATE only (skip DAY)
+                        // TIME is index 0, DATE is index 1, DAY is index 2
+                        if (_state.datetime.selectedIndex === 0) {
+                            // TIME → DATE (cycle back)
+                            _state.datetime.selectedIndex = 1;
+                        } else if (_state.datetime.selectedIndex === 1) {
+                            // DATE → TIME
+                            _state.datetime.selectedIndex = 0;
+                        } else {
+                            // If somehow on DAY (index 2), go to TIME
+                            _state.datetime.selectedIndex = 0;
+                        }
                         console.log(`[MENU] Date/Time menu - Selected index: ${_state.datetime.selectedIndex} → "${DATETIME_MENU_ITEMS[_state.datetime.selectedIndex]}"`);
                         _emit();
                     }
@@ -2212,7 +2238,18 @@
                         console.log(`[DATETIME] DOWN: ${subField} adjusted`);
                         _emit();
                     } else {
-                        _state.datetime.selectedIndex = (_state.datetime.selectedIndex + 1) % DATETIME_MENU_ITEMS.length;
+                        // Cycle through TIME and DATE only (skip DAY)
+                        // TIME is index 0, DATE is index 1, DAY is index 2
+                        if (_state.datetime.selectedIndex === 0) {
+                            // TIME → DATE
+                            _state.datetime.selectedIndex = 1;
+                        } else if (_state.datetime.selectedIndex === 1) {
+                            // DATE → TIME (cycle back)
+                            _state.datetime.selectedIndex = 0;
+                        } else {
+                            // If somehow on DAY (index 2), go to TIME
+                            _state.datetime.selectedIndex = 0;
+                        }
                         console.log(`[MENU] Date/Time menu - Selected index: ${_state.datetime.selectedIndex} → "${DATETIME_MENU_ITEMS[_state.datetime.selectedIndex]}"`);
                         _emit();
                     }
@@ -2498,7 +2535,24 @@
                 break;
 
             case "LEFT":
-                if (_state.viewId === "display_menu" && _state.display.editing && _state.menu.selectedIndex === 2 && _state.display.focus === "value") {
+                // Handle setup_menu first to avoid being intercepted by other handlers
+                if (_state.viewId === "setup_menu") {
+                    // LEFT arrow: move to left column (same row position)
+                    // Setup menu has 11 items: left column (0-5), right column (6-10)
+                    const currentIndex = _state.menu.selectedIndex;
+                    const leftColumnCount = Math.ceil(SETUP_MENU_ITEMS.length / 2); // 6 items
+                    console.log(`[MENU] Setup menu LEFT: currentIndex=${currentIndex}, leftColumnCount=${leftColumnCount}, viewId=${_state.viewId}`);
+                    if (currentIndex >= leftColumnCount) {
+                        // In right column: move to left column (same row)
+                        const rowInRightColumn = currentIndex - leftColumnCount;
+                        const newIndex = Math.min(leftColumnCount - 1, rowInRightColumn);
+                        _state.menu.selectedIndex = newIndex;
+                        console.log(`[MENU] Setup menu LEFT: Moved from right column (${currentIndex}) to left column (${newIndex})`);
+                        _emit();
+                    } else {
+                        console.log(`[MENU] Setup menu LEFT: Already in left column (${currentIndex}), doing nothing`);
+                    }
+                } else if (_state.viewId === "display_menu" && _state.display.editing && _state.menu.selectedIndex === 2 && _state.display.focus === "value") {
                     // LEFT arrow: decrease contrast by one segment (remove one filled box)
                     // Each segment represents 100/15 ≈ 6.67 contrast units
                     const currentSegments = Math.round((_state.display.contrast / 100) * 15);
@@ -2511,7 +2565,7 @@
                     _state.display.focus = "title";
                     _state.display.editing = false; // Exit edit mode so UP/DOWN can navigate between items
                     _emit();
-                } else if (_state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
+                } else if (_state.meterSet && _state.meterSet.editing && (_state.viewId === "meter_set_menu" || _state.viewId === "meter_set_edit")) {
                     if (_state.meterSet.focus === "value" || _state.meterSet.focus === "off") {
                         // LEFT arrow switches from value/off back to title and exits edit mode
                         _state.meterSet.focus = "title";
@@ -2593,7 +2647,7 @@
                     // LEFT arrow: move to previous subfield
                     const currentSubField = _state.datetime.editSubField;
                     if (_state.datetime.editField === "time") {
-                        // Time subfields: hour → minute → second → hour
+                        // Time subfields: hour ↔ minute ↔ second
                         if (currentSubField === "hour") {
                             _state.datetime.editSubField = "second";
                         } else if (currentSubField === "minute") {
@@ -2601,13 +2655,13 @@
                         } else if (currentSubField === "second") {
                             _state.datetime.editSubField = "minute";
                         }
-                    } else if (_state.datetime.editField === "year" || _state.datetime.editField === "month" || _state.datetime.editField === "day") {
-                        // Date subfields cycle: year → month → day → year
-                        if (currentSubField === "year") {
-                            _state.datetime.editSubField = "day";
-                        } else if (currentSubField === "month") {
+                    } else if (_state.datetime.editField === "date") {
+                        // Date subfields cycle: day ↔ month ↔ year
+                        if (currentSubField === "day") {
                             _state.datetime.editSubField = "year";
-                        } else if (currentSubField === "day") {
+                        } else if (currentSubField === "month") {
+                            _state.datetime.editSubField = "day";
+                        } else if (currentSubField === "year") {
                             _state.datetime.editSubField = "month";
                         }
                     }
@@ -2855,6 +2909,19 @@
                         }
                     }
                     // In Meter 2, RIGHT does nothing
+                } else if (_state.viewId === "setup_menu") {
+                    // RIGHT arrow: move to right column (same row position)
+                    // Setup menu has 11 items: left column (0-5), right column (6-10)
+                    const currentIndex = _state.menu.selectedIndex;
+                    const leftColumnCount = Math.ceil(SETUP_MENU_ITEMS.length / 2); // 6 items
+                    if (currentIndex < leftColumnCount) {
+                        // In left column: move to right column (same row)
+                        const newIndex = Math.min(SETUP_MENU_ITEMS.length - 1, currentIndex + leftColumnCount);
+                        _state.menu.selectedIndex = newIndex;
+                        console.log(`[MENU] Setup menu RIGHT: Moved from left column (${currentIndex}) to right column (${newIndex})`);
+                        _emit();
+                    }
+                    // If in right column, do nothing
                 } else if (_state.viewId === "files_session_dir") {
                     // RIGHT arrow: move to right column (same row position)
                     const fileList = _state.files.sessionFiles;
@@ -2959,14 +3026,14 @@
                         } else if (currentSubField === "second") {
                             _state.datetime.editSubField = "hour";
                         }
-                    } else if (_state.datetime.editField === "year" || _state.datetime.editField === "month" || _state.datetime.editField === "day") {
-                        // Date subfields cycle: year → month → day → year
-                        if (currentSubField === "year") {
+                    } else if (_state.datetime.editField === "date") {
+                        // Date subfields cycle: day → month → year → day
+                        if (currentSubField === "day") {
                             _state.datetime.editSubField = "month";
                         } else if (currentSubField === "month") {
-                            _state.datetime.editSubField = "day";
-                        } else if (currentSubField === "day") {
                             _state.datetime.editSubField = "year";
+                        } else if (currentSubField === "year") {
+                            _state.datetime.editSubField = "day";
                         }
                     }
                     console.log(`[DATETIME] RIGHT: Moved to subfield ${_state.datetime.editSubField}`);
@@ -3286,9 +3353,24 @@
                         _state.autoRun.focus = "title";
                         _state.autoRun.editing = false;
                         _emit();
-                    } else if (item === "DATETIME") {
+                    } else if (item === "TIME-DATE") {
                         _pushHistory("datetime_menu");
                         _state.viewId = "datetime_menu";
+                        // Initialize datetime object if it doesn't exist
+                        if (!_state.datetime) {
+                            _state.datetime = {};
+                        }
+                        // Initialize datetime values if not set
+                        const now = new Date();
+                        if (_state.datetime.year === undefined) {
+                            _state.datetime.year = now.getFullYear();
+                            _state.datetime.month = now.getMonth() + 1;
+                            _state.datetime.day = now.getDate();
+                            _state.datetime.hour = now.getHours();
+                            _state.datetime.minute = now.getMinutes();
+                            _state.datetime.second = now.getSeconds();
+                        }
+                        // Set menu state
                         _state.datetime.selectedIndex = 0;
                         _state.datetime.editing = false;
                         _state.datetime.editField = null;
@@ -3794,26 +3876,67 @@
                     _emit();
                 } else if (_state.viewId === "datetime_menu") {
                     if (_state.datetime.editing) {
-                        // Already in edit mode: confirm and exit edit mode
-                        _state.datetime.editing = false;
-                        _state.datetime.editField = null;
-                        _state.datetime.editSubField = null;
-                        console.log(`[DATETIME] ENTER: Confirmed and exited edit mode`);
-                        _emit();
+                        // Already in edit mode
+                        if (_state.datetime.editField === "time") {
+                            // For TIME: cycle through subfields (hour → minute → second → exit to TIME label)
+                            const currentSubField = _state.datetime.editSubField;
+                            if (currentSubField === "hour") {
+                                _state.datetime.editSubField = "minute";
+                                console.log(`[DATETIME] ENTER: Cycling TIME subfield to minute`);
+                            } else if (currentSubField === "minute") {
+                                _state.datetime.editSubField = "second";
+                                console.log(`[DATETIME] ENTER: Cycling TIME subfield to second`);
+                            } else if (currentSubField === "second") {
+                                // Exit edit mode and return to TIME label
+                                _state.datetime.editing = false;
+                                _state.datetime.editField = null;
+                                _state.datetime.editSubField = null;
+                                console.log(`[DATETIME] ENTER: Exited edit mode, back to TIME label`);
+                            }
+                            _emit();
+                        } else if (_state.datetime.editField === "date") {
+                            // For DATE: cycle through subfields (day → month → year → exit to DATE label)
+                            const currentSubField = _state.datetime.editSubField;
+                            if (currentSubField === "day") {
+                                _state.datetime.editSubField = "month";
+                                console.log(`[DATETIME] ENTER: Cycling DATE subfield to month`);
+                            } else if (currentSubField === "month") {
+                                _state.datetime.editSubField = "year";
+                                console.log(`[DATETIME] ENTER: Cycling DATE subfield to year`);
+                            } else if (currentSubField === "year") {
+                                // Exit edit mode and return to DATE label
+                                _state.datetime.editing = false;
+                                _state.datetime.editField = null;
+                                _state.datetime.editSubField = null;
+                                console.log(`[DATETIME] ENTER: Exited edit mode, back to DATE label`);
+                            }
+                            _emit();
+                        } else {
+                            // For other fields: confirm and exit edit mode
+                            _state.datetime.editing = false;
+                            _state.datetime.editField = null;
+                            _state.datetime.editSubField = null;
+                            console.log(`[DATETIME] ENTER: Confirmed and exited edit mode`);
+                            _emit();
+                        }
                     } else {
                         // Enter edit mode for selected field
                         const selectedItem = DATETIME_MENU_ITEMS[_state.datetime.selectedIndex];
                         _state.datetime.editing = true;
-                        _state.datetime.editField = selectedItem.toLowerCase(); // "year", "month", "day", "time"
+                        _state.datetime.editField = selectedItem.toLowerCase(); // "time", "date", "day"
                         // Set initial subfield based on selected item
-                        if (selectedItem === "YEAR") {
-                            _state.datetime.editSubField = "year";
-                        } else if (selectedItem === "MONTH") {
-                            _state.datetime.editSubField = "month";
-                        } else if (selectedItem === "DAY") {
-                            _state.datetime.editSubField = "day";
-                        } else if (selectedItem === "TIME") {
+                        if (selectedItem === "TIME") {
                             _state.datetime.editSubField = "hour";
+                        } else if (selectedItem === "DATE") {
+                            _state.datetime.editSubField = "day"; // Start with day when editing DATE
+                        } else if (selectedItem === "DAY") {
+                            // DAY is not editable - it's calculated from the date
+                            _state.datetime.editing = false;
+                            _state.datetime.editField = null;
+                            _state.datetime.editSubField = null;
+                            console.log(`[DATETIME] ENTER: DAY is not editable (calculated from date)`);
+                            _emit();
+                            return;
                         }
                         console.log(`[DATETIME] ENTER: Entered edit mode for ${selectedItem}, subfield: ${_state.datetime.editSubField}`);
                         _emit();

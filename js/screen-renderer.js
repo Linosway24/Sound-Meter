@@ -1178,23 +1178,39 @@
                             const editField = state?.datetime?.editField;
                             const editSubField = state?.datetime?.editSubField;
                             let displayValue = "";
-                            if (item === "YEAR") {
-                                displayValue = String(state?.datetime?.year || 2024);
-                            } else if (item === "MONTH") {
-                                displayValue = String(state?.datetime?.month || 1);
-                            } else if (item === "DAY") {
-                                displayValue = String(state?.datetime?.day || 1);
-                            } else if (item === "TIME") {
+                            const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                            const dayNames = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+                            
+                            if (item === "TIME") {
                                 const hour = String(state?.datetime?.hour || 12).padStart(2, '0');
                                 const minute = String(state?.datetime?.minute || 0).padStart(2, '0');
                                 const second = String(state?.datetime?.second || 0).padStart(2, '0');
                                 displayValue = `${hour}:${minute}:${second}`;
+                            } else if (item === "DATE") {
+                                const day = String(state?.datetime?.day || 1).padStart(2, '0');
+                                const month = state?.datetime?.month || 1;
+                                const year = state?.datetime?.year || 2024;
+                                displayValue = `${day} ${monthNames[month - 1]} ${year}`;
+                            } else if (item === "DAY") {
+                                // Calculate day of week from date
+                                const year = state?.datetime?.year || 2024;
+                                const month = (state?.datetime?.month || 1) - 1; // JS months are 0-indexed
+                                const day = state?.datetime?.day || 1;
+                                const date = new Date(year, month, day);
+                                const dayOfWeek = date.getDay();
+                                displayValue = dayNames[dayOfWeek];
                             }
-                            html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                            const titleClass = (!isDatetimeEditing && isSelected) ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                            // For TIME and DATE: when editing, don't add menu-item--selected to prevent title highlighting
+                            const menuItemClass = ((item === "TIME" || item === "DATE") && isDatetimeEditing) 
+                                ? 'menu-item menu-item--display' 
+                                : `menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}`;
+                            html += `<div class="${menuItemClass}">`;
+                            // For TIME and DATE: only highlight the title when NOT editing (when label itself is selected)
+                            // When editing subfields, the title should NOT be highlighted
+                            const titleClass = ((item === "TIME" || item === "DATE") && !isDatetimeEditing && isSelected) ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
                             html += `<span class="${titleClass}">${item}</span>`;
                             html += `<span class="menu-item__equals"> = </span>`;
-                            // For TIME, highlight the subfield being edited
+                            // For TIME, highlight the subfield being edited (hour, minute, or second)
                             if (item === "TIME" && isDatetimeEditing && editSubField) {
                                 const parts = displayValue.split(':');
                                 html += `<span class="${editSubField === 'hour' ? 'menu-item__value menu-item__value--editing' : 'menu-item__value'}">${parts[0]}</span>`;
@@ -1202,8 +1218,18 @@
                                 html += `<span class="${editSubField === 'minute' ? 'menu-item__value menu-item__value--editing' : 'menu-item__value'}">${parts[1]}</span>`;
                                 html += `<span>:</span>`;
                                 html += `<span class="${editSubField === 'second' ? 'menu-item__value menu-item__value--editing' : 'menu-item__value'}">${parts[2]}</span>`;
-                            } else if (isDatetimeEditing && editField && item.toLowerCase() === editField && editSubField === item.toLowerCase()) {
-                                // For YEAR, MONTH, DAY - highlight the whole value when editing
+                            } else if (item === "DATE" && isDatetimeEditing && editSubField) {
+                                // For DATE, highlight the subfield being edited (day, month, or year)
+                                const day = String(state?.datetime?.day || 1).padStart(2, '0');
+                                const month = state?.datetime?.month || 1;
+                                const year = state?.datetime?.year || 2024;
+                                html += `<span class="${editSubField === 'day' ? 'menu-item__value menu-item__value--editing' : 'menu-item__value'}">${day}</span>`;
+                                html += `<span> </span>`;
+                                html += `<span class="${editSubField === 'month' ? 'menu-item__value menu-item__value--editing' : 'menu-item__value'}">${monthNames[month - 1]}</span>`;
+                                html += `<span> </span>`;
+                                html += `<span class="${editSubField === 'year' ? 'menu-item__value menu-item__value--editing' : 'menu-item__value'}">${year}</span>`;
+                            } else if (isDatetimeEditing && editField && item.toLowerCase() === editField) {
+                                // For DAY - highlight the whole value when editing (not editable, just selected)
                                 html += `<span class="menu-item__value menu-item__value--editing">${displayValue}</span>`;
                             } else {
                                 html += `<span class="menu-item__value">${displayValue}</span>`;
@@ -1337,11 +1363,12 @@
                                 html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${item.title}</div>`;
                             }
                         } else {
-                            // Simple string item - for language menu: diamond shows saved language, highlight shows selected language
+                            // Simple string item - for home screen menu and language menu: diamond shows saved language, highlight shows selected language
                             const currentLanguage = state?.display?.language || "ENGLISH";
                             const hasDiamond = (item === currentLanguage);
                             const diamond = hasDiamond ? '<span class="menu-item__diamond">◆</span>' : '';
-                            html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${diamond}${item}</div>`;
+                            const titleClass = isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                            html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${diamond}<span class="${titleClass}">${item}</span></div>`;
                         }
                     });
                     

@@ -846,7 +846,7 @@
             "MEASURE",
             "METER SET",
             "AUTO RUN",
-            "DATETIME",
+            "TIME-DATE",
             "DIGITAL OUT",
             "OPTIONS",
             "SIG INPUT",
@@ -1098,16 +1098,15 @@
       "mode": "MENU",
       "referenceImage": "Capture/operational/datetime_menu.jpeg",
       "elements": [
-        { "type": "title", "id": "screen_title", "text": "setup\\DATETIME" },
+        { "type": "title", "id": "screen_title", "text": "setup\\TIME-DATE" },
         { "type": "divider", "id": "title_rule" },
         {
           "type": "textList",
           "id": "datetime_list",
           "items": [
-            "YEAR",
-            "MONTH",
-            "DAY",
-            "TIME"
+            "TIME",
+            "DATE",
+            "DAY"
           ],
           "bind": "datetime.selectedIndex"
         }
