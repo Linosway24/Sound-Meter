@@ -34,11 +34,12 @@
 
     // Sound presets with corresponding simulator settings
     // gain: volume boost multiplier (1.0 = normal, 2.0 = 2x louder, etc.)
+    // file: filename only (e.g., 'fan.wav') - will be resolved to Base64 data URI or file path
     const SOUND_PRESETS = {
         // Steady sounds
         fan: {
             name: 'Fan/HVAC',
-            file: 'assets/audio/fan.wav',
+            file: 'fan.wav',
             baseLevel: 65,
             variation: 2,
             gain: 1.0,
@@ -46,7 +47,7 @@
         },
         engine: {
             name: 'Engine Idle',
-            file: 'assets/audio/engine.wav',
+            file: 'engine.wav',
             baseLevel: 75,
             variation: 3,
             gain: 3.0,  // Boosted - quiet source file
@@ -55,7 +56,7 @@
         // Intermittent/burst sounds
         hammering: {
             name: 'Hammering',
-            file: 'assets/audio/hammering.wav',
+            file: 'hammering.wav',
             baseLevel: 85,
             variation: 15,
             gain: 1.0,
@@ -68,7 +69,7 @@
         },
         clapping: {
             name: 'Clapping',
-            file: 'assets/audio/clapping.wav',
+            file: 'clapping.wav',
             baseLevel: 80,
             variation: 12,
             gain: 1.0,
@@ -82,7 +83,7 @@
         // Industrial sounds
         machinery: {
             name: 'Industrial Machinery',
-            file: 'assets/audio/machinery.wav',
+            file: 'machinery.wav',
             baseLevel: 90,
             variation: 8,
             gain: 1.0,
@@ -91,7 +92,7 @@
         // Quiet environments
         office: {
             name: 'Office Ambient',
-            file: 'assets/audio/office.wav',
+            file: 'office.wav',
             baseLevel: 50,
             variation: 3,
             gain: 4.0,  // Boosted - very quiet source file
@@ -100,13 +101,28 @@
         // Calibration tone
         calibration: {
             name: 'Calibration Tone (1kHz)',
-            file: 'assets/audio/Calibration_1khz.wav',
+            file: 'Calibration_1khz.wav',
             baseLevel: 114,
             variation: 0.5,
             gain: 1.0,
             description: '1000 Hz calibration tone at 114 dB'
         }
     };
+
+    /**
+     * Resolve audio file path to data URI or file path
+     * Checks for Base64 data in AUDIO_DATA first (CORS-safe), falls back to file path
+     * @param {string} filename - Audio filename (e.g., 'fan.wav')
+     * @returns {string} Data URI or file path
+     */
+    function resolveAudioFile(filename) {
+        // Check for Base64 data from build script (CORS-safe for iframes)
+        if (window.AUDIO_DATA && window.AUDIO_DATA[filename]) {
+            return window.AUDIO_DATA[filename];
+        }
+        // Fallback to file path (for development or when build script not run)
+        return `assets/audio/${filename}`;
+    }
 
     /**
      * Initialize audio module
@@ -330,8 +346,11 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
         
+        // Resolve audio file to Base64 data URI or file path
+        const audioSource = resolveAudioFile(preset.file);
+        
         // Create and play audio element
-        currentAudio = new Audio(preset.file);
+        currentAudio = new Audio(audioSource);
         currentAudio.loop = loop;
         
         // Route through Web Audio API
@@ -399,8 +418,12 @@
 
         currentAudio.addEventListener('error', (e) => {
             console.warn(`[AUDIO] Error loading ${preset.file}:`, e);
-            console.log('[AUDIO] Simulator settings applied, but audio file not found');
-            console.log('[AUDIO] Add audio files to assets/audio/ directory');
+            if (window.AUDIO_DATA && window.AUDIO_DATA[preset.file]) {
+                console.log('[AUDIO] Base64 data available but playback failed - check audio format');
+            } else {
+                console.log('[AUDIO] Simulator settings applied, but audio file not found');
+                console.log('[AUDIO] Run "node build-audio.js" to generate Base64 audio data, or add audio files to assets/audio/ directory');
+            }
             // Still update simulator even if audio fails
             updateStatus(`⚠ No audio - Sim: ${preset.baseLevel} dB ±${preset.variation}`);
         });

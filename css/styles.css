@@ -2069,7 +2069,7 @@ body {
 
 .screen-element--bar-meter {
     width: 100%;
-    padding: 8px 12px;
+    padding: 0.4em 0.6em; /* Use em units to scale proportionally with LCD, reduced from fixed 8px 12px */
 }
 
 .bar-meter__header {
@@ -2077,8 +2077,8 @@ body {
     justify-content: space-between;
     align-items: center;
     font-family: 'Courier New', monospace;
-    font-size: 14px;
-    margin-bottom: 4px;
+    font-size: 0.9em; /* Use em units to scale proportionally with LCD, reduced from fixed 14px */
+    margin-bottom: 0.2em; /* Scale margin proportionally */
 }
 
 .bar-meter__min,
@@ -2093,7 +2093,7 @@ body {
 
 .bar-meter__scale {
     position: relative;
-    height: 20px;
+    height: 1em; /* Use em units to scale proportionally with LCD, reduced from fixed 20px */
     background: transparent;
     border: 1px solid currentColor;
 }
@@ -2116,43 +2116,64 @@ body {
 
 .bar-meter__fill {
     position: absolute;
-    top: 2px;
-    left: 2px;
-    bottom: 2px;
+    top: 0.1em; /* Scale proportionally */
+    left: 0.1em; /* Scale proportionally */
+    bottom: 0.1em; /* Scale proportionally */
     background: currentColor;
     transition: width 0.1s ease-out;
+}
+
+/* Reduce LCD main padding only on calibration running screen to give more room for large numbers */
+.lcd__main:has(#cal_running_spl) {
+    padding-left: 0.5em !important; /* Reduced left padding for calibration screen */
+    padding-right: 0.5em !important; /* Reduced right padding for calibration screen */
 }
 
 .screen-element--spl-display {
     display: flex;
     align-items: baseline;
     justify-content: center;
-    padding: 16px 12px;
+    padding: 0.3em 0.5em 0.5em 0.5em; /* Match SLM main-readout padding - minimal top to sit close to bar graph */
     font-family: 'Courier New', monospace;
+    /* Ensure text doesn't overflow container */
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden; /* Clip overflow to prevent cutoff */
+    box-sizing: border-box;
 }
 
 .screen-element--spl-display.spl-display--large {
-    padding: 24px 12px;
+    padding: 0.3em 0.5em 0.5em 0.5em; /* Same padding for large display */
 }
 
 .spl-display__value {
-    font-size: 48px;
-    font-weight: bold;
-    letter-spacing: -2px;
+    font-size: 3.5em; /* Match SLM main-readout value size - scales proportionally with LCD */
+    font-weight: 600; /* Match SLM main-readout weight */
+    letter-spacing: -0.21em; /* Scales proportionally */
+    /* Ensure text fits within container */
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0; /* Don't shrink - let font size scale via em units instead */
+    min-width: 0;
+    max-width: 100%;
+    margin-right: 0.3em; /* Match SLM main-readout spacing */
 }
 
 .spl-display--large .spl-display__value {
-    font-size: 64px;
+    font-size: 3.5em; /* Keep same size as normal - matches SLM screen */
 }
 
 .spl-display__unit {
-    font-size: 18px;
-    margin-left: 8px;
+    font-size: 1.2em; /* Match SLM main-readout units size */
     opacity: 0.9;
+    flex-shrink: 0;
+    min-width: 0;
+    vertical-align: baseline; /* Match SLM main-readout alignment */
 }
 
 .spl-display--large .spl-display__unit {
-    font-size: 22px;
+    font-size: 1.2em; /* Keep same size as normal - matches SLM screen */
 }
 
 .screen-element--countdown {
