@@ -620,7 +620,9 @@
             '3': 'soft-key--3',
             '4': 'soft-key--4',
             'f': 'fn-btn--altf',
-            'F': 'fn-btn--altf'
+            'F': 'fn-btn--altf',
+            's': 'fn-btn--stop', // s key maps to stop button
+            'S': 'fn-btn--stop'  // S key maps to stop button
         };
 
         const className = keyMap[event.key];

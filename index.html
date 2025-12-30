@@ -185,8 +185,15 @@
                             if (lcd) {
                                 if (state.viewId === 'OFF') {
                                     lcd.classList.add('lcd--powered-off');
+                                    lcd.classList.remove('lcd--boot-screen');
                                 } else {
                                     lcd.classList.remove('lcd--powered-off');
+                                    // Add boot screen class for styling
+                                    if (state.viewId === 'boot_screen') {
+                                        lcd.classList.add('lcd--boot-screen');
+                                    } else {
+                                        lcd.classList.remove('lcd--boot-screen');
+                                    }
                                     // Ensure LCD is visible when not OFF
                                     lcd.style.display = '';
                                     lcd.style.visibility = '';

@@ -5,7 +5,7 @@
       "mode": "BOOT",
       "referenceImage": "capture/startup/boot_screen.jpg",
       "elements": [
-        { "type": "label", "id": "fw", "text": "Quest SoundPro SE/DL" },
+        { "type": "label", "id": "fw", "text": "SoundPro" },
         { "type": "label", "id": "ver", "text": "Firmware v1.13J" }
       ],
       "softkeys": [],
@@ -859,7 +859,7 @@
           "columns": 2
         }
       ],
-      "softkeys": ["Select", "", "", ""],
+      "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -998,7 +998,7 @@
           "columns": 2
         }
       ],
-      "softkeys": ["Select", "", "", ""],
+      "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -1111,7 +1111,7 @@
           "bind": "datetime.selectedIndex"
         }
       ],
-      "softkeys": ["Select", "", "", ""],
+      "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc", "left", "right"],
       "display": { "backlight": true }
     },
@@ -1263,12 +1263,17 @@
       "mode": "MENU",
       "referenceImage": "Capture/operational/battery_menu.jpeg",
       "elements": [
-        { "type": "title", "id": "screen_title", "text": "setup\\BATTERY" },
+        { "type": "title", "id": "screen_title", "text": "setup\\BAT-CHECK" },
         { "type": "divider", "id": "title_rule" },
         {
-          "type": "label",
-          "id": "battery_status",
-          "text": "B1 B2 B3 B4"
+          "type": "batteryBars",
+          "id": "battery_bars",
+          "batteries": [
+            { "id": "B1", "bind": "battery.B1", "level": 65 },
+            { "id": "B2", "bind": "battery.B2", "level": 0 },
+            { "id": "B3", "bind": "battery.B3", "level": 100 },
+            { "id": "B4", "bind": "battery.B4", "level": 100 }
+          ]
         }
       ],
       "softkeys": ["ALK", "NiMH", "", ""],
@@ -1291,7 +1296,7 @@
           "dynamicItems": "display.items"
         }
       ],
-      "softkeys": ["Select", "", "", ""],
+      "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },
@@ -1318,7 +1323,7 @@
           "columns": 2
         }
       ],
-      "softkeys": ["Select", "", "", ""],
+      "softkeys": ["", "", "", ""],
       "keys": ["up", "down", "enter", "esc"],
       "display": { "backlight": true }
     },

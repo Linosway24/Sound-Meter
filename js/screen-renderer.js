@@ -9,6 +9,7 @@
     let screenAtlas = null;
     let isInitialized = false;
 
+
     /**
      * Helper: Get value from state using dot-notation bind path
      * @param {Object} state - FSM state
@@ -449,6 +450,17 @@
                     const selectedItem = items[selectedIndex] || 'L_AVG';
                     return `<div id="${element.id}" class="screen-element screen-element--label">${selectedItem}</div>`;
                 }
+                // Special handling for boot screen - centered, large dot matrix text
+                if (state?.viewId === "boot_screen") {
+                    if (element.id === "fw") {
+                        // Main "SoundPro" text - large, centered, dot matrix style
+                        const text = element.text || 'SoundPro';
+                        return `<div id="${element.id}" class="screen-element screen-element--label screen-element--boot-title" style="text-align: center; font-size: 2.8em; margin: 0; line-height: 1.2; display: block; width: 100%;"><span>${text}</span></div>`;
+                    } else if (element.id === "ver") {
+                        // Firmware version - smaller, below main text
+                        return `<div id="${element.id}" class="screen-element screen-element--label screen-element--boot-version" style="text-align: center; font-size: 1.1em; color: #4a4a4a; font-family: 'Courier New', monospace; margin: 0.8em 0 0; text-rendering: optimizeSpeed; -webkit-font-smoothing: none; image-rendering: pixelated; line-height: 1.2; display: block; width: 100%; text-shadow: 0 0 1px rgba(0,0,0,0.1);">${element.text || ''}</div>`;
+                    }
+                }
                 // Default label rendering - support highlighted and align properties
                 const labelText = element.text || '';
                 let highlightedClass = element.highlighted ? ' screen-element--highlighted' : '';
@@ -866,8 +878,9 @@
                     html += '<div class="menu-columns-wrapper">';
                     html += '<div class="menu-column menu-column--left">';
                     leftColumnItems.forEach((item, index) => {
-                        // For logging menu, left column uses actual index (0, 1); for others, index matches selectedIndex
-                        const isSelected = index === selectedIndex;
+                        // For logging menu, left column uses actual index (0, 1); for others, index is the actual item index (0 to leftColumnItems.length-1)
+                        const actualIndex = element.dynamicItems === "logging.items" ? index : index;
+                        const isSelected = actualIndex === selectedIndex;
                         const isEditing = state?.meterSet?.editing && isSelected;
                         const focusValue = state?.meterSet?.focus === "value";
                         const focusOff = state?.meterSet?.focus === "off" && isEditing;
@@ -876,7 +889,11 @@
                             // Check if this is a display menu item (has showValue or valueKey)
                             if (item.showValue === false) {
                                 // LANGUAGE - no value displayed
-                                html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${item.title}</div>`;
+                                const displayFocusTitle = state?.display?.focus === "title" || (!state?.display?.focus && isSelected);
+                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
+                                const titleClass = displayFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                html += `<span class="${titleClass}">${item.title}</span>`;
+                                html += `</div>`;
                             } else if (item.type === "bar") {
                                 // CONTRAST - shows bar graph
                                 const isDisplayEditing = state?.display?.editing && isSelected;
@@ -940,9 +957,12 @@
                                 // BACKLIGHT - shows text value (MANUAL, etc.) with editing support
                                 const isDisplayEditing = state?.display?.editing && isSelected;
                                 const displayFocusValue = state?.display?.focus === "value";
-                                const displayFocusTitle = state?.display?.focus === "title" || (!state?.display?.focus && isSelected);
-                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                                const titleClass = displayFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                // Title should only be highlighted when focus is "title" or undefined, NOT when focus is "value"
+                                const displayFocusTitle = isSelected && (state?.display?.focus === "title" || !state?.display?.focus) && !displayFocusValue;
+                                // Add class to indicate we're editing the value (not the title)
+                                const editingValueClass = (isDisplayEditing && displayFocusValue) ? 'menu-item--editing-value' : '';
+                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''} ${editingValueClass}">`;
+                                const titleClass = displayFocusTitle ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
                                 html += `<span class="${titleClass}">${item.title}</span>`;
                                 html += `<span class="menu-item__equals"> = </span>`;
                                 const valueClass = (isDisplayEditing && displayFocusValue) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
@@ -979,11 +999,12 @@
                                 html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${item.title}</div>`;
                             }
                         } else {
-                            // For language menu: diamond shows saved language, highlight shows selected language
+                            // Simple string item - for setup menu and language menu: diamond shows saved language, highlight shows selected language
                             const currentLanguage = state?.display?.language || "ENGLISH";
                             const hasDiamond = (item === currentLanguage);
                             const diamond = hasDiamond ? '<span class="menu-item__diamond">◆</span>' : '';
-                            html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${diamond}${item}</div>`;
+                            const titleClass = isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                            html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${diamond}<span class="${titleClass}">${item}</span></div>`;
                         }
                     });
                     html += '</div>';
@@ -1000,7 +1021,11 @@
                             // Check if this is a display menu item (has showValue or valueKey)
                             if (item.showValue === false) {
                                 // LANGUAGE - no value displayed
-                                html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${item.title}</div>`;
+                                const displayFocusTitle = state?.display?.focus === "title" || (!state?.display?.focus && isSelected);
+                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
+                                const titleClass = displayFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                html += `<span class="${titleClass}">${item.title}</span>`;
+                                html += `</div>`;
                             } else if (item.type === "bar") {
                                 // CONTRAST - shows bar graph
                                 const isDisplayEditing = state?.display?.editing && isSelected;
@@ -1064,9 +1089,12 @@
                                 // BACKLIGHT - shows text value (MANUAL, etc.) with editing support
                                 const isDisplayEditing = state?.display?.editing && isSelected;
                                 const displayFocusValue = state?.display?.focus === "value";
-                                const displayFocusTitle = state?.display?.focus === "title" || (!state?.display?.focus && isSelected);
-                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                                const titleClass = displayFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                // Title should only be highlighted when focus is "title" or undefined, NOT when focus is "value"
+                                const displayFocusTitle = isSelected && (state?.display?.focus === "title" || !state?.display?.focus) && !displayFocusValue;
+                                // Add class to indicate we're editing the value (not the title)
+                                const editingValueClass = (isDisplayEditing && displayFocusValue) ? 'menu-item--editing-value' : '';
+                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''} ${editingValueClass}">`;
+                                const titleClass = displayFocusTitle ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
                                 html += `<span class="${titleClass}">${item.title}</span>`;
                                 html += `<span class="menu-item__equals"> = </span>`;
                                 const valueClass = (isDisplayEditing && displayFocusValue) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
@@ -1103,11 +1131,12 @@
                                 html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${item.title}</div>`;
                             }
                         } else {
-                            // For language menu: diamond shows saved language, highlight shows selected language
+                            // Simple string item - for setup menu and language menu: diamond shows saved language, highlight shows selected language
                             const currentLanguage = state?.display?.language || "ENGLISH";
                             const hasDiamond = (item === currentLanguage);
                             const diamond = hasDiamond ? '<span class="menu-item__diamond">◆</span>' : '';
-                            html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${diamond}${item}</div>`;
+                            const titleClass = isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                            html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${diamond}<span class="${titleClass}">${item}</span></div>`;
                         }
                     });
                     html += '</div>'; // Close right column
@@ -1239,7 +1268,11 @@
                             // Check if this is a display menu item (has showValue or valueKey)
                             if (item.showValue === false) {
                                 // LANGUAGE - no value displayed
-                                html += `<div class="menu-item ${isSelected ? 'menu-item--selected' : ''}">${item.title}</div>`;
+                                const displayFocusTitle = state?.display?.focus === "title" || (!state?.display?.focus && isSelected);
+                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
+                                const titleClass = displayFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                html += `<span class="${titleClass}">${item.title}</span>`;
+                                html += `</div>`;
                             } else if (item.type === "bar") {
                                 // CONTRAST - shows bar graph
                                 const isDisplayEditing = state?.display?.editing && isSelected;
@@ -1324,9 +1357,12 @@
                                 // BACKLIGHT - shows text value (MANUAL, etc.) with editing support
                                 const isDisplayEditing = state?.display?.editing && isSelected;
                                 const displayFocusValue = state?.display?.focus === "value";
-                                const displayFocusTitle = state?.display?.focus === "title" || (!state?.display?.focus && isSelected);
-                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''}">`;
-                                const titleClass = displayFocusTitle && isSelected ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
+                                // Title should only be highlighted when focus is "title" or undefined, NOT when focus is "value"
+                                const displayFocusTitle = isSelected && (state?.display?.focus === "title" || !state?.display?.focus) && !displayFocusValue;
+                                // Add class to indicate we're editing the value (not the title)
+                                const editingValueClass = (isDisplayEditing && displayFocusValue) ? 'menu-item--editing-value' : '';
+                                html += `<div class="menu-item menu-item--display ${isSelected ? 'menu-item--selected' : ''} ${editingValueClass}">`;
+                                const titleClass = displayFocusTitle ? 'menu-item__title menu-item__title--selected' : 'menu-item__title';
                                 html += `<span class="${titleClass}">${item.title}</span>`;
                                 html += `<span class="menu-item__equals"> = </span>`;
                                 const valueClass = (isDisplayEditing && displayFocusValue) ? 'menu-item__value menu-item__value--editing' : 'menu-item__value';
@@ -1491,6 +1527,51 @@
                 barGraphHtml += `</div>`;
                 barGraphHtml += `</div>`;
                 return barGraphHtml;
+            
+            case 'batteryBars':
+                // Vertical battery bars with checkered pattern
+                const batteries = element.batteries || [];
+                let batteryBarsHtml = `<div id="${element.id}" class="screen-element screen-element--battery-bars">`;
+                batteryBarsHtml += '<div class="battery-bars__container">';
+                
+                batteries.forEach(battery => {
+                    // Get battery level from state or use default
+                    let level = battery.level || 0;
+                    if (battery.bind) {
+                        const bindPath = battery.bind.split('.');
+                        let value = state;
+                        for (const key of bindPath) {
+                            value = value?.[key];
+                        }
+                        if (value !== undefined && value !== null) {
+                            level = typeof value === 'number' ? value : level;
+                        }
+                    }
+                    
+                    // Clamp level between 0 and 100
+                    level = Math.max(0, Math.min(100, level));
+                    
+                    batteryBarsHtml += '<div class="battery-bar__wrapper">';
+                    batteryBarsHtml += `<div class="battery-bar__label">${battery.id}</div>`;
+                    batteryBarsHtml += '<div class="battery-bar__container">';
+                    batteryBarsHtml += `<div class="battery-bar__fill" style="height: ${level}%;"></div>`;
+                    batteryBarsHtml += '</div>';
+                    batteryBarsHtml += '</div>';
+                });
+                
+                batteryBarsHtml += '</div>';
+                
+                // Add battery type labels if provided
+                if (element.labels && element.labels.length > 0) {
+                    batteryBarsHtml += '<div class="battery-bars__type-labels">';
+                    element.labels.forEach((label, index) => {
+                        batteryBarsHtml += `<span class="battery-bar__type-label">${label}</span>`;
+                    });
+                    batteryBarsHtml += '</div>';
+                }
+                
+                batteryBarsHtml += `</div>`;
+                return batteryBarsHtml;
             
             case 'mainReadout':
                 // Main dB readout with large digits and units
@@ -2215,9 +2296,13 @@
             mainHTML = `<div style="display: flex; flex-direction: column; height: 100%; min-height: 100%; justify-content: space-between; padding: 0; margin: 0;">${mainHTML}</div>`;
         }
         
+        // Wrap boot_screen in centered container with boot class for styling
+        if (screenId === "boot_screen") {
+            mainHTML = `<div class="lcd__main--boot" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; position: relative;">${mainHTML}</div>`;
+        }
         // Wrap stop_confirm and power_off_countdown screens in centered container
-        if (screenId === "stop_confirm") {
-            mainHTML = `<div id="stop_confirm_wrapper" style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: flex-start !important; min-height: 100% !important; width: 100% !important; padding-top: 1.5em !important; box-sizing: border-box !important; position: relative !important;">${mainHTML}</div>`;
+        else if (screenId === "stop_confirm") {
+            mainHTML = `<div id="stop_confirm_wrapper" style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; min-height: 100% !important; width: 100% !important; box-sizing: border-box !important; position: relative !important;">${mainHTML}</div>`;
         } else if (screenId === "power_off_countdown") {
             mainHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%;">${mainHTML}</div>`;
         }

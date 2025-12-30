@@ -273,9 +273,16 @@
         if (lcd) {
             if (viewId === 'OFF') {
                 lcd.classList.add('lcd--powered-off');
+                lcd.classList.remove('lcd--boot-screen');
                 updateDisplayBacklightState(false);
             } else {
                 lcd.classList.remove('lcd--powered-off');
+                // Add boot screen class for styling
+                if (viewId === 'boot_screen') {
+                    lcd.classList.add('lcd--boot-screen');
+                } else {
+                    lcd.classList.remove('lcd--boot-screen');
+                }
                 // Update backlight based on FSM state
                 updateDisplayBacklightState(state.backlight || false);
             }

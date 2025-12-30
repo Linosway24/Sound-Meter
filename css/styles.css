@@ -170,6 +170,100 @@ body {
 .lcd__main--slm {
     padding-top: 0.3em !important; /* Minimal top padding for SLM screens */
 }
+
+/* Boot screen - realistic LCD appearance */
+.lcd__main--boot {
+    background: #c4d4c0 !important; /* Light greenish-gray LCD tint */
+    position: relative;
+    overflow: hidden;
+    padding: 0 !important; /* Remove default padding for centered content */
+}
+
+/* Add texture overlay for LCD grain effect */
+.lcd__main--boot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.03) 0px,
+            transparent 1px,
+            transparent 2px,
+            rgba(0, 0, 0, 0.03) 3px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.03) 0px,
+            transparent 1px,
+            transparent 2px,
+            rgba(0, 0, 0, 0.03) 3px
+        );
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Ensure boot screen text appears above texture */
+.lcd__main--boot .screen-element--boot-title,
+.lcd__main--boot .screen-element--boot-version {
+    position: relative;
+    z-index: 2;
+}
+
+/* Dot matrix effect for boot screen title */
+.screen-element--boot-title {
+    position: relative;
+    display: inline-block;
+}
+
+/* Dot matrix grid overlay using pseudo-element */
+.screen-element--boot-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle, rgba(42, 42, 42, 0.25) 1px, transparent 1px);
+    background-size: 0.25em 0.35em;
+    background-position: 0 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.6;
+}
+
+/* Text styling for dot matrix appearance */
+.screen-element--boot-title > span,
+.screen-element--boot-title {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #2a2a2a;
+    letter-spacing: 0.1em;
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: none;
+    image-rendering: pixelated;
+    position: relative;
+    z-index: 2;
+    /* Create pixelated/dot-based appearance */
+    filter: contrast(1.4) brightness(0.92);
+    text-shadow: 
+        0.02em 0.02em 0.5px #2a2a2a,
+        0.04em 0.04em 0.5px #2a2a2a,
+        0.06em 0.06em 0.5px #2a2a2a;
+}
+
+/* Add subtle LCD bezel effect for boot screen */
+.lcd--boot-screen {
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.lcd--boot-screen .lcd__main {
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.15);
+}
 .lcd__softkeys { 
     background: #909090 !important;
     display: flex;
@@ -590,9 +684,11 @@ body {
 
 .action-button--selected {
     background-color: rgba(230, 230, 230, 0.15);
-    padding: 0.2em 0.5em;
+    padding: 0.2em 5px; /* 5px horizontal padding, scale vertical */
     border: 1px solid rgba(230, 230, 230, 0.3);
     border-radius: 2px;
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 /* Centered label for AUTO RUN Timed Run */
@@ -619,8 +715,10 @@ body {
 /* Selected label style (for FILE NAME when not editing) */
 .screen-element--selected {
     background-color: rgba(230, 230, 230, 0.15);
-    padding: 0.2em 0.5em;
+    padding: 0.2em 5px; /* 5px horizontal padding, scale vertical */
     border: 1px solid rgba(230, 230, 230, 0.3);
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 .screen-element--textList {
@@ -755,6 +853,12 @@ body {
     min-width: 0; /* Allow flex item to shrink */
 }
 
+/* Override flex: 1 for selected titles so they only take text width */
+.menu-item--selected .menu-item__title,
+.menu-item__title--selected {
+    flex: 0 0 auto; /* Don't grow or shrink, use content width */
+}
+
 /* Center title and value when used in date display */
 .screen-element--centered-label .menu-item__title,
 .menu-item--date-tight .menu-item__title {
@@ -779,6 +883,7 @@ body {
     margin-left: 0;
     text-align: left;
     white-space: nowrap; /* Prevent wrapping */
+    flex-shrink: 0; /* Don't shrink the value */
 }
 
 /* TIME-DATE screen: constrain width to align with end of "TIME-DATE" in title */
@@ -789,9 +894,11 @@ body {
 .menu-item__value--editing {
     background-color: #4a5568;
     color: #000000;
-    padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
+    padding: 0.15em 5px; /* 5px horizontal padding, scale vertical */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 .menu-item--selected {
@@ -804,8 +911,11 @@ body {
     background-color: #000000; /* Black highlight bar */
     color: #888888; /* Grey text that looks cut out */
     font-weight: 500;
-    padding: 0.15em 0.45em; /* Scale relative to LCD base font size */
+    padding: 0.15em 5px; /* 5px horizontal padding, scale vertical */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
+    flex: 0 0 auto !important; /* Override flex: 1 to prevent stretching */
 }
 
 /* When backlight is on, selected text should appear more green */
@@ -813,13 +923,21 @@ body {
     color: #4a8a4a; /* Green-tinted text when backlight is on */
 }
 
+/* Override title highlight when editing value (for display menu items) */
+.lcd--backlight-on .menu-item--display.menu-item--selected.menu-item--editing-value .menu-item__title {
+    color: #000000 !important; /* Normal text color when editing value */
+}
+
 /* Selected title class (used in JavaScript) */
 .menu-item__title--selected {
     background-color: #000000; /* Black highlight bar */
     color: #888888; /* Grey text that looks cut out */
     font-weight: 500;
-    padding: 0.15em 0.45em; /* Scale relative to LCD base font size */
+    padding: 0.15em 5px; /* 5px horizontal padding, scale vertical */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
+    flex: 0 0 auto !important; /* Override flex: 1 to prevent stretching */
 }
 
 /* When backlight is on, selected text should appear more green */
@@ -846,9 +964,12 @@ body {
 }
 
 #auto_run_list .menu-item--selected .menu-item__title {
-    padding: 0.15em 0.2em 0.15em 0; /* Same reduced padding to prevent position shift */
+    padding: 0.15em 5px 0.15em 0; /* 5px right padding, scale vertical */
     background-color: #000000; /* Black highlight bar */
     color: #888888; /* Grey text that looks cut out */
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
+    flex: 0 0 auto !important; /* Override flex: 1 to prevent stretching */
 }
 
 .lcd--backlight-on #auto_run_list .menu-item--selected .menu-item__title {
@@ -865,11 +986,20 @@ body {
 
 /* When value is being edited, don't highlight the title and gray it out like non-selected items */
 .menu-item--selected.menu-item--editing-value .menu-item__title {
-    background-color: transparent;
-    color: #000000; /* Same gray color as non-selected menu items */
-    font-weight: normal;
-    padding: 0;
-    border-radius: 0;
+    background-color: transparent !important;
+    color: #000000 !important; /* Same gray color as non-selected menu items */
+    font-weight: normal !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* Ensure display menu items also respect editing-value state */
+.menu-item--display.menu-item--selected.menu-item--editing-value .menu-item__title {
+    background-color: transparent !important;
+    color: #000000 !important;
+    font-weight: normal !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
 }
 
 .menu-item--selected .menu-item__value {
@@ -893,9 +1023,12 @@ body {
 }
 
 #level_triggered_list .menu-item--selected .menu-item__title {
-    padding: 0.05em 0.2em 0.05em 0; /* Same padding to prevent position shift */
+    padding: 0.05em 5px 0.05em 0; /* 5px right padding, scale vertical */
     background-color: #000000; /* Black highlight bar */
     color: #888888; /* Grey text that looks cut out */
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
+    flex: 0 0 auto !important; /* Override flex: 1 to prevent stretching */
 }
 
 .lcd--backlight-on #level_triggered_list .menu-item--selected .menu-item__title {
@@ -956,9 +1089,11 @@ body {
 .menu-item--selected .menu-item__value--editing {
     background-color: #5a6578;
     color: #000000;
-    padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
+    padding: 0.15em 5px; /* 5px horizontal padding, scale vertical */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 /* Display menu items (BACKLIGHT = MANUAL, CONTRAST = bar) */
@@ -971,6 +1106,7 @@ body {
 .menu-item__equals {
     color: #000000;
     margin: 0 0.15em; /* Scale relative to LCD base font size */
+    margin-left: auto; /* Push equals and value to the right */
 }
 
 .menu-item__spacer {
@@ -984,6 +1120,7 @@ body {
     gap: 0.08em; /* Scale relative to LCD base font size */
     letter-spacing: 0px;
     font-size: 0.9em; /* Scale relative to LCD base font size */
+    flex-shrink: 0; /* Don't shrink the bar graph */
 }
 
 .bar-segment {
@@ -1004,9 +1141,11 @@ body {
 
 .menu-item__bar--editing {
     background-color: #4a5568;
-    padding: 0.15em 0.3em; /* Scale relative to LCD base font size */
+    padding: 0.15em 5px; /* 5px horizontal padding, scale vertical */
     border-radius: 0.2em; /* Scale relative to LCD base font size */
     font-weight: 600;
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 .menu-item__bar--editing .bar-segment-filled {
@@ -1153,6 +1292,86 @@ body {
     background-color: #4ade80; /* Green fill */
     transition: width 0.1s ease;
     min-width: 0;
+}
+
+/* Battery Bars (Vertical) */
+.screen-element--battery-bars {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0.5em 0;
+    align-items: center;
+}
+
+.battery-bars__container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 1.5em;
+    margin: 0.5em 0;
+}
+
+.battery-bar__wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3em;
+}
+
+.battery-bar__label {
+    font-size: 1em;
+    color: #000000;
+    font-weight: bold;
+    text-align: center;
+}
+
+.battery-bar__container {
+    width: 1.2em;
+    height: 4em;
+    background-color: #2a3340;
+    border: 1px solid #3a4450;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.battery-bar__fill {
+    width: 100%;
+    background-color: #2a2a2a;
+    background-image: 
+        repeating-linear-gradient(
+            90deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(42, 42, 42, 0.8) 3px,
+            rgba(42, 42, 42, 0.8) 4px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(42, 42, 42, 0.8) 3px,
+            rgba(42, 42, 42, 0.8) 4px
+        );
+    transition: height 0.2s ease;
+    min-height: 0;
+}
+
+.battery-bars__type-labels {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 2em;
+    margin-top: 0.5em;
+    width: 100%;
+}
+
+.battery-bar__type-label {
+    font-size: 1em;
+    color: #000000;
+    text-align: center;
 }
 
 /* SLM Main Readout */
@@ -1550,7 +1769,9 @@ body {
 .format-option--selected {
     background-color: #000000; /* Black highlight bar */
     color: #888888; /* Grey text that looks cut out */
-    padding: 0.2em 0.5em;
+    padding: 0.2em 5px; /* 5px horizontal padding, scale vertical */
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 .lcd--backlight-on .format-option--selected {
@@ -1614,7 +1835,10 @@ body {
     color: #000000;
     background-color: rgba(230, 230, 230, 0.1);
     padding-left: 0.3em;
+    padding-right: 5px; /* 5px right padding */
     border-left: 2px solid #e6e6e6;
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 .file-item--empty {
@@ -1672,6 +1896,10 @@ body {
     background-color: rgba(230, 230, 230, 0.2);
     border-color: #e6e6e6;
     font-weight: bold;
+    padding-left: 5px; /* 5px left padding */
+    padding-right: 5px; /* 5px right padding */
+    display: inline-block; /* Only width of content + padding */
+    width: fit-content; /* Fit to text content */
 }
 
 /* ========================================
@@ -1932,7 +2160,8 @@ body {
     align-items: center;
     justify-content: center;
     height: 100%;
-    font-size: 120px;
+    min-height: 8em; /* Ensure minimum height for visibility */
+    font-size: 12em; /* Scale relative to LCD base font size */
     font-weight: bold;
     color: #000000;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -1942,10 +2171,10 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 3px solid #e6e6e6 !important;
+    border: 0.25em solid #000000 !important; /* Scale relative to LCD base font size */
     box-sizing: border-box;
-    width: 150px;
-    height: 150px;
+    width: 12em; /* Scale relative to LCD base font size */
+    height: 12em; /* Scale relative to LCD base font size */
     line-height: 1;
     color: #000000;
     font-size: inherit;
@@ -1973,29 +2202,17 @@ body {
     padding: 0 !important;
 }
 
-/* Stop confirm wrapper - ensure proper layout */
+/* Stop confirm wrapper - ensure proper layout without affecting LCD size */
+/* Don't modify .lcd__main - keep it exactly as normal to maintain LCD size */
 #stop_confirm_wrapper {
+    height: 100%;
+    width: 100%;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    min-height: 100% !important;
-    width: 100% !important;
+    justify-content: center !important; /* Center content vertically */
+    align-items: center !important; /* Center content horizontally */
     box-sizing: border-box !important;
     position: relative !important;
-}
-
-/* Ensure stop_confirm screen displays properly in lcd__main */
-.lcd__main:has(#stop_confirm_wrapper) {
-    display: flex !important;
-    flex-direction: column !important;
-    padding: 0 !important;
-    overflow: visible !important;
-}
-
-.lcd__main:has(#stop_confirm_wrapper) > #stop_confirm_wrapper {
-    flex: 1 !important;
-    display: flex !important;
 }
 
 

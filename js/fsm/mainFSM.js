@@ -1186,15 +1186,24 @@
                 break;
 
             case "BACKLIGHT":
-                if (_state.viewId === "home_screen_dim") {
-                    _state.viewId = "home_screen";
-                    _state.backlight = true;
-                    _emit();
-                } else if (_state.viewId === "home_screen") {
-                    _state.viewId = "home_screen_dim";
-                    _state.backlight = false;
-                    _emit();
+                // Toggle backlight on all screens (except OFF)
+                if (_state.viewId === "OFF" || _state.viewId === "boot_screen") {
+                    // Don't toggle backlight when powered off or during boot
+                    break;
                 }
+                
+                // Toggle backlight state
+                _state.backlight = !_state.backlight;
+                
+                // For home screen, also toggle between dim and bright variants
+                if (_state.viewId === "home_screen_dim" && _state.backlight) {
+                    _state.viewId = "home_screen";
+                } else if (_state.viewId === "home_screen" && !_state.backlight) {
+                    _state.viewId = "home_screen_dim";
+                }
+                
+                console.log(`[FSM] BACKLIGHT: Toggled to ${_state.backlight ? 'ON' : 'OFF'} on screen ${_state.viewId}`);
+                _emit();
                 break;
 
             case "UP":
@@ -1363,6 +1372,11 @@
                         // If MANUAL, do nothing - UP/DOWN only work when in time mode
                     } else {
                         _state.menu.selectedIndex = (_state.menu.selectedIndex + DISPLAY_MENU_ITEMS.length - 1) % DISPLAY_MENU_ITEMS.length;
+                        // Reset editing state when navigating between items
+                        if (_state.display.editing) {
+                            _state.display.editing = false;
+                            _state.display.focus = "title";
+                        }
                         console.log(`[MENU] Display menu - Selected index: ${_state.menu.selectedIndex} → "${DISPLAY_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                         _emit();
                     }
@@ -2193,6 +2207,11 @@
                         // If MANUAL, do nothing - UP/DOWN only work when in time mode
                     } else {
                         _state.menu.selectedIndex = (_state.menu.selectedIndex + 1) % DISPLAY_MENU_ITEMS.length;
+                        // Reset editing state when navigating between items
+                        if (_state.display.editing) {
+                            _state.display.editing = false;
+                            _state.display.focus = "title";
+                        }
                         console.log(`[MENU] Display menu - Selected index: ${_state.menu.selectedIndex} → "${DISPLAY_MENU_ITEMS[_state.menu.selectedIndex]}"`);
                         _emit();
                     }
@@ -3558,6 +3577,9 @@
                     _state.display.language = LANGUAGE_OPTIONS[_state.display.languageIndex];
                     const previousView = _popHistory() || "display_menu";
                     _state.viewId = previousView;
+                    if (_state.viewId === "display_menu") {
+                        _state.menu.selectedIndex = 0; // Reset to LANGUAGE (first item)
+                    }
                     _emit();
                 } else if (_state.viewId === "display_menu") {
                     const item = DISPLAY_MENU_ITEMS[_state.menu.selectedIndex];
@@ -3572,7 +3594,8 @@
                         }
                         _emit();
                     } else if (item === "BACKLIGHT") {
-                        if (_state.display.editing && _state.display.focus === "value") {
+                        // Check if we're already editing BACKLIGHT's value
+                        if (_state.display.editing && _state.menu.selectedIndex === 1 && _state.display.focus === "value") {
                             // ENTER on BACKLIGHT value: toggle between MANUAL and time mode
                             if (_state.display.backlightMode === "MANUAL") {
                                 // Switch from MANUAL to default time (10 sec)
@@ -3583,7 +3606,7 @@
                             }
                             _emit();
                         } else {
-                            // ENTER on BACKLIGHT title: enter edit mode, focus on value
+                            // ENTER on BACKLIGHT title (or when not editing BACKLIGHT): enter edit mode, focus on value
                             _state.display.editing = true;
                             _state.display.focus = "value";
                             _emit();
@@ -4841,6 +4864,9 @@
                 } else if (_state.viewId === "display_language" || _state.viewId === "display_backlight" || _state.viewId === "display_contrast") {
                     const previousView = _popHistory() || "display_menu";
                     _state.viewId = previousView;
+                    if (_state.viewId === "display_menu") {
+                        _state.menu.selectedIndex = 0; // Reset to LANGUAGE (first item)
+                    }
                     _emit();
                 } else if (isInFiles()) {
                     if (_state.viewId === "files_menu") {
@@ -5155,8 +5181,13 @@
                 break;
 
             case "STOP_DOWN":
-                // Stop only works when paused (not running)
+                // Stop works when paused - start countdown timer
                 if (isSlm() && _state.measurement.state === "paused") {
+                    _startStopHoldTimer();
+                } else if (isSlm() && _state.measurement.state === "running") {
+                    // If running, stop button should pause first, then stop
+                    // But for now, we can allow it to work when running as well
+                    console.log('[FSM] STOP_DOWN: Measurement is running, start stop countdown');
                     _startStopHoldTimer();
                 }
                 break;
