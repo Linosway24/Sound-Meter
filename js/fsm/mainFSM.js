@@ -1095,7 +1095,7 @@
                     _state.viewId = "boot_screen";
                     _state.backlight = false;
                     _emit();
-                    const bootDuration = 300 + Math.random() * 500; // 300-800ms
+                    const bootDuration = 800 + Math.random() * 400; // 800-1200ms (longer to allow zoom animation)
                     console.log('[FSM] Boot duration:', bootDuration, 'ms');
                     setTimeout(() => {
                         console.log('[FSM] Boot complete: boot_screen → home_screen_dim');

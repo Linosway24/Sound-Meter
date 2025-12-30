@@ -64,6 +64,37 @@
         </div>
     </div>
 
+    <!-- Zoom Control Panel -->
+    <div id="zoom-control" class="zoom-control">
+        <div class="zoom-control__header">
+            <span class="zoom-control__title">🔍 Zoom</span>
+        </div>
+        <div class="zoom-control__content">
+            <div class="zoom-control__slider-container">
+                <input 
+                    type="range" 
+                    id="zoom-slider" 
+                    class="zoom-control__slider" 
+                    min="0" 
+                    max="200" 
+                    value="0" 
+                    step="5"
+                    oninput="window.setDeviceZoom(this.value)"
+                >
+                <div class="zoom-control__labels">
+                    <span>0%</span>
+                    <span id="zoom-value">0%</span>
+                    <span>200%</span>
+                </div>
+            </div>
+            <div class="zoom-control__buttons">
+                <button class="zoom-btn" onclick="window.setDeviceZoom(0)">Reset</button>
+                <button class="zoom-btn" onclick="window.zoomIn()">+</button>
+                <button class="zoom-btn" onclick="window.zoomOut()">−</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Control Panel -->
     <div id="audio-panel" class="audio-panel">
         <div class="audio-panel__header">
@@ -174,9 +205,21 @@
                 console.log('[INIT] Checking subscription setup...');
                 console.log('[INIT] window.subscribeMainFSM:', !!window.subscribeMainFSM);
                 console.log('[INIT] window.renderScreen:', !!window.renderScreen);
+                
+                // Track previous viewId for auto-zoom detection
+                let previousViewId = null;
+                
                 if (window.subscribeMainFSM && window.renderScreen) {
-                    console.log('[INIT] Setting up subscription...');
+console.log('[INIT] Setting up subscription...');
                     const unsubscribe = window.subscribeMainFSM((state) => {
+                        // Auto-zoom when boot screen appears (start zoom during boot for smoother effect)
+                        if (previousViewId === 'OFF' && state.viewId === 'boot_screen') {
+                            // Start zoom animation during boot screen - this keeps boot screen visible during zoom
+                            setTimeout(() => {
+                                autoZoomToLCD();
+                            }, 150); // Small delay to ensure boot screen is rendered
+                        }
+                        previousViewId = state.viewId;
                         try {
                             // #region agent log
                             fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:122',message:'subscription callback entry',data:{viewId:state.viewId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
@@ -422,6 +465,314 @@
         
         // Make function globally accessible for debugging
         window.updateLCDFontSize = updateLCDFontSize;
+        
+        // Device zoom functionality - only affects device-frame, not other UI elements
+        let currentZoom = 0; // 0% = 1.0 scale
+        let panX = 0; // Pan offset X
+        let panY = 0; // Pan offset Y
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragStartPanX = 0;
+        let dragStartPanY = 0;
+        
+        function applyDeviceTransform(instant = false) {
+            const deviceFrame = document.querySelector('.device-frame');
+            if (!deviceFrame) return;
+            
+            // Convert percentage to scale (0% = 1.0, 100% = 2.0, 200% = 3.0)
+            const scale = 1 + (currentZoom / 100);
+            
+            // Apply transform with both scale and translation
+            deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            deviceFrame.style.transformOrigin = 'center center';
+            
+            // Adjust transition duration for smooth animation (unless instant)
+            if (instant) {
+                deviceFrame.style.transition = 'transform 0s';
+            } else {
+                // Use cubic-bezier for smoother, more natural animation
+                deviceFrame.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            }
+            
+            // Enable/disable cursor based on zoom
+            if (currentZoom > 0) {
+                deviceFrame.style.cursor = isDragging ? 'grabbing' : 'grab';
+            } else {
+                deviceFrame.style.cursor = 'default';
+                // Reset pan when zoom is 0
+                panX = 0;
+                panY = 0;
+            }
+        }
+        
+        function setDeviceZoom(zoomPercent, instant = false) {
+            currentZoom = parseInt(zoomPercent) || 0;
+            const zoomValue = document.getElementById('zoom-value');
+            const zoomSlider = document.getElementById('zoom-slider');
+            
+            // Reset pan when zooming to 0
+            if (currentZoom === 0) {
+                panX = 0;
+                panY = 0;
+            }
+            
+            // Update display
+            if (zoomValue) zoomValue.textContent = currentZoom + '%';
+            if (zoomSlider) zoomSlider.value = currentZoom;
+            
+            // Apply transform (with optional instant flag for smooth animation)
+            applyDeviceTransform(instant);
+            
+            // Update LCD font size after zoom completes (delay to avoid interrupting animation)
+            if (instant) {
+                updateLCDFontSize();
+            } else {
+                // Wait for animation to complete before updating font size
+                setTimeout(() => {
+                    requestAnimationFrame(() => {
+                        updateLCDFontSize();
+                    });
+                }, 850); // Slightly longer than transition duration
+            }
+        }
+        
+        // Pan/drag functionality for zoomed device
+        function initDevicePanning() {
+            const deviceFrame = document.querySelector('.device-frame');
+            if (!deviceFrame) return;
+            
+            // Mouse events
+            deviceFrame.addEventListener('mousedown', function(e) {
+                if (currentZoom === 0) return; // Only allow panning when zoomed
+                if (e.target.closest('.zoom-control') || e.target.closest('.audio-panel')) return;
+                
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                dragStartPanX = panX;
+                dragStartPanY = panY;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging || currentZoom === 0) return;
+                
+                const deltaX = e.clientX - dragStartX;
+                const deltaY = e.clientY - dragStartY;
+                
+                panX = dragStartPanX + deltaX;
+                panY = dragStartPanY + deltaY;
+                
+                // Use requestAnimationFrame for smooth panning
+                requestAnimationFrame(() => {
+                    applyDeviceTransform(true); // Instant for drag (no transition)
+                });
+            });
+            
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+            });
+            
+            // Touch events for mobile
+            deviceFrame.addEventListener('touchstart', function(e) {
+                if (currentZoom === 0) return;
+                if (e.target.closest('.zoom-control') || e.target.closest('.audio-panel')) return;
+                
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    dragStartX = e.touches[0].clientX;
+                    dragStartY = e.touches[0].clientY;
+                    dragStartPanX = panX;
+                    dragStartPanY = panY;
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging || currentZoom === 0) return;
+                
+                if (e.touches.length === 1) {
+                    const deltaX = e.touches[0].clientX - dragStartX;
+                    const deltaY = e.touches[0].clientY - dragStartY;
+                    
+                    panX = dragStartPanX + deltaX;
+                    panY = dragStartPanY + deltaY;
+                    
+                    // Use requestAnimationFrame for smooth panning
+                    requestAnimationFrame(() => {
+                        applyDeviceTransform(true); // Instant for drag (no transition)
+                    });
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            document.addEventListener('touchend', function() {
+                isDragging = false;
+            });
+        }
+        
+        // Initialize panning after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDevicePanning);
+        } else {
+            initDevicePanning();
+        }
+        
+        function zoomIn() {
+            const slider = document.getElementById('zoom-slider');
+            if (!slider) return;
+            const current = parseInt(slider.value) || 0;
+            const newZoom = Math.min(200, current + 10);
+            setDeviceZoom(newZoom);
+        }
+        
+        function zoomOut() {
+            const slider = document.getElementById('zoom-slider');
+            if (!slider) return;
+            const current = parseInt(slider.value) || 0;
+            const newZoom = Math.max(0, current - 10);
+            setDeviceZoom(newZoom);
+        }
+        
+        // Make zoom functions globally accessible
+        window.setDeviceZoom = setDeviceZoom;
+        window.zoomIn = zoomIn;
+        window.zoomOut = zoomOut;
+        
+        // Auto-zoom to LCD and buttons area after power on
+        function autoZoomToLCD() {
+            const deviceFrame = document.querySelector('.device-frame');
+            const devicePhoto = document.querySelector('.device-photo');
+            const lcd = document.querySelector('.lcd');
+            
+            if (!deviceFrame || !devicePhoto || !lcd) {
+                console.warn('[ZOOM] Cannot auto-zoom - elements not found');
+                return;
+            }
+            
+            // Wait for layout to be complete
+            requestAnimationFrame(() => {
+                // Get device dimensions
+                const photoRect = devicePhoto.getBoundingClientRect();
+                const lcdRect = lcd.getBoundingClientRect();
+                
+                // Calculate viewport center
+                const viewportCenterX = window.innerWidth / 2;
+                const viewportCenterY = window.innerHeight / 2;
+                
+                // Calculate LCD center relative to viewport
+                const lcdCenterX = lcdRect.left + lcdRect.width / 2;
+                
+                // Calculate zoom level to show LCD + buttons area
+                // We want the visible area to be roughly: LCD width + some margin
+                const targetVisibleWidth = lcdRect.width * 2.2; // Show LCD + buttons with margin
+                const targetZoomPercent = Math.min(200, Math.max(50, ((photoRect.width / targetVisibleWidth) - 1) * 100 + 5)); // Add 5% more zoom
+                const scale = 1 + (targetZoomPercent / 100);
+                
+                // Calculate target position: bottom of device should be at bottom of viewport
+                // After zoom, device bottom = (photoRect.bottom * scale) + panY
+                // We want: (photoRect.bottom * scale) + panY = window.innerHeight
+                // So: panY = window.innerHeight - (photoRect.bottom * scale)
+                
+                // But transform origin is center center, so we need to account for that
+                const deviceCenterX = photoRect.left + photoRect.width / 2;
+                const deviceCenterY = photoRect.top + photoRect.height / 2;
+                
+                // After scaling from center, the device bottom will be at:
+                // deviceCenterY + (photoRect.height / 2 * scale) + panY
+                // We want this to equal window.innerHeight
+                // So: panY = window.innerHeight - deviceCenterY - (photoRect.height / 2 * scale)
+                
+                // For horizontal: center the LCD horizontally
+                const targetLcdCenterX = viewportCenterX;
+                const lcdOffsetFromDeviceCenterX = lcdCenterX - deviceCenterX;
+                
+                // Calculate final pan positions
+                panX = targetLcdCenterX - deviceCenterX - (lcdOffsetFromDeviceCenterX * scale);
+                panY = window.innerHeight - deviceCenterY - (photoRect.height / 2 * scale);
+                
+                // Set zoom and pan together (with smooth animation) - everything happens simultaneously
+                setDeviceZoom(targetZoomPercent, false);
+                
+                console.log('[ZOOM] Auto-zoomed to LCD:', {
+                    zoom: targetZoomPercent.toFixed(0) + '%',
+                    pan: { x: panX.toFixed(0), y: panY.toFixed(0) },
+                    scale: scale.toFixed(2)
+                });
+            });
+        }
+        
+        // Make auto-zoom function globally accessible
+        window.autoZoomToLCD = autoZoomToLCD;
+        
+        // Keyboard controls for zoom (override browser zoom)
+        document.addEventListener('keydown', function(e) {
+            // Check if we're in an input field - if so, don't intercept
+            const isInputFocused = document.activeElement && (
+                document.activeElement.tagName === 'INPUT' ||
+                document.activeElement.tagName === 'TEXTAREA' ||
+                document.activeElement.isContentEditable
+            );
+            
+            if (isInputFocused) return;
+            
+            // Ctrl/Cmd + Plus/Equal for zoom in
+            if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+' || e.key === 'Plus')) {
+                e.preventDefault();
+                e.stopPropagation();
+                zoomIn();
+                return false;
+            }
+            
+            // Ctrl/Cmd + Minus for zoom out
+            if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === 'Minus')) {
+                e.preventDefault();
+                e.stopPropagation();
+                zoomOut();
+                return false;
+            }
+            
+            // Ctrl/Cmd + 0 for reset zoom
+            if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                e.preventDefault();
+                e.stopPropagation();
+                setDeviceZoom(0);
+                return false;
+            }
+            
+            // Plus/Minus keys (without modifier) for zoom
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                e.stopPropagation();
+                zoomIn();
+                return false;
+            }
+            
+            if (e.key === '-') {
+                e.preventDefault();
+                e.stopPropagation();
+                zoomOut();
+                return false;
+            }
+        }, true); // Use capture phase to intercept before browser handles it
+        
+        // Prevent browser zoom with mouse wheel + Ctrl/Cmd
+        document.addEventListener('wheel', function(e) {
+            if ((e.ctrlKey || e.metaKey) && !e.target.closest('.zoom-control')) {
+                e.preventDefault();
+                e.stopPropagation();
+                // Convert wheel delta to zoom change
+                const delta = e.deltaY > 0 ? -10 : 10;
+                const slider = document.getElementById('zoom-slider');
+                if (slider) {
+                    const current = parseInt(slider.value) || 0;
+                    const newZoom = Math.max(0, Math.min(200, current + delta));
+                    setDeviceZoom(newZoom);
+                }
+                return false;
+            }
+        }, { passive: false });
         
         // Debug utility to check SPL display text overflow
         function checkSPLDisplayOverflow() {
