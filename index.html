@@ -71,13 +71,10 @@
         </div>
     </div>
 
-    <!-- Video Overlay for Sound Presets -->
-    <div id="sound-video-overlay" class="fan-video-overlay" style="display: none;">
-        <div class="fan-video-container">
-            <button class="fan-video-close" onclick="closeSoundVideo()">×</button>
-            <video id="sound-video" class="fan-video" autoplay loop muted>
-                Your browser does not support the video tag.
-            </video>
+    <!-- Video Panel for Sound Presets -->
+    <div id="sound-video-panel" class="sound-video-panel">
+        <div class="sound-video-grid" id="sound-video-grid">
+            <!-- Videos will be dynamically inserted here -->
         </div>
     </div>
 
@@ -95,9 +92,9 @@
             }
         }
 
-        function closeSoundVideo() {
+        function stopAllVideos() {
             if (window.AudioPlayer) {
-                window.AudioPlayer.hideSoundVideo();
+                window.AudioPlayer.stopAllVideos();
             }
         }
 

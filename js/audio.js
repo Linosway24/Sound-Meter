@@ -338,7 +338,7 @@
      * @param {boolean} loop - Whether to loop the audio (default: true)
      * @param {boolean} useAnalysis - Use real-time audio analysis (default: true)
      */
-    function playPreset(presetName, loop = true, useAnalysis = true) {
+    function playPreset(presetName, loop = true, useAnalysis = true, skipVideo = false) {
         const preset = SOUND_PRESETS[presetName];
         if (!preset) {
             console.error(`[AUDIO] Unknown preset: ${presetName}`);
@@ -415,8 +415,8 @@
                     }
                     updateStatus(`▶ ${preset.name} (${mode})`);
                     
-                    // Show video for presets that have videos
-                    if (VIDEO_PATHS[presetName]) {
+                    // Show video for presets that have videos (unless skipped)
+                    if (!skipVideo && VIDEO_PATHS[presetName]) {
                         showSoundVideo(presetName);
                     }
                     
@@ -494,41 +494,343 @@
         machinery: 'assets/Video/FactoryLoop.mp4',
         office: 'assets/Video/officeSpace02.mp4',
         clapping: 'assets/Video/AudienceStock.mp4',
-        hammering: 'assets/Video/Hammer.mp4'
+        hammering: 'assets/Video/HammerTimed.mp4'
     };
 
+    // Video panel state
+    let videoPanelInitialized = false;
+    let currentPlayingVideo = null;
+
     /**
-     * Show video overlay for specific preset
-     * @param {string} presetName - Name of preset to show video for
+     * Initialize video panel with all videos
      */
-    function showSoundVideo(presetName) {
-        const overlay = document.getElementById('sound-video-overlay');
-        const video = document.getElementById('sound-video');
-        if (!overlay || !video) return;
+    function initVideoPanel() {
+        if (videoPanelInitialized) return;
+        
+        const grid = document.getElementById('sound-video-grid');
+        if (!grid) return;
 
-        const videoPath = VIDEO_PATHS[presetName];
-        if (!videoPath) return;
+        // Create video items for each preset
+        Object.entries(VIDEO_PATHS).forEach(([presetName, videoPath]) => {
+            const item = document.createElement('div');
+            item.className = 'sound-video-item';
+            item.dataset.preset = presetName;
 
-        // Set video source
-        video.src = videoPath;
-        video.load(); // Reload video with new source
+            const video = document.createElement('video');
+            video.src = videoPath;
+            video.loop = true;
+            // Unmute hammer video to use its audio track
+            video.muted = presetName !== 'hammering';
+            video.playsInline = true;
+            video.dataset.preset = presetName;
 
-        overlay.style.display = 'flex';
-        video.play().catch(e => console.warn(`[AUDIO] Video play failed for ${presetName}:`, e));
+            const stopBtn = document.createElement('button');
+            stopBtn.className = 'sound-video-item-stop';
+            stopBtn.innerHTML = '⏹';
+            stopBtn.title = 'Stop';
+            stopBtn.onclick = (e) => {
+                e.stopPropagation();
+                stopVideo(presetName);
+            };
+
+            item.appendChild(video);
+            item.appendChild(stopBtn);
+            grid.appendChild(item);
+
+            // Handle video click to play
+            item.onclick = () => playVideo(presetName);
+        });
+
+        videoPanelInitialized = true;
+        
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                // Videos will automatically adjust with CSS
+            }, 100);
+        });
     }
 
     /**
-     * Hide sound video overlay
+     * Play a specific video and its corresponding audio simultaneously
+     * @param {string} presetName - Name of preset to play video for
+     */
+    function playVideo(presetName) {
+        // Stop currently playing video and audio
+        if (currentPlayingVideo && currentPlayingVideo !== presetName) {
+            stopVideo(currentPlayingVideo, true);
+        }
+        
+        // Stop any currently playing audio
+        if (isPlaying) {
+            stop();
+        }
+
+        const item = document.querySelector(`.sound-video-item[data-preset="${presetName}"]`);
+        const video = item?.querySelector('video');
+        if (!video) return;
+
+        // Mark as current playing video
+        item.classList.add('playing');
+        currentPlayingVideo = presetName;
+
+        // Play the corresponding audio preset if it exists
+        if (SOUND_PRESETS[presetName]) {
+            const preset = SOUND_PRESETS[presetName];
+            currentPresetName = presetName;
+
+            // Initialize audio context
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // Special handling for hammer: use video's audio track
+            if (presetName === 'hammering') {
+                // Unmute video to use its audio
+                video.muted = false;
+                
+                // Route video's audio through Web Audio API
+                sourceNode = audioContext.createMediaElementSource(video);
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = preset.gain || 1.0;
+                
+                // Create analyser node
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 2048;
+                analyserNode.smoothingTimeConstant = 0.3;
+                
+                // Connect audio nodes
+                sourceNode.connect(gainNode);
+                gainNode.connect(analyserNode);
+                analyserNode.connect(audioContext.destination);
+                
+                // Set up audio analysis
+                audioAnalysisState.baseLevel = preset.baseLevel;
+                setAudioAnalysisMode(true, {
+                    baseLevel: preset.baseLevel,
+                    peakThreshold: preset.impulsePattern ? 0.25 : 0.4,
+                    smoothing: preset.impulsePattern ? 0.6 : 0.8
+                });
+
+                // Wait for video to be ready, then play
+                const videoReady = new Promise((resolve) => {
+                    if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+                        resolve();
+                    } else {
+                        video.addEventListener('canplay', () => resolve(), { once: true });
+                    }
+                });
+
+                videoReady.then(() => {
+                    if (currentPlayingVideo !== presetName) return;
+
+                    video.play()
+                        .then(() => {
+                            if (currentPlayingVideo !== presetName) return;
+                            isPlaying = true;
+                            currentAudio = video; // Store video as currentAudio for consistency
+                            const mode = '🎤 Analyzing';
+                            console.log(`[AUDIO] Playing: ${preset.name} (analysis mode, using video audio)`);
+                            updateStatus(`▶ ${preset.name} (${mode})`);
+                            
+                            // Start audio analysis
+                            if (audioAnalysisState.enabled) {
+                                startAudioAnalysis();
+                            }
+                        })
+                        .catch(e => {
+                            console.warn(`[AUDIO] Playback failed for ${presetName}:`, e);
+                            updateStatus(`⚠ Playback failed`);
+                        });
+                }).catch(e => {
+                    console.warn(`[AUDIO] Failed to load video for ${presetName}:`, e);
+                });
+            } else {
+                // For other presets, use separate audio file
+                // Resolve audio file
+                const audioSource = resolveAudioFile(preset.file);
+                
+                // Create audio element
+                currentAudio = new Audio(audioSource);
+                currentAudio.loop = true;
+                
+                // Route through Web Audio API
+                sourceNode = audioContext.createMediaElementSource(currentAudio);
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = preset.gain || 1.0;
+                
+                // Create analyser node
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 2048;
+                analyserNode.smoothingTimeConstant = 0.3;
+                
+                // Connect audio nodes
+                sourceNode.connect(gainNode);
+                gainNode.connect(analyserNode);
+                analyserNode.connect(audioContext.destination);
+                
+                // Set up audio analysis
+                audioAnalysisState.baseLevel = preset.baseLevel;
+                setAudioAnalysisMode(true, {
+                    baseLevel: preset.baseLevel,
+                    peakThreshold: preset.impulsePattern ? 0.25 : 0.4,
+                    smoothing: preset.impulsePattern ? 0.6 : 0.8
+                });
+
+                // Wait for both video and audio to be ready, then play simultaneously
+                const videoReady = new Promise((resolve) => {
+                    if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+                        resolve();
+                    } else {
+                        video.addEventListener('canplay', () => resolve(), { once: true });
+                    }
+                });
+
+                const audioReady = new Promise((resolve) => {
+                    if (currentAudio.readyState >= 3) { // HAVE_FUTURE_DATA
+                        resolve();
+                    } else {
+                        currentAudio.addEventListener('canplaythrough', () => resolve(), { once: true });
+                    }
+                });
+
+                // When both are ready, play them simultaneously
+                Promise.all([videoReady, audioReady]).then(() => {
+                    // Ensure we're still playing the same preset
+                    if (currentPlayingVideo !== presetName || !currentAudio) return;
+
+                    // Play both at the same time
+                    const videoPlay = video.play();
+                    const audioPlay = currentAudio.play();
+
+                    Promise.all([videoPlay, audioPlay])
+                        .then(() => {
+                            if (!currentAudio || currentPlayingVideo !== presetName) return;
+                            isPlaying = true;
+                            const mode = '🎤 Analyzing';
+                            console.log(`[AUDIO] Playing: ${preset.name} (analysis mode)`);
+                            updateStatus(`▶ ${preset.name} (${mode})`);
+                            
+                            // Start audio analysis
+                            if (audioAnalysisState.enabled) {
+                                startAudioAnalysis();
+                            }
+                        })
+                        .catch(e => {
+                            console.warn(`[AUDIO] Playback failed for ${presetName}:`, e);
+                            updateStatus(`⚠ Playback failed`);
+                        });
+                }).catch(e => {
+                    console.warn(`[AUDIO] Failed to load media for ${presetName}:`, e);
+                });
+            }
+        } else {
+            // No audio preset, just play video
+            video.play().catch(e => console.warn(`[AUDIO] Video play failed for ${presetName}:`, e));
+        }
+    }
+
+    /**
+     * Stop a specific video
+     * @param {string} presetName - Name of preset to stop video for
+     * @param {boolean} stopAudio - If true, also stop audio if this preset is playing
+     */
+    function stopVideo(presetName, stopAudio = true) {
+        const item = document.querySelector(`.sound-video-item[data-preset="${presetName}"]`);
+        const video = item?.querySelector('video');
+        if (!video) return;
+
+        video.pause();
+        video.currentTime = 0;
+        item.classList.remove('playing');
+        
+        if (currentPlayingVideo === presetName) {
+            currentPlayingVideo = null;
+            // Stop audio if this preset is currently playing (but avoid recursion)
+            if (stopAudio && currentPresetName === presetName) {
+                // Stop audio components directly to avoid recursion
+                stopAudioAnalysis();
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                    currentAudio = null;
+                }
+                isPlaying = false;
+                currentPresetName = null;
+                
+                // Clean up audio nodes
+                if (sourceNode) {
+                    try {
+                        sourceNode.disconnect();
+                    } catch (e) {}
+                    sourceNode = null;
+                }
+                if (gainNode) {
+                    try {
+                        gainNode.disconnect();
+                    } catch (e) {}
+                    gainNode = null;
+                }
+                if (analyserNode) {
+                    try {
+                        analyserNode.disconnect();
+                    } catch (e) {}
+                    analyserNode = null;
+                }
+            }
+        }
+    }
+
+    /**
+     * Stop all videos
+     */
+    function stopAllVideos() {
+        Object.keys(VIDEO_PATHS).forEach(presetName => {
+            stopVideo(presetName);
+        });
+        // Also stop audio
+        stop();
+    }
+
+    /**
+     * Show video overlay for specific preset (legacy support)
+     * @param {string} presetName - Name of preset to show video for
+     * @param {boolean} skipAudio - If true, don't play audio (video only)
+     */
+    function showSoundVideo(presetName, skipAudio = true) {
+        // Initialize panel if not already done
+        initVideoPanel();
+        
+        // Stop currently playing video if switching
+        if (currentPlayingVideo && currentPlayingVideo !== presetName) {
+            stopVideo(currentPlayingVideo, false);
+        }
+
+        const item = document.querySelector(`.sound-video-item[data-preset="${presetName}"]`);
+        const video = item?.querySelector('video');
+        if (!video) return;
+
+        // Play the video
+        video.play().catch(e => console.warn(`[AUDIO] Video play failed for ${presetName}:`, e));
+        item.classList.add('playing');
+        currentPlayingVideo = presetName;
+        
+        // Only play audio if not skipped (when called from user clicking video)
+        if (!skipAudio && SOUND_PRESETS[presetName]) {
+            playPreset(presetName, true, true, true); // skipVideo = true to avoid loop
+        }
+    }
+
+    /**
+     * Hide sound video overlay (legacy support - now stops current video)
      * @param {boolean} skipAudioStop - If true, don't stop audio (used when called from stop())
      */
     function hideSoundVideo(skipAudioStop = false) {
-        const overlay = document.getElementById('sound-video-overlay');
-        const video = document.getElementById('sound-video');
-        if (overlay && video) {
-            overlay.style.display = 'none';
-            video.pause();
-            video.currentTime = 0;
-            video.src = ''; // Clear source
+        // Stop current playing video (pass skipAudioStop to avoid double-stopping)
+        if (currentPlayingVideo) {
+            stopVideo(currentPlayingVideo, !skipAudioStop);
         }
         
         // Stop audio playback when video is closed (unless called from stop())
@@ -692,10 +994,18 @@
     }
 
     // Initialize on load
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
+    function initializeAll() {
         init();
+        // Initialize video panel after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            initVideoPanel();
+        }, 100);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeAll);
+    } else {
+        initializeAll();
     }
 
     // Export to window
@@ -712,6 +1022,10 @@
         setAudioAnalysisMode,
         showSoundVideo,
         hideSoundVideo,
+        initVideoPanel,
+        playVideo,
+        stopVideo,
+        stopAllVideos,
         _audioAnalysisState: audioAnalysisState, // Expose for FSM to check
         _debugAnalysis: false, // Set to true for console logging
         _showAnalysisStatus: true, // Show analysis status in audio panel
