@@ -71,6 +71,16 @@
         </div>
     </div>
 
+    <!-- Video Overlay for Sound Presets -->
+    <div id="sound-video-overlay" class="fan-video-overlay" style="display: none;">
+        <div class="fan-video-container">
+            <button class="fan-video-close" onclick="closeSoundVideo()">×</button>
+            <video id="sound-video" class="fan-video" autoplay loop muted>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
     <script>
         function toggleAudioPanel() {
             const panel = document.getElementById('audio-panel');
@@ -82,6 +92,12 @@
             } else {
                 content.style.display = 'none';
                 toggle.textContent = '+';
+            }
+        }
+
+        function closeSoundVideo() {
+            if (window.AudioPlayer) {
+                window.AudioPlayer.hideSoundVideo();
             }
         }
 
@@ -630,12 +646,25 @@ console.log('[INIT] Setting up subscription...');
         // Pan/drag functionality for zoomed device
         function initDevicePanning() {
             const deviceFrame = document.querySelector('.device-frame');
+            const overlayLayer = document.querySelector('.overlay-layer');
             if (!deviceFrame) return;
             
-            // Mouse events
-            deviceFrame.addEventListener('mousedown', function(e) {
-                if (currentZoom === 0) return; // Only allow panning when zoomed
-                if (e.target.closest('.zoom-control') || e.target.closest('.audio-panel')) return;
+            // Helper function to check if we should allow panning
+            function shouldAllowPanning(e) {
+                if (currentZoom === 0) return false; // Only allow panning when zoomed
+                if (e.target.closest('.zoom-control') || e.target.closest('.audio-panel')) return false;
+                
+                // Don't start panning if clicking on a button or dosimeter
+                if (e.target.closest('button') || e.target.closest('.dosimeter-container')) {
+                    return false; // Let buttons handle their own clicks
+                }
+                
+                return true;
+            }
+            
+            // Mouse events - listen on both device frame and overlay layer
+            function handleMouseDown(e) {
+                if (!shouldAllowPanning(e)) return;
                 
                 isDragging = true;
                 dragStartX = e.clientX;
@@ -643,7 +672,13 @@ console.log('[INIT] Setting up subscription...');
                 dragStartPanX = panX;
                 dragStartPanY = panY;
                 e.preventDefault();
-            });
+                e.stopPropagation(); // Prevent other handlers from interfering
+            }
+            
+            deviceFrame.addEventListener('mousedown', handleMouseDown);
+            if (overlayLayer) {
+                overlayLayer.addEventListener('mousedown', handleMouseDown);
+            }
             
             document.addEventListener('mousemove', function(e) {
                 if (!isDragging || currentZoom === 0) return;
@@ -661,13 +696,17 @@ console.log('[INIT] Setting up subscription...');
             });
             
             document.addEventListener('mouseup', function() {
-                isDragging = false;
+                if (isDragging) {
+                    isDragging = false;
+                    // When done panning, restore proper scale using applyDeviceTransform
+                    // This respects zoom level and only applies 0.7 scale if dosimeter is snapped
+                    applyDeviceTransform(false); // Use smooth transition
+                }
             });
             
             // Touch events for mobile
-            deviceFrame.addEventListener('touchstart', function(e) {
-                if (currentZoom === 0) return;
-                if (e.target.closest('.zoom-control') || e.target.closest('.audio-panel')) return;
+            function handleTouchStart(e) {
+                if (!shouldAllowPanning(e)) return;
                 
                 if (e.touches.length === 1) {
                     isDragging = true;
@@ -676,8 +715,14 @@ console.log('[INIT] Setting up subscription...');
                     dragStartPanX = panX;
                     dragStartPanY = panY;
                     e.preventDefault();
+                    e.stopPropagation(); // Prevent other handlers from interfering
                 }
-            }, { passive: false });
+            }
+            
+            deviceFrame.addEventListener('touchstart', handleTouchStart, { passive: false });
+            if (overlayLayer) {
+                overlayLayer.addEventListener('touchstart', handleTouchStart, { passive: false });
+            }
             
             document.addEventListener('touchmove', function(e) {
                 if (!isDragging || currentZoom === 0) return;
@@ -698,7 +743,12 @@ console.log('[INIT] Setting up subscription...');
             }, { passive: false });
             
             document.addEventListener('touchend', function() {
-                isDragging = false;
+                if (isDragging) {
+                    isDragging = false;
+                    // When done panning, restore proper scale using applyDeviceTransform
+                    // This respects zoom level and only applies 0.7 scale if dosimeter is snapped
+                    applyDeviceTransform(false); // Use smooth transition
+                }
             });
         }
         
@@ -760,19 +810,23 @@ console.log('[INIT] Setting up subscription...');
                 const targetZoomPercent = Math.min(200, Math.max(50, ((photoRect.width / targetVisibleWidth) - 1) * 100 + 5)); // Add 5% more zoom
                 const scale = 1 + (targetZoomPercent / 100);
                 
-                // Calculate target position: bottom of device should be at bottom of viewport
-                // After zoom, device bottom = (photoRect.bottom * scale) + panY
-                // We want: (photoRect.bottom * scale) + panY = window.innerHeight
-                // So: panY = window.innerHeight - (photoRect.bottom * scale)
+                // Calculate the center of the LCD and buttons area (roughly upper-middle of device vertically)
+                // LCD is at ~18% from top, buttons extend to ~66% from top
+                // Position higher in viewport to show all buttons - target around 30% from top of device
+                const interactiveAreaCenterY = photoRect.top + (photoRect.height * 0.30); // 30% from top
                 
                 // But transform origin is center center, so we need to account for that
                 const deviceCenterX = photoRect.left + photoRect.width / 2;
                 const deviceCenterY = photoRect.top + photoRect.height / 2;
                 
-                // After scaling from center, the device bottom will be at:
-                // deviceCenterY + (photoRect.height / 2 * scale) + panY
-                // We want this to equal window.innerHeight
-                // So: panY = window.innerHeight - deviceCenterY - (photoRect.height / 2 * scale)
+                // Calculate target position: position the LCD and buttons area higher in viewport
+                // After scaling from center, we want the interactive area center to be above viewport center
+                // Position it at about 2.75% of viewport height (moved up 75% from 11%)
+                const targetViewportY = window.innerHeight * 0.0275; // 2.75% from top of viewport
+                
+                // interactiveAreaCenterY (after scale) + panY = targetViewportY
+                // (interactiveAreaCenterY - deviceCenterY) * scale + deviceCenterY + panY = targetViewportY
+                // So: panY = targetViewportY - deviceCenterY - ((interactiveAreaCenterY - deviceCenterY) * scale)
                 
                 // For horizontal: center the LCD horizontally
                 const targetLcdCenterX = viewportCenterX;
@@ -780,7 +834,7 @@ console.log('[INIT] Setting up subscription...');
                 
                 // Calculate final pan positions
                 panX = targetLcdCenterX - deviceCenterX - (lcdOffsetFromDeviceCenterX * scale);
-                panY = window.innerHeight - deviceCenterY - (photoRect.height / 2 * scale);
+                panY = targetViewportY - deviceCenterY - ((interactiveAreaCenterY - deviceCenterY) * scale);
                 
                 // Set zoom and pan together (with smooth animation) - everything happens simultaneously
                 setDeviceZoom(targetZoomPercent, false);
@@ -1119,6 +1173,9 @@ console.log('[INIT] Setting up subscription...');
                 // Don't drag if clicking on the button
                 if (e.target.closest('.dosimeter-btn')) return;
                 
+                // Don't start dosimeter drag if we're already panning the device
+                if (isDragging) return;
+                
                 // Check if already snapped - if so, keep current scale; if not, scale down
                 const wasSnapped = dosimeterContainer.dataset.snapped === 'true';
                 if (wasSnapped) {
@@ -1161,12 +1218,48 @@ console.log('[INIT] Setting up subscription...');
                 const deltaX = e.clientX - dosimeterStartX;
                 const deltaY = e.clientY - dosimeterStartY;
                 
-                let newLeft = dosimeterStartLeft + deltaX;
-                let newTop = dosimeterStartTop + deltaY;
-                
-                // Get device frame and calculate microphone snap point
+                // Get device frame and calculate microphone snap point first to check if we're on the mic
                 const deviceFrame = document.querySelector('.device-frame');
                 const devicePhoto = document.querySelector('.device-photo');
+                
+                // Check current position to determine if we're on the microphone
+                let isOnMicrophone = false;
+                let isDraggingAway = false;
+                if (deviceFrame && devicePhoto) {
+                    const deviceRect = deviceFrame.getBoundingClientRect();
+                    const currentDosimeterRect = dosimeterContainer.getBoundingClientRect();
+                    const micSnapPoint = getMicSnapPoint(deviceRect);
+                    const dosimeterScale = 0.6;
+                    
+                    // Calculate current attachment point
+                    const currentAttachmentY = currentDosimeterRect.top + (currentDosimeterRect.height * 0.3);
+                    const initialAttachmentY = dosimeterInitialTop + (currentDosimeterRect.height * 0.3);
+                    const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
+                    
+                    // Check if currently at or very close to the stop point (within 5px tolerance)
+                    const stopPointTolerance = 5;
+                    isOnMicrophone = Math.abs(currentAttachmentY - halfwayY) <= stopPointTolerance || currentAttachmentY >= halfwayY;
+                    
+                    // Check if we're dragging away from the microphone (moving up or away horizontally)
+                    // If we started near the mic and are now moving up, we're dragging away
+                    const startAttachmentY = dosimeterStartTop + (currentDosimeterRect.height * 0.3);
+                    const wasNearMic = Math.abs(startAttachmentY - halfwayY) <= stopPointTolerance || startAttachmentY >= halfwayY;
+                    const isMovingUp = deltaY < 0; // Negative deltaY means moving up
+                    const proposedAttachmentY = (dosimeterStartTop + deltaY) + (currentDosimeterRect.height * 0.3);
+                    const isNowAboveStopPoint = proposedAttachmentY < halfwayY - stopPointTolerance;
+                    
+                    // If we were near the mic and are now moving up/away, we're dragging away
+                    isDraggingAway = wasNearMic && (isMovingUp || isNowAboveStopPoint);
+                }
+                
+                // If on microphone, lock horizontal movement but allow vertical
+                let newLeft = dosimeterStartLeft;
+                let newTop = dosimeterStartTop + deltaY;
+                
+                // Only apply horizontal movement if NOT on microphone
+                if (!isOnMicrophone) {
+                    newLeft = dosimeterStartLeft + deltaX;
+                }
                 
                 if (deviceFrame && devicePhoto) {
                     const deviceRect = deviceFrame.getBoundingClientRect();
@@ -1225,8 +1318,8 @@ console.log('[INIT] Setting up subscription...');
                         const magneticPull = 0.3 * attractionStrength; // Adjust pull strength (0-1)
                         
                         // Apply magnetic attraction (but respect the constraint)
-                        // Only apply horizontal attraction if not at stop point
-                        if (!isAtStopPoint && dosimeterTopAttachmentY < halfwayY) {
+                        // Only apply horizontal attraction if not at stop point and not on microphone
+                        if (!isOnMicrophone && !isAtStopPoint && dosimeterTopAttachmentY < halfwayY) {
                             newLeft += distanceX * magneticPull;
                         }
                         const proposedNewTop = newTop + distanceY * magneticPull;
@@ -1279,6 +1372,7 @@ console.log('[INIT] Setting up subscription...');
                             currentSnapPoint = null;
                         }
                     } else {
+                        // If dragging away, clear snap state and don't apply magnetic attraction
                         dosimeterContainer.dataset.snapped = 'false';
                         dosimeterContainer.dataset.snapPoint = '';
                         currentSnapPoint = null;
@@ -1304,6 +1398,9 @@ console.log('[INIT] Setting up subscription...');
             });
             
             document.addEventListener('mouseup', function() {
+                // Only handle dosimeter drag if we were actually dragging the dosimeter
+                if (!isDraggingDosimeter) return;
+                
                 isDraggingDosimeter = false;
                 dosimeterPhoto.classList.remove('dragging');
                 
@@ -1351,6 +1448,9 @@ console.log('[INIT] Setting up subscription...');
                 // Don't drag if clicking on the button
                 if (e.target.closest('.dosimeter-btn')) return;
                 
+                // Don't start dosimeter drag if we're already panning the device
+                if (isDragging) return;
+                
                 // Check if already snapped - if so, keep current scale; if not, scale down
                 const wasSnapped = dosimeterContainer.dataset.snapped === 'true';
                 if (wasSnapped) {
@@ -1395,12 +1495,48 @@ console.log('[INIT] Setting up subscription...');
                 const deltaX = e.touches[0].clientX - dosimeterStartX;
                 const deltaY = e.touches[0].clientY - dosimeterStartY;
                 
-                let newLeft = dosimeterStartLeft + deltaX;
-                let newTop = dosimeterStartTop + deltaY;
-                
-                // Get device frame and calculate microphone snap point
+                // Get device frame and calculate microphone snap point first to check if we're on the mic
                 const deviceFrame = document.querySelector('.device-frame');
                 const devicePhoto = document.querySelector('.device-photo');
+                
+                // Check current position to determine if we're on the microphone
+                let isOnMicrophone = false;
+                let isDraggingAway = false;
+                if (deviceFrame && devicePhoto) {
+                    const deviceRect = deviceFrame.getBoundingClientRect();
+                    const currentDosimeterRect = dosimeterContainer.getBoundingClientRect();
+                    const micSnapPoint = getMicSnapPoint(deviceRect);
+                    const dosimeterScale = 0.6;
+                    
+                    // Calculate current attachment point
+                    const currentAttachmentY = currentDosimeterRect.top + (currentDosimeterRect.height * 0.3);
+                    const initialAttachmentY = dosimeterInitialTop + (currentDosimeterRect.height * 0.3);
+                    const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
+                    
+                    // Check if currently at or very close to the stop point (within 5px tolerance)
+                    const stopPointTolerance = 5;
+                    isOnMicrophone = Math.abs(currentAttachmentY - halfwayY) <= stopPointTolerance || currentAttachmentY >= halfwayY;
+                    
+                    // Check if we're dragging away from the microphone (moving up or away horizontally)
+                    // If we started near the mic and are now moving up, we're dragging away
+                    const startAttachmentY = dosimeterStartTop + (currentDosimeterRect.height * 0.3);
+                    const wasNearMic = Math.abs(startAttachmentY - halfwayY) <= stopPointTolerance || startAttachmentY >= halfwayY;
+                    const isMovingUp = deltaY < 0; // Negative deltaY means moving up
+                    const proposedAttachmentY = (dosimeterStartTop + deltaY) + (currentDosimeterRect.height * 0.3);
+                    const isNowAboveStopPoint = proposedAttachmentY < halfwayY - stopPointTolerance;
+                    
+                    // If we were near the mic and are now moving up/away, we're dragging away
+                    isDraggingAway = wasNearMic && (isMovingUp || isNowAboveStopPoint);
+                }
+                
+                // If on microphone, lock horizontal movement but allow vertical
+                let newLeft = dosimeterStartLeft;
+                let newTop = dosimeterStartTop + deltaY;
+                
+                // Only apply horizontal movement if NOT on microphone
+                if (!isOnMicrophone) {
+                    newLeft = dosimeterStartLeft + deltaX;
+                }
                 
                 if (deviceFrame && devicePhoto) {
                     const deviceRect = deviceFrame.getBoundingClientRect();
@@ -1453,14 +1589,15 @@ console.log('[INIT] Setting up subscription...');
                     }
                     
                     // Sound meter is already scaled down when dragging starts - just handle magnetic attraction and snapping
-                    if (distance < snapZoneRadius) {
+                    // Only apply magnetic attraction and snapping if NOT dragging away from microphone
+                    if (!isDraggingAway && distance < snapZoneRadius) {
                         // Calculate attraction strength (stronger as closer)
                         const attractionStrength = 1 - (distance / snapZoneRadius);
                         const magneticPull = 0.3 * attractionStrength; // Adjust pull strength (0-1)
                         
                         // Apply magnetic attraction (but respect the constraint)
-                        // Only apply horizontal attraction if not at stop point
-                        if (!isAtStopPoint && dosimeterTopAttachmentY < halfwayY) {
+                        // Only apply horizontal attraction if not at stop point and not on microphone
+                        if (!isOnMicrophone && !isAtStopPoint && dosimeterTopAttachmentY < halfwayY) {
                             newLeft += distanceX * magneticPull;
                         }
                         const proposedNewTop = newTop + distanceY * magneticPull;
@@ -1513,6 +1650,7 @@ console.log('[INIT] Setting up subscription...');
                             currentSnapPoint = null;
                         }
                     } else {
+                        // If dragging away, clear snap state and don't apply magnetic attraction
                         dosimeterContainer.dataset.snapped = 'false';
                         dosimeterContainer.dataset.snapPoint = '';
                         currentSnapPoint = null;
@@ -1538,6 +1676,9 @@ console.log('[INIT] Setting up subscription...');
             }, { passive: false });
             
             document.addEventListener('touchend', function() {
+                // Only handle dosimeter drag if we were actually dragging the dosimeter
+                if (!isDraggingDosimeter) return;
+                
                 isDraggingDosimeter = false;
                 dosimeterPhoto.classList.remove('dragging');
                 

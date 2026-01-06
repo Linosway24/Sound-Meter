@@ -15,7 +15,9 @@
         '.overlay-layer .soft-key',
         '.overlay-layer .fn-btn',
         '.overlay-layer .nav__btn',
-        '.overlay-layer .dialog__btn'
+        '.overlay-layer .dialog__btn',
+        '.dosimeter-container .dosimeter-display',
+        '.dosimeter-container .dosimeter-btn'
     ].join(',');
 
     let isEnabled = false;

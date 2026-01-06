@@ -52,9 +52,144 @@ body {
     min-height: 100vh;
     width: 100%;
     display: flex;
-    align-items: center; /* Center device initially */
-    justify-content: center;
+    align-items: center; /* Center vertically */
+    justify-content: center; /* Center simulator horizontally */
     padding: 24px 0; /* Top/bottom padding around photo */
+    position: relative; /* Allow absolute positioning of dosimeter */
+    font-size: 15px;
+    background-clip: unset;
+    -webkit-background-clip: unset;
+    color: rgba(0, 0, 0, 1);
+}
+
+/* Dosimeter container - positioned relative to simulator, scales with viewport */
+.dosimeter-container {
+    position: absolute;
+    /* Initial position - will be updated by JavaScript to maintain relative position */
+    left: 115px;
+    top: 300px;
+    display: block;
+    /* Scale based on viewport height - 25% of simulator size, increased by 25% = 31.25% */
+    height: calc((100vh - 48px) * 0.3125);
+    width: auto; /* Width automatically maintains aspect ratio */
+    max-width: calc(50vw - 40px); /* Prevent it from taking too much space, account for left padding */
+    z-index: 10000; /* Place in front of simulator */
+    pointer-events: none; /* Container doesn't capture events, children do */
+    transition: transform 0.2s ease-out; /* Smooth scaling when approaching microphone */
+}
+
+/* Dosimeter image - fills the container */
+.dosimeter-photo {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+    pointer-events: auto; /* Enable dragging */
+    cursor: move; /* Show move cursor */
+    /* Match simulator's scaling behavior */
+    object-fit: contain;
+}
+
+/* When dragging, remove the transform to allow free positioning */
+.dosimeter-photo.dragging {
+    transform: none;
+}
+
+/* Dosimeter button overlay - positioned relative to dosimeter container */
+.dosimeter-btn {
+    position: absolute;
+    pointer-events: auto;
+    border: 2px solid var(--btn-border);
+    background: var(--btn-fill);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 120ms ease, transform 60ms ease;
+    z-index: 10001; /* Above the dosimeter photo */
+    /* Use percentages to scale with container */
+    width: 20%;
+    height: 14%;
+    min-width: 40px; /* Minimum size for usability */
+    min-height: 40px;
+}
+
+.dosimeter-btn:hover {
+    background: var(--btn-fill-hover);
+}
+
+.dosimeter-btn:active {
+    background: var(--btn-fill-active);
+    transform: translateY(1px);
+}
+
+/* Power button on dosimeter - adjust position to match actual button location on device */
+/* Using percentages so it scales with the dosimeter image */
+.dosimeter-btn--power {
+    left: 38.95%;
+    top: 40.2%;
+}
+
+/* Dosimeter display overlay - positioned over the device display area */
+.dosimeter-display {
+    position: absolute;
+    top: 23.04%;
+    left: 35.16%;
+    width: 27.84%;
+    height: 14.59%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none; /* Don't block clicks */
+    z-index: 10002; /* Above button but below testing overlay */
+    font-family: 'Courier New', monospace;
+    color: #ffffff; /* White text on dark background */
+    opacity: 0; /* Hidden by default, shown when dosimeter is on */
+    transition: opacity 0.2s ease;
+}
+
+.dosimeter-display.dosimeter-display--on {
+    opacity: 1;
+}
+
+.dosimeter-display__line {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    width: 100%;
+    line-height: 1.2;
+}
+
+.dosimeter-display__line--top {
+    margin-bottom: 0.2em;
+}
+
+.dosimeter-display__value {
+    font-size: 33px;
+    font-weight: 600;
+    color: rgba(5, 5, 5, 1);
+    font-family: 'Courier New', monospace;
+    margin-right: 5px;
+    text-align: right;
+}
+
+.dosimeter-display__unit {
+    font-size: clamp(1em, 2.5vw, 1.2em); /* Same size as frequency text */
+    color: #ffffff; /* White text */
+    font-family: 'Courier New', monospace;
+    vertical-align: baseline;
+}
+
+.dosimeter-display__frequency {
+    font-size: 22px;
+    color: rgba(8, 8, 8, 1);
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+/* Visual feedback when dosimeter is snapped to microphone */
+.dosimeter-container[data-snapped="true"] {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
 /* Frame matches the photo dimensions; overlays are relative to this */
@@ -74,6 +209,7 @@ body {
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     transform: translateZ(0); /* Force GPU acceleration */
+    transition: transform 0.2s ease-out; /* Smooth scaling when dosimeter approaches */
 }
 
 .device-photo {
@@ -296,6 +432,13 @@ body {
     text-overflow: ellipsis;
 }
 
+/* Make SVG icons in softkeys scale proportionally with LCD font size */
+.soft-key-label svg {
+    width: 2.4em; /* Double the size - scale with font size instead of fixed pixels */
+    height: auto; /* Maintain aspect ratio */
+    vertical-align: middle;
+}
+
 .lcd--powered-off .lcd__status,
 .lcd--powered-off .lcd__main,
 .lcd--powered-off .lcd__softkeys {
@@ -339,6 +482,8 @@ body {
 /* Testing overlay helper - will be removed after positioning verification */
 .testing-overlay { outline: 2px solid var(--debug-outline); }
 .testing-overlay:not(.lcd) { background: var(--debug-fill); }
+/* Make dosimeter display visible for debugging when it has testing-overlay class AND is on */
+.testing-overlay.dosimeter-display.dosimeter-display--on { opacity: 0.8 !important; }
 
 /* Shared button overlay base */
 .soft-key,
@@ -456,6 +601,14 @@ body {
   left: 29.545%;
   width: 11.572%;
   height: 3.064%;
+}
+
+/* Disabled state for stop button when measurement is running */
+.fn-btn--stop:disabled,
+.fn-btn--stop.button--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 .fn-btn--power {
   top: 89.945%;
@@ -2174,6 +2327,60 @@ body {
     font-size: 11px;
     color: #8b949e;
     text-align: center;
+}
+
+/* Fan Video Overlay */
+.fan-video-overlay {
+    position: fixed;
+    top: 700px; /* Well below the audio panel */
+    right: 20px; /* Align with audio panel */
+    width: 280px; /* Match audio panel width */
+    z-index: 99999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    pointer-events: none; /* Allow clicks through overlay except on video */
+}
+
+.fan-video-container {
+    position: relative;
+    width: 280px;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    pointer-events: auto; /* Enable interactions on video container */
+}
+
+.fan-video {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 400px; /* Limit height so it doesn't cover too much */
+}
+
+.fan-video-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    transition: background 0.2s;
+}
+
+.fan-video-close:hover {
+    background: rgba(255, 0, 0, 0.8);
 }
 
 /* ========================================

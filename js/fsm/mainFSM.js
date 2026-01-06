@@ -5181,14 +5181,12 @@
                 break;
 
             case "STOP_DOWN":
-                // Stop works when paused - start countdown timer
+                // Stop only works when paused - start countdown timer
                 if (isSlm() && _state.measurement.state === "paused") {
                     _startStopHoldTimer();
                 } else if (isSlm() && _state.measurement.state === "running") {
-                    // If running, stop button should pause first, then stop
-                    // But for now, we can allow it to work when running as well
-                    console.log('[FSM] STOP_DOWN: Measurement is running, start stop countdown');
-                    _startStopHoldTimer();
+                    // Stop button disabled when running - user must pause first
+                    console.log('[FSM] STOP_DOWN: Measurement is running - stop button disabled, must pause first');
                 }
                 break;
 

@@ -14,6 +14,7 @@
     let sourceNode = null;
     let analyserNode = null;
     let isPlaying = false;
+    let currentPresetName = null; // Track current preset name
     
     // Audio analysis state
     let audioAnalysisState = {
@@ -40,7 +41,7 @@
         fan: {
             name: 'Fan/HVAC',
             file: 'fan.wav',
-            baseLevel: 65,
+            baseLevel: 70,
             variation: 2,
             gain: 1.0,
             description: 'Steady fan or HVAC hum'
@@ -157,14 +158,21 @@
     function amplitudeToSPL(amplitude, baseLevel = 47) {
         if (amplitude <= 0) return audioAnalysisState.minSPL;
         
-        // Convert normalized amplitude to dB
-        // Using log scale: dB = 20 * log10(amplitude / reference)
-        // Scale to realistic SPL range (30-130 dB)
-        const db = 20 * Math.log10(amplitude / audioAnalysisState.referenceLevel);
+        // Convert normalized amplitude (0-1) to SPL
+        // Calibrated so that typical audio amplitudes map to the baseLevel
+        // For normalized audio, we use a calibrated reference that maps amplitude to SPL
+        // Typical audio RMS values are 0.05-0.3, we want these to map to baseLevel ± variation
         
-        // Map to realistic SPL range and add base level offset
-        // Scale factor adjusts the sensitivity
-        const spl = baseLevel + (db * 0.5);
+        // Use a calibrated reference level that works with normalized audio amplitudes
+        // This reference is much larger than acoustic reference (20 µPa) because audio is normalized
+        const calibratedReference = 0.01; // Calibrated for normalized audio (0-1 range)
+        
+        // Convert amplitude to dB relative to calibrated reference
+        const db = 20 * Math.log10(amplitude / calibratedReference);
+        
+        // Map to SPL: baseLevel is the target for typical amplitude (~0.1)
+        // Scale factor of 0.15 provides reasonable sensitivity without over-amplifying
+        const spl = baseLevel + (db * 0.15);
         
         // Clamp to realistic range
         return Math.max(audioAnalysisState.minSPL, Math.min(audioAnalysisState.maxSPL, spl));
@@ -338,8 +346,11 @@
             return;
         }
 
-        // Stop any currently playing audio
+        // Stop any currently playing audio (this will also hide any video)
         stop();
+
+        // Track current preset name
+        currentPresetName = presetName;
 
         // Initialize audio context
         if (!audioContext) {
@@ -403,6 +414,11 @@
                         console.log(`[AUDIO] 💡 Enable debug: window.AudioPlayer._debugAnalysis = true`);
                     }
                     updateStatus(`▶ ${preset.name} (${mode})`);
+                    
+                    // Show video for presets that have videos
+                    if (VIDEO_PATHS[presetName]) {
+                        showSoundVideo(presetName);
+                    }
                     
                     // Start audio analysis if enabled
                     if (useAnalysis && audioAnalysisState.enabled) {
@@ -470,10 +486,92 @@
     }
 
     /**
+     * Video paths for different presets
+     */
+    const VIDEO_PATHS = {
+        fan: 'assets/Video/fan.mp4',
+        engine: 'assets/Video/Porsche01_1.mp4',
+        machinery: 'assets/Video/FactoryLoop.mp4',
+        office: 'assets/Video/officeSpace02.mp4',
+        clapping: 'assets/Video/AudienceStock.mp4',
+        hammering: 'assets/Video/Hammer.mp4'
+    };
+
+    /**
+     * Show video overlay for specific preset
+     * @param {string} presetName - Name of preset to show video for
+     */
+    function showSoundVideo(presetName) {
+        const overlay = document.getElementById('sound-video-overlay');
+        const video = document.getElementById('sound-video');
+        if (!overlay || !video) return;
+
+        const videoPath = VIDEO_PATHS[presetName];
+        if (!videoPath) return;
+
+        // Set video source
+        video.src = videoPath;
+        video.load(); // Reload video with new source
+
+        overlay.style.display = 'flex';
+        video.play().catch(e => console.warn(`[AUDIO] Video play failed for ${presetName}:`, e));
+    }
+
+    /**
+     * Hide sound video overlay
+     * @param {boolean} skipAudioStop - If true, don't stop audio (used when called from stop())
+     */
+    function hideSoundVideo(skipAudioStop = false) {
+        const overlay = document.getElementById('sound-video-overlay');
+        const video = document.getElementById('sound-video');
+        if (overlay && video) {
+            overlay.style.display = 'none';
+            video.pause();
+            video.currentTime = 0;
+            video.src = ''; // Clear source
+        }
+        
+        // Stop audio playback when video is closed (unless called from stop())
+        if (!skipAudioStop) {
+            stopAudioAnalysis();
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            isPlaying = false;
+            currentPresetName = null;
+            
+            // Clean up audio nodes
+            if (sourceNode) {
+                try {
+                    sourceNode.disconnect();
+                } catch (e) {}
+                sourceNode = null;
+            }
+            if (gainNode) {
+                try {
+                    gainNode.disconnect();
+                } catch (e) {}
+                gainNode = null;
+            }
+            if (analyserNode) {
+                try {
+                    analyserNode.disconnect();
+                } catch (e) {}
+                analyserNode = null;
+            }
+        }
+    }
+
+    /**
      * Stop current audio playback
      */
     function stop() {
         stopAudioAnalysis();
+        
+        // Hide video overlay when stopping (skip audio stop to avoid duplicate work)
+        hideSoundVideo(true);
         
         if (currentAudio) {
             currentAudio.pause();
@@ -481,6 +579,7 @@
             currentAudio = null;
         }
         isPlaying = false;
+        currentPresetName = null; // Clear preset name when stopped
         
         // Clean up audio nodes
         if (sourceNode) {
@@ -570,6 +669,7 @@
         return {
             isPlaying,
             currentPreset: currentAudio ? currentAudio.src : null,
+            currentPresetName: currentPresetName, // Include preset name
             volume: currentAudio ? currentAudio.volume : 1,
             analysisEnabled: audioAnalysisState.enabled
         };
@@ -610,6 +710,8 @@
         getState,
         listPresets,
         setAudioAnalysisMode,
+        showSoundVideo,
+        hideSoundVideo,
         _audioAnalysisState: audioAnalysisState, // Expose for FSM to check
         _debugAnalysis: false, // Set to true for console logging
         _showAnalysisStatus: true, // Show analysis status in audio panel
