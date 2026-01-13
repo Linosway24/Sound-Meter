@@ -38,6 +38,43 @@
         </div>
     </div>
 
+    <!-- Dosimeter Snap Coordinates Control Panel -->
+    <div id="dosimeter-snap-control" class="dosimeter-snap-control">
+        <div class="dosimeter-snap-control__header">
+            <span class="dosimeter-snap-control__title">📍 Dosimeter Snap</span>
+        </div>
+        <div class="dosimeter-snap-control__content">
+            <div class="dosimeter-snap-control__current">
+                <div class="dosimeter-snap-control__label">Current Position:</div>
+                <div id="dosimeter-current-pos" class="dosimeter-snap-control__value">X: 0, Y: 0</div>
+            </div>
+            <div class="dosimeter-snap-control__captured" id="dosimeter-captured-values" style="display: none;">
+                <div class="dosimeter-snap-control__label">Captured Values:</div>
+                <div id="dosimeter-captured-display" class="dosimeter-snap-control__value" style="font-size: 11px; word-break: break-all;"></div>
+                <button class="dosimeter-snap-btn" onclick="window.copyCapturedValues()" style="margin-top: 4px; padding: 4px 8px; font-size: 11px;">Copy Values</button>
+            </div>
+            <div class="dosimeter-snap-control__inputs">
+                <div class="dosimeter-snap-control__input-group">
+                    <label>X Offset:</label>
+                    <input type="number" id="dosimeter-snap-x" value="-20" step="1" onchange="window.applyDosimeterSnapCoords()" oninput="window.updateDosimeterSnapPreview()">
+                </div>
+                <div class="dosimeter-snap-control__input-group">
+                    <label>Y Offset:</label>
+                    <input type="number" id="dosimeter-snap-y" value="-166" step="1" onchange="window.applyDosimeterSnapCoords()" oninput="window.updateDosimeterSnapPreview()">
+                </div>
+                <div class="dosimeter-snap-control__input-group">
+                    <label>Height Multiplier:</label>
+                    <input type="number" id="dosimeter-snap-height-mult" value="0.5" step="0.1" onchange="window.applyDosimeterSnapCoords()" oninput="window.updateDosimeterSnapPreview()">
+                </div>
+            </div>
+            <div class="dosimeter-snap-control__buttons">
+                <button class="dosimeter-snap-btn" onclick="window.applyDosimeterSnapCoords()">Apply</button>
+                <button class="dosimeter-snap-btn" onclick="window.forceSnapDosimeter()">Force Snap</button>
+                <button class="dosimeter-snap-btn" onclick="window.captureCurrentDosimeterPos()">Capture</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Control Panel -->
     <div id="audio-panel" class="audio-panel">
         <div class="audio-panel__header">
@@ -999,7 +1036,7 @@ console.log('[INIT] Setting up subscription...');
         };
         
         // Store dosimeter position relative to simulator for resize handling
-        let dosimeterRelativePosition = { left: 115, top: 300 }; // Initial position in pixels
+        let dosimeterRelativePosition = { left: 115, top: 0 }; // Initial position - will be calculated on load to upper third
         let lastSimulatorRect = null;
         
         // Update dosimeter position relative to simulator on resize
@@ -1097,22 +1134,42 @@ console.log('[INIT] Setting up subscription...');
             });
         }
         
-        // Initialize dosimeter relative position on load
+        // Initialize dosimeter relative position on load - position in upper third
+        function initializeDosimeterPosition() {
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            const deviceFrame = document.querySelector('.device-frame');
+            if (!dosimeterContainer || !deviceFrame) return;
+            
+            const deviceRect = deviceFrame.getBoundingClientRect();
+            lastSimulatorRect = deviceRect;
+            
+            // Position dosimeter in upper third of device frame
+            // Position higher up - at ~8% from top of device
+            const upperThirdY = deviceRect.top + (deviceRect.height * 0.08);
+            const leftPosition = 115; // Keep left position as is
+            
+            dosimeterContainer.style.left = leftPosition + 'px';
+            dosimeterContainer.style.top = upperThirdY + 'px';
+            
+            // Store relative position
+            dosimeterRelativePosition = { left: leftPosition, top: upperThirdY };
+        }
+        
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
-                    const deviceFrame = document.querySelector('.device-frame');
-                    if (deviceFrame) {
-                        lastSimulatorRect = deviceFrame.getBoundingClientRect();
-                    }
+                    initializeDosimeterPosition();
+                    updateDosimeterPositionDisplay();
+                    // Update position display periodically
+                    setInterval(updateDosimeterPositionDisplay, 100);
                 }, 100);
             });
         } else {
             setTimeout(() => {
-                const deviceFrame = document.querySelector('.device-frame');
-                if (deviceFrame) {
-                    lastSimulatorRect = deviceFrame.getBoundingClientRect();
-                }
+                initializeDosimeterPosition();
+                updateDosimeterPositionDisplay();
+                // Update position display periodically
+                setInterval(updateDosimeterPositionDisplay, 100);
             }, 100);
         }
         
@@ -1120,6 +1177,192 @@ console.log('[INIT] Setting up subscription...');
         // Also handle orientation change
         window.addEventListener('orientationchange', handleResize);
         
+        // Custom dosimeter snap coordinates (can be adjusted via UI)
+        // Using percentages relative to device frame for zoom/pan/resize compatibility
+        window.dosimeterSnapCoords = {
+            snapXPercent: 0.48,   // Percentage of device width (0.0 to 1.0) - adjusted left
+            snapYPercent: 0.05  // Percentage of device height (0.0 to 1.0)
+        };
+
+        // Update dosimeter position display
+        function updateDosimeterPositionDisplay() {
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            if (!dosimeterContainer) return;
+            
+            const rect = dosimeterContainer.getBoundingClientRect();
+            const displayEl = document.getElementById('dosimeter-current-pos');
+            if (displayEl) {
+                displayEl.textContent = `X: ${Math.round(rect.left)}, Y: ${Math.round(rect.top)}`;
+            }
+        }
+
+        // Update snap coordinates from inputs and apply if snapped
+        window.applyDosimeterSnapCoords = function() {
+            const xInput = document.getElementById('dosimeter-snap-x');
+            const yInput = document.getElementById('dosimeter-snap-y');
+            const heightMultInput = document.getElementById('dosimeter-snap-height-mult');
+            
+            const deviceFrame = document.querySelector('.device-frame');
+            if (!deviceFrame) return;
+            
+            const deviceRect = deviceFrame.getBoundingClientRect();
+            
+            // Convert offset inputs back to percentages
+            // Inputs are offsets from device center (mic position)
+            const centerX = deviceRect.width * 0.5;
+            const centerY = deviceRect.height * 0.05;
+            
+            if (xInput && !isNaN(parseFloat(xInput.value))) {
+                const xOffset = parseFloat(xInput.value);
+                window.dosimeterSnapCoords.snapXPercent = (centerX + xOffset) / deviceRect.width;
+            }
+            
+            if (yInput && !isNaN(parseFloat(yInput.value))) {
+                const yOffset = parseFloat(yInput.value);
+                window.dosimeterSnapCoords.snapYPercent = (centerY + yOffset) / deviceRect.height;
+            }
+            
+            // Height multiplier kept for backward compatibility (not used in new calculation)
+            
+            // If currently snapped, re-snap with new coordinates immediately
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            if (dosimeterContainer && dosimeterContainer.dataset.snapped === 'true') {
+                // Calculate absolute position from percentages
+                const newLeft = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
+                const newTop = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
+                
+                dosimeterContainer.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
+                dosimeterContainer.style.left = newLeft + 'px';
+                dosimeterContainer.style.top = newTop + 'px';
+                
+                setTimeout(() => {
+                    dosimeterContainer.style.transition = '';
+                    updateDosimeterPositionDisplay();
+                }, 200);
+            } else {
+                // Not snapped - coordinates will be used on next snap
+                updateDosimeterPositionDisplay();
+            }
+        };
+
+        // Preview snap position while typing (only if snapped)
+        window.updateDosimeterSnapPreview = function() {
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            if (dosimeterContainer && dosimeterContainer.dataset.snapped === 'true') {
+                // Update coordinates and apply immediately for live preview
+                window.applyDosimeterSnapCoords();
+            }
+        };
+
+        // Force snap dosimeter to test coordinates
+        window.forceSnapDosimeter = function() {
+            // First update coordinates from inputs
+            window.applyDosimeterSnapCoords();
+            
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            const deviceFrame = document.querySelector('.device-frame');
+            
+            if (dosimeterContainer && deviceFrame) {
+                const deviceRect = deviceFrame.getBoundingClientRect();
+                
+                // Calculate absolute position from percentages
+                const newLeft = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
+                const newTop = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
+                
+                // Scale dosimeter smaller when snapped
+                const dosimeterScale = 0.6;
+                dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
+                dosimeterContainer.style.transformOrigin = 'center top';
+                
+                dosimeterContainer.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
+                dosimeterContainer.style.left = newLeft + 'px';
+                dosimeterContainer.style.top = newTop + 'px';
+                
+                // Mark as snapped
+                dosimeterContainer.dataset.snapped = 'true';
+                dosimeterContainer.dataset.snapPoint = 'mic';
+                
+                setTimeout(() => {
+                    dosimeterContainer.style.transition = '';
+                    updateDosimeterPositionDisplay();
+                }, 200);
+            }
+        };
+
+        // Capture current dosimeter position and calculate percentages
+        window.captureCurrentDosimeterPos = function() {
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            const deviceFrame = document.querySelector('.device-frame');
+            if (!dosimeterContainer || !deviceFrame) return;
+            
+            const dosimeterRect = dosimeterContainer.getBoundingClientRect();
+            const deviceRect = deviceFrame.getBoundingClientRect();
+            
+            // Calculate position as percentage of device frame dimensions
+            const snapXPercent = (dosimeterRect.left - deviceRect.left) / deviceRect.width;
+            const snapYPercent = (dosimeterRect.top - deviceRect.top) / deviceRect.height;
+            
+            // Update coordinates
+            window.dosimeterSnapCoords.snapXPercent = snapXPercent;
+            window.dosimeterSnapCoords.snapYPercent = snapYPercent;
+            
+            // Update inputs (convert percentages to display values - show as pixels offset from center)
+            const xInput = document.getElementById('dosimeter-snap-x');
+            const yInput = document.getElementById('dosimeter-snap-y');
+            const heightMultInput = document.getElementById('dosimeter-snap-height-mult');
+            
+            // For display, show pixel offset from device center (more intuitive)
+            const centerX = deviceRect.width * 0.5;
+            const centerY = deviceRect.height * 0.05; // Mic position
+            const xOffset = (snapXPercent * deviceRect.width) - centerX;
+            const yOffset = (snapYPercent * deviceRect.height) - centerY;
+            
+            if (xInput) xInput.value = Math.round(xOffset);
+            if (yInput) yInput.value = Math.round(yOffset);
+            
+            // Height multiplier kept for backward compatibility
+            const heightMult = heightMultInput ? parseFloat(heightMultInput.value) : 0.5;
+            
+            // Display captured values
+            const capturedDisplay = document.getElementById('dosimeter-captured-display');
+            const capturedContainer = document.getElementById('dosimeter-captured-values');
+            if (capturedDisplay && capturedContainer) {
+                const values = {
+                    xPercent: snapXPercent.toFixed(4),
+                    yPercent: snapYPercent.toFixed(4),
+                    xOffset: Math.round(xOffset),
+                    yOffset: Math.round(yOffset),
+                    heightMultiplier: heightMult
+                };
+                capturedDisplay.textContent = `X: ${values.xPercent}, Y: ${values.yPercent} (Offset: ${values.xOffset}, ${values.yOffset})`;
+                capturedContainer.style.display = 'block';
+                // Store for copying
+                window.lastCapturedValues = values;
+            }
+            
+            // Update display
+            updateDosimeterPositionDisplay();
+        };
+
+        // Copy captured values to clipboard
+        window.copyCapturedValues = function() {
+            if (!window.lastCapturedValues) return;
+            
+            const text = `X Percent: ${window.lastCapturedValues.xPercent}, Y Percent: ${window.lastCapturedValues.yPercent}, X Offset: ${window.lastCapturedValues.xOffset}, Y Offset: ${window.lastCapturedValues.yOffset}`;
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Values copied to clipboard!\n\n' + text);
+                }).catch(() => {
+                    // Fallback if clipboard fails
+                    prompt('Copy these values:', text);
+                });
+            } else {
+                // Fallback for older browsers
+                prompt('Copy these values:', text);
+            }
+        };
+
         // Make dosimeter draggable
         function initDosimeterDragging() {
             const dosimeterContainer = document.querySelector('.dosimeter-container');
@@ -1215,183 +1458,125 @@ console.log('[INIT] Setting up subscription...');
                 const deltaX = e.clientX - dosimeterStartX;
                 const deltaY = e.clientY - dosimeterStartY;
                 
-                // Get device frame and calculate microphone snap point first to check if we're on the mic
-                const deviceFrame = document.querySelector('.device-frame');
-                const devicePhoto = document.querySelector('.device-photo');
-                
-                // Check current position to determine if we're on the microphone
-                let isOnMicrophone = false;
-                let isDraggingAway = false;
-                if (deviceFrame && devicePhoto) {
-                    const deviceRect = deviceFrame.getBoundingClientRect();
-                    const currentDosimeterRect = dosimeterContainer.getBoundingClientRect();
-                    const micSnapPoint = getMicSnapPoint(deviceRect);
-                    const dosimeterScale = 0.6;
-                    
-                    // Calculate current attachment point
-                    const currentAttachmentY = currentDosimeterRect.top + (currentDosimeterRect.height * 0.3);
-                    const initialAttachmentY = dosimeterInitialTop + (currentDosimeterRect.height * 0.3);
-                    const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
-                    
-                    // Check if currently at or very close to the stop point (within 5px tolerance)
-                    const stopPointTolerance = 5;
-                    isOnMicrophone = Math.abs(currentAttachmentY - halfwayY) <= stopPointTolerance || currentAttachmentY >= halfwayY;
-                    
-                    // Check if we're dragging away from the microphone (moving up or away horizontally)
-                    // If we started near the mic and are now moving up, we're dragging away
-                    const startAttachmentY = dosimeterStartTop + (currentDosimeterRect.height * 0.3);
-                    const wasNearMic = Math.abs(startAttachmentY - halfwayY) <= stopPointTolerance || startAttachmentY >= halfwayY;
-                    const isMovingUp = deltaY < 0; // Negative deltaY means moving up
-                    const proposedAttachmentY = (dosimeterStartTop + deltaY) + (currentDosimeterRect.height * 0.3);
-                    const isNowAboveStopPoint = proposedAttachmentY < halfwayY - stopPointTolerance;
-                    
-                    // If we were near the mic and are now moving up/away, we're dragging away
-                    isDraggingAway = wasNearMic && (isMovingUp || isNowAboveStopPoint);
-                }
-                
-                // If on microphone, lock horizontal movement but allow vertical
-                let newLeft = dosimeterStartLeft;
+                // Start with direct mouse position
+                let newLeft = dosimeterStartLeft + deltaX;
                 let newTop = dosimeterStartTop + deltaY;
                 
-                // Only apply horizontal movement if NOT on microphone
-                if (!isOnMicrophone) {
-                    newLeft = dosimeterStartLeft + deltaX;
-                }
+                const deviceFrame = document.querySelector('.device-frame');
+                const devicePhoto = document.querySelector('.device-photo');
                 
                 if (deviceFrame && devicePhoto) {
                     const deviceRect = deviceFrame.getBoundingClientRect();
                     const dosimeterRect = dosimeterContainer.getBoundingClientRect();
-                    
-                    // Get microphone snap point
                     const micSnapPoint = getMicSnapPoint(deviceRect);
+                    const dosimeterScale = 0.6;
                     
-                    // Calculate dosimeter center point based on new position (top portion where it would attach)
-                    const dosimeterCenterX = newLeft + (dosimeterRect.width * 0.5);
-                    const dosimeterCenterY = newTop + (dosimeterRect.height * 0.3); // Top portion of dosimeter
-                    
-                    // Calculate distance to microphone
+                    // Calculate microphone center position
                     const micTargetX = deviceRect.left + (deviceRect.width * 0.5);
                     const micTargetY = micSnapPoint.micY;
-                    const distanceX = micTargetX - dosimeterCenterX;
-                    const distanceY = micTargetY - dosimeterCenterY;
-                    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
                     
-                    // Define snap zones
-                    const snapZoneRadius = 150; // pixels - distance at which attraction starts
-                    const snapThreshold = 30; // pixels - distance at which it snaps into place
-                    
-                    // Constraint: Prevent dosimeter from going below 25% point between initial position and mic
-                    // Limit to 25% of the distance - dosimeter can only go 25% down to the mic
-                    const dosimeterScale = 0.6;
-                    // dosimeterRect.height is already scaled, so 30% of rendered height is correct
-                    const dosimeterTopAttachmentY = newTop + (dosimeterRect.height * 0.3);
-                    
-                    // Calculate 25% point between initial position and mic position
+                    // Calculate target snap position - centered on microphone, aligned to top
+                    const unscaledWidth = dosimeterContainer.offsetWidth;
+                    const unscaledHeight = dosimeterContainer.offsetHeight;
                     const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                    const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
                     
-                    // Check if at or very close to the stop point (within 5px tolerance)
-                    const stopPointTolerance = 5;
-                    const isAtStopPoint = Math.abs(dosimeterTopAttachmentY - halfwayY) <= stopPointTolerance;
+                    // Calculate snap position from percentages relative to device frame
+                    const snapTargetX = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
+                    const snapTargetY = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
                     
-                    if (dosimeterTopAttachmentY > halfwayY) {
-                        // Clamp to 25% position
-                        newTop = halfwayY - (dosimeterRect.height * 0.3);
-                    }
+                    // Calculate current dosimeter attachment point (30% from top)
+                    const dosimeterAttachmentX = newLeft + (dosimeterRect.width * 0.5);
+                    const dosimeterAttachmentY = newTop + (dosimeterRect.height * 0.3);
                     
-                    // If at stop point, lock horizontal position to microphone center
-                    if (isAtStopPoint || dosimeterTopAttachmentY >= halfwayY) {
-                        // Use unscaled width to account for transform origin 'center top'
-                        const unscaledWidth = dosimeterContainer.offsetWidth;
-                        // Horizontal offset to shift dosimeter left (match getMicSnapPoint)
-                        const horizontalOffset = -120; // Negative value moves left
-                        newLeft = micTargetX - (unscaledWidth * dosimeterScale * 0.5) + horizontalOffset;
-                    }
+                    // Calculate horizontal distance to microphone
+                    const horizontalDistance = Math.abs(micTargetX - dosimeterAttachmentX);
                     
-                    // Sound meter is already scaled down when dragging starts - just handle magnetic attraction and snapping
-                    if (distance < snapZoneRadius) {
-                        // Calculate attraction strength (stronger as closer)
-                        const attractionStrength = 1 - (distance / snapZoneRadius);
-                        const magneticPull = 0.3 * attractionStrength; // Adjust pull strength (0-1)
+                    // Final snap position - centered on mic, attachment point at mic top
+                    const finalSnapX = snapTargetX;
+                    const finalSnapY = snapTargetY;
+                    
+                    // Horizontal lock zone - when close horizontally, lock X and allow vertical sliding
+                    const horizontalLockZone = 80; // pixels
+                    const isInHorizontalLockZone = horizontalDistance < horizontalLockZone;
+                    
+                    // Check if already locked/snapped
+                    const isLocked = dosimeterContainer.dataset.snapped === 'true';
+                    
+                    if (isInHorizontalLockZone || isLocked) {
+                        // Lock horizontal position - dosimeter slides onto mic
+                        newLeft = finalSnapX;
                         
-                        // Apply magnetic attraction (but respect the constraint)
-                        // Only apply horizontal attraction if not at stop point and not on microphone
-                        if (!isOnMicrophone && !isAtStopPoint && dosimeterTopAttachmentY < halfwayY) {
-                            newLeft += distanceX * magneticPull;
-                        }
-                        const proposedNewTop = newTop + distanceY * magneticPull;
+                        // Calculate current attachment point
+                        const dosimeterTopAttachmentY = newTop + (dosimeterRect.height * 0.3);
                         
-                        // Only apply vertical attraction if it doesn't violate the constraint
-                        const proposedAttachmentY = proposedNewTop + (dosimeterRect.height * 0.3);
-                        const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                        const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
+                        // When in lock zone, pull toward snap position vertically
+                        const verticalDistance = dosimeterTopAttachmentY - micTargetY;
+                        const verticalSnapThreshold = 30; // pixels
                         
-                        if (proposedAttachmentY <= halfwayY) {
-                            newTop = proposedNewTop;
-                        } else {
-                            // If would exceed stop point, clamp to stop point and lock horizontal
-                            newTop = halfwayY - (dosimeterRect.height * 0.3);
-                            // Use unscaled width to account for transform origin 'center top'
-                            const unscaledWidth = dosimeterContainer.offsetWidth;
-                            // Horizontal offset to shift dosimeter left (match getMicSnapPoint)
-                            const horizontalOffset = -80; // Negative value moves left
-                            newLeft = micTargetX - (unscaledWidth * dosimeterScale * 0.5) + horizontalOffset;
-                        }
-                        
-                        // Snap into final position when very close (but only to 25% point)
-                        if (distance < snapThreshold) {
-                            // Align dosimeter horizontally with mic, but vertically at 25% point
-                            // Use unscaled width to account for transform origin 'center top'
-                            const unscaledWidth = dosimeterContainer.offsetWidth;
-                            // Horizontal offset to shift dosimeter left (match getMicSnapPoint)
-                            const horizontalOffset = -80; // Negative value moves left
-                            newLeft = micTargetX - (unscaledWidth * dosimeterScale * 0.5) + horizontalOffset;
-                            const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                            const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
-                            newTop = halfwayY - (dosimeterRect.height * 0.3);
-                            
-                            // Mark as snapped
+                        if (Math.abs(verticalDistance) < verticalSnapThreshold) {
+                            // Close enough - snap to final position
+                            newTop = finalSnapY;
                             dosimeterContainer.dataset.snapped = 'true';
                             dosimeterContainer.dataset.snapPoint = micSnapPoint.id;
                             currentSnapPoint = micSnapPoint.id;
-                            
-                            // Ensure both scales are maintained when snapped
-                            const soundMeterScale = 0.7; // Sound meter scale
-                            const zoomScale = 1 + (currentZoom / 100);
-                            const combinedScale = zoomScale * soundMeterScale;
-                            deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
-                            deviceFrame.style.transformOrigin = 'center center';
-                            dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                            dosimeterContainer.style.transformOrigin = 'center top';
                         } else {
-                            dosimeterContainer.dataset.snapped = 'false';
-                            dosimeterContainer.dataset.snapPoint = '';
-                            currentSnapPoint = null;
+                            // Pull toward snap position (magnetic effect)
+                            const pullStrength = 0.3; // How strongly to pull (0-1)
+                            const targetTop = finalSnapY;
+                            newTop = newTop + (targetTop - newTop) * pullStrength;
+                            
+                            // Constrain to valid range
+                            const constrainedAttachmentY = newTop + (dosimeterRect.height * 0.3);
+                            if (constrainedAttachmentY > micTargetY) {
+                                newTop = finalSnapY;
+                            }
+                            if (constrainedAttachmentY < initialAttachmentY) {
+                                newTop = initialAttachmentY - (dosimeterRect.height * 0.3);
+                            }
+                            
+                            if (isLocked && Math.abs(verticalDistance) > verticalSnapThreshold * 2) {
+                                // If locked but dragged away significantly, unlock
+                                dosimeterContainer.dataset.snapped = 'false';
+                                dosimeterContainer.dataset.snapPoint = '';
+                                currentSnapPoint = null;
+                            } else if (!isLocked) {
+                                // In lock zone but not snapped yet
+                                dosimeterContainer.dataset.snapped = 'false';
+                                dosimeterContainer.dataset.snapPoint = '';
+                                currentSnapPoint = null;
+                            }
                         }
                     } else {
-                        // If dragging away, clear snap state and don't apply magnetic attraction
+                        // Not in horizontal lock zone - free movement
+                        // Soft constraint: prevent going below mic top
+                        const dosimeterTopAttachmentY = newTop + (dosimeterRect.height * 0.3);
+                        if (dosimeterTopAttachmentY > micTargetY) {
+                            newTop = finalSnapY;
+                        }
+                        
+                        // Clear snap state
                         dosimeterContainer.dataset.snapped = 'false';
                         dosimeterContainer.dataset.snapPoint = '';
                         currentSnapPoint = null;
                     }
                     
                     // Keep both dosimeter and sound meter at smaller scale while dragging
-                    const soundMeterScale = 0.7; // Sound meter scale
+                    const soundMeterScale = 0.7;
                     dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
                     dosimeterContainer.style.transformOrigin = 'center top';
                     
-                    // Keep sound meter at smaller scale (already set on drag start)
                     const zoomScale = 1 + (currentZoom / 100);
                     const combinedScale = zoomScale * soundMeterScale;
                     deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
                     deviceFrame.style.transformOrigin = 'center center';
                 }
                 
-                // Always update position (snapped state is cleared on mousedown to allow dragging away)
-                dosimeterContainer.style.left = newLeft + 'px';
-                dosimeterContainer.style.top = newTop + 'px';
-                
-                dosimeterPhoto.style.transform = 'none'; // Remove centering transform when dragging
+                // Smooth position update using requestAnimationFrame
+                requestAnimationFrame(() => {
+                    dosimeterContainer.style.left = newLeft + 'px';
+                    dosimeterContainer.style.top = newTop + 'px';
+                    dosimeterPhoto.style.transform = 'none'; // Remove centering transform when dragging
+                });
             });
             
             document.addEventListener('mouseup', function() {
@@ -1401,34 +1586,62 @@ console.log('[INIT] Setting up subscription...');
                 isDraggingDosimeter = false;
                 dosimeterPhoto.classList.remove('dragging');
                 
-                // Keep sound meter and dosimeter at smaller scale when dragging stops (always stay at smaller scale)
+                // Keep sound meter and dosimeter at smaller scale when dragging stops
                 const deviceFrame = document.querySelector('.device-frame');
                 if (deviceFrame) {
-                    // Always keep smaller scale when dragging stops
-                    const soundMeterScale = 0.7; // Sound meter scale
-                    const dosimeterScale = 0.6; // Dosimeter scale (smaller)
+                    const soundMeterScale = 0.7;
+                    const dosimeterScale = 0.6;
                     const zoomScale = 1 + (currentZoom / 100);
                     const combinedScale = zoomScale * soundMeterScale;
                     deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
                     deviceFrame.style.transformOrigin = 'center center';
-                    
-                    // Keep dosimeter at smaller scale
                     dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
                     dosimeterContainer.style.transformOrigin = 'center top';
                     
-                    // If snapped, ensure perfect alignment to the 25% point
-                    if (dosimeterContainer.dataset.snapped === 'true' && currentSnapPoint === 'mic') {
+                    // Check if close enough to snap on release
+                    const deviceRect = deviceFrame.getBoundingClientRect();
+                    const dosimeterRect = dosimeterContainer.getBoundingClientRect();
+                    const micSnapPoint = getMicSnapPoint(deviceRect);
+                    
+                    // Calculate current attachment point
+                    const dosimeterCenterX = dosimeterRect.left + (dosimeterRect.width * 0.5);
+                    const dosimeterCenterY = dosimeterRect.top + (dosimeterRect.height * 0.3);
+                    
+                    // Calculate distance to microphone
+                    const micTargetX = deviceRect.left + (deviceRect.width * 0.5);
+                    const micTargetY = micSnapPoint.micY;
+                    const distanceX = micTargetX - dosimeterCenterX;
+                    const distanceY = micTargetY - dosimeterCenterY;
+                    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                    
+                    // Snap threshold - only snap if close enough on release
+                    const snapThreshold = 50; // pixels
+                    
+                    if (distance < snapThreshold) {
+                        // Snap to position calculated from percentages
                         const deviceRect = deviceFrame.getBoundingClientRect();
-                        const micSnapPoint = getMicSnapPoint(deviceRect);
-                        const dosimeterRect = dosimeterContainer.getBoundingClientRect();
+                        const newLeft = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
+                        const newTop = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
                         
-                        // Calculate 25% point between initial position and mic
-                        const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                        const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
-                        const halfwayTop = halfwayY - (dosimeterRect.height * 0.3);
+                        // Smooth snap with transition
+                        dosimeterContainer.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
+                        dosimeterContainer.style.left = newLeft + 'px';
+                        dosimeterContainer.style.top = newTop + 'px';
                         
-                        dosimeterContainer.style.left = micSnapPoint.x + 'px';
-                        dosimeterContainer.style.top = halfwayTop + 'px';
+                        // Mark as snapped
+                        dosimeterContainer.dataset.snapped = 'true';
+                        dosimeterContainer.dataset.snapPoint = micSnapPoint.id;
+                        currentSnapPoint = micSnapPoint.id;
+                        
+                        // Remove transition after snap completes
+                        setTimeout(() => {
+                            dosimeterContainer.style.transition = '';
+                        }, 200);
+                    } else {
+                        // Not close enough - clear snap state
+                        dosimeterContainer.dataset.snapped = 'false';
+                        dosimeterContainer.dataset.snapPoint = '';
+                        currentSnapPoint = null;
                     }
                 }
                 
@@ -1492,182 +1705,124 @@ console.log('[INIT] Setting up subscription...');
                 const deltaX = e.touches[0].clientX - dosimeterStartX;
                 const deltaY = e.touches[0].clientY - dosimeterStartY;
                 
-                // Get device frame and calculate microphone snap point first to check if we're on the mic
-                const deviceFrame = document.querySelector('.device-frame');
-                const devicePhoto = document.querySelector('.device-photo');
-                
-                // Check current position to determine if we're on the microphone
-                let isOnMicrophone = false;
-                let isDraggingAway = false;
-                if (deviceFrame && devicePhoto) {
-                    const deviceRect = deviceFrame.getBoundingClientRect();
-                    const currentDosimeterRect = dosimeterContainer.getBoundingClientRect();
-                    const micSnapPoint = getMicSnapPoint(deviceRect);
-                    const dosimeterScale = 0.6;
-                    
-                    // Calculate current attachment point
-                    const currentAttachmentY = currentDosimeterRect.top + (currentDosimeterRect.height * 0.3);
-                    const initialAttachmentY = dosimeterInitialTop + (currentDosimeterRect.height * 0.3);
-                    const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
-                    
-                    // Check if currently at or very close to the stop point (within 5px tolerance)
-                    const stopPointTolerance = 5;
-                    isOnMicrophone = Math.abs(currentAttachmentY - halfwayY) <= stopPointTolerance || currentAttachmentY >= halfwayY;
-                    
-                    // Check if we're dragging away from the microphone (moving up or away horizontally)
-                    // If we started near the mic and are now moving up, we're dragging away
-                    const startAttachmentY = dosimeterStartTop + (currentDosimeterRect.height * 0.3);
-                    const wasNearMic = Math.abs(startAttachmentY - halfwayY) <= stopPointTolerance || startAttachmentY >= halfwayY;
-                    const isMovingUp = deltaY < 0; // Negative deltaY means moving up
-                    const proposedAttachmentY = (dosimeterStartTop + deltaY) + (currentDosimeterRect.height * 0.3);
-                    const isNowAboveStopPoint = proposedAttachmentY < halfwayY - stopPointTolerance;
-                    
-                    // If we were near the mic and are now moving up/away, we're dragging away
-                    isDraggingAway = wasNearMic && (isMovingUp || isNowAboveStopPoint);
-                }
-                
-                // If on microphone, lock horizontal movement but allow vertical
-                let newLeft = dosimeterStartLeft;
+                // Start with direct touch position
+                let newLeft = dosimeterStartLeft + deltaX;
                 let newTop = dosimeterStartTop + deltaY;
                 
-                // Only apply horizontal movement if NOT on microphone
-                if (!isOnMicrophone) {
-                    newLeft = dosimeterStartLeft + deltaX;
-                }
+                const deviceFrame = document.querySelector('.device-frame');
+                const devicePhoto = document.querySelector('.device-photo');
                 
                 if (deviceFrame && devicePhoto) {
                     const deviceRect = deviceFrame.getBoundingClientRect();
                     const dosimeterRect = dosimeterContainer.getBoundingClientRect();
-                    
-                    // Get microphone snap point
                     const micSnapPoint = getMicSnapPoint(deviceRect);
+                    const dosimeterScale = 0.6;
                     
-                    // Calculate dosimeter center point based on new position
-                    const dosimeterCenterX = newLeft + (dosimeterRect.width * 0.5);
-                    const dosimeterCenterY = newTop + (dosimeterRect.height * 0.3);
-                    
-                    // Calculate distance to microphone
+                    // Calculate microphone center position
                     const micTargetX = deviceRect.left + (deviceRect.width * 0.5);
                     const micTargetY = micSnapPoint.micY;
-                    const distanceX = micTargetX - dosimeterCenterX;
-                    const distanceY = micTargetY - dosimeterCenterY;
-                    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
                     
-                    // Define snap zones
-                    const snapZoneRadius = 150; // pixels - distance at which attraction starts
-                    const snapThreshold = 30; // pixels - distance at which it snaps into place
-                    
-                    // Constraint: Prevent dosimeter from going below 25% point between initial position and mic
-                    // Limit to 25% of the distance - dosimeter can only go 25% down to the mic
-                    const dosimeterScale = 0.6;
-                    // dosimeterRect.height is already scaled, so 30% of rendered height is correct
-                    const dosimeterTopAttachmentY = newTop + (dosimeterRect.height * 0.3);
-                    
-                    // Calculate 25% point between initial position and mic position
+                    // Calculate target snap position - centered on microphone, aligned to top
+                    const unscaledWidth = dosimeterContainer.offsetWidth;
+                    const unscaledHeight = dosimeterContainer.offsetHeight;
                     const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                    const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
                     
-                    // Check if at or very close to the stop point (within 5px tolerance)
-                    const stopPointTolerance = 5;
-                    const isAtStopPoint = Math.abs(dosimeterTopAttachmentY - halfwayY) <= stopPointTolerance;
+                    // Calculate snap position from percentages relative to device frame
+                    const snapTargetX = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
+                    const snapTargetY = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
                     
-                    if (dosimeterTopAttachmentY > halfwayY) {
-                        // Clamp to 25% position
-                        newTop = halfwayY - (dosimeterRect.height * 0.3);
-                    }
+                    // Calculate current dosimeter attachment point (30% from top)
+                    const dosimeterAttachmentX = newLeft + (dosimeterRect.width * 0.5);
+                    const dosimeterAttachmentY = newTop + (dosimeterRect.height * 0.3);
                     
-                    // If at stop point, lock horizontal position to microphone center
-                    if (isAtStopPoint || dosimeterTopAttachmentY >= halfwayY) {
-                        // Use unscaled width to account for transform origin 'center top'
-                        const unscaledWidth = dosimeterContainer.offsetWidth;
-                        // Horizontal offset to shift dosimeter left (match getMicSnapPoint)
-                        const horizontalOffset = -120; // Negative value moves left
-                        newLeft = micTargetX - (unscaledWidth * dosimeterScale * 0.5) + horizontalOffset;
-                    }
+                    // Calculate horizontal distance to microphone
+                    const horizontalDistance = Math.abs(micTargetX - dosimeterAttachmentX);
                     
-                    // Sound meter is already scaled down when dragging starts - just handle magnetic attraction and snapping
-                    // Only apply magnetic attraction and snapping if NOT dragging away from microphone
-                    if (!isDraggingAway && distance < snapZoneRadius) {
-                        // Calculate attraction strength (stronger as closer)
-                        const attractionStrength = 1 - (distance / snapZoneRadius);
-                        const magneticPull = 0.3 * attractionStrength; // Adjust pull strength (0-1)
+                    // Final snap position - centered on mic, attachment point at mic top
+                    const finalSnapX = snapTargetX;
+                    const finalSnapY = snapTargetY;
+                    
+                    // Horizontal lock zone - when close horizontally, lock X and allow vertical sliding
+                    const horizontalLockZone = 80; // pixels
+                    const isInHorizontalLockZone = horizontalDistance < horizontalLockZone;
+                    
+                    // Check if already locked/snapped
+                    const isLocked = dosimeterContainer.dataset.snapped === 'true';
+                    
+                    if (isInHorizontalLockZone || isLocked) {
+                        // Lock horizontal position - dosimeter slides onto mic
+                        newLeft = finalSnapX;
                         
-                        // Apply magnetic attraction (but respect the constraint)
-                        // Only apply horizontal attraction if not at stop point and not on microphone
-                        if (!isOnMicrophone && !isAtStopPoint && dosimeterTopAttachmentY < halfwayY) {
-                            newLeft += distanceX * magneticPull;
-                        }
-                        const proposedNewTop = newTop + distanceY * magneticPull;
+                        // Calculate current attachment point
+                        const dosimeterTopAttachmentY = newTop + (dosimeterRect.height * 0.3);
                         
-                        // Only apply vertical attraction if it doesn't violate the constraint
-                        const proposedAttachmentY = proposedNewTop + (dosimeterRect.height * 0.3);
-                        const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                        const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
+                        // When in lock zone, pull toward snap position vertically
+                        const verticalDistance = dosimeterTopAttachmentY - micTargetY;
+                        const verticalSnapThreshold = 30; // pixels
                         
-                        if (proposedAttachmentY <= halfwayY) {
-                            newTop = proposedNewTop;
-                        } else {
-                            // If would exceed stop point, clamp to stop point and lock horizontal
-                            newTop = halfwayY - (dosimeterRect.height * 0.3);
-                            // Use unscaled width to account for transform origin 'center top'
-                            const unscaledWidth = dosimeterContainer.offsetWidth;
-                            // Horizontal offset to shift dosimeter left (match getMicSnapPoint)
-                            const horizontalOffset = -80; // Negative value moves left
-                            newLeft = micTargetX - (unscaledWidth * dosimeterScale * 0.5) + horizontalOffset;
-                        }
-                        
-                        // Snap into final position when very close (but only to 25% point)
-                        if (distance < snapThreshold) {
-                            // Align dosimeter horizontally with mic, but vertically at 25% point
-                            // Use unscaled width to account for transform origin 'center top'
-                            const unscaledWidth = dosimeterContainer.offsetWidth;
-                            // Horizontal offset to shift dosimeter left (match getMicSnapPoint)
-                            const horizontalOffset = -80; // Negative value moves left
-                            newLeft = micTargetX - (unscaledWidth * dosimeterScale * 0.5) + horizontalOffset;
-                            const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                            const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
-                            newTop = halfwayY - (dosimeterRect.height * 0.3);
-                            
-                            // Mark as snapped
+                        if (Math.abs(verticalDistance) < verticalSnapThreshold) {
+                            // Close enough - snap to final position
+                            newTop = finalSnapY;
                             dosimeterContainer.dataset.snapped = 'true';
                             dosimeterContainer.dataset.snapPoint = micSnapPoint.id;
                             currentSnapPoint = micSnapPoint.id;
-                            
-                            // Ensure both scales are maintained when snapped
-                            const soundMeterScale = 0.7; // Sound meter scale
-                            const zoomScale = 1 + (currentZoom / 100);
-                            const combinedScale = zoomScale * soundMeterScale;
-                            deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
-                            deviceFrame.style.transformOrigin = 'center center';
-                            dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                            dosimeterContainer.style.transformOrigin = 'center top';
                         } else {
-                            dosimeterContainer.dataset.snapped = 'false';
-                            dosimeterContainer.dataset.snapPoint = '';
-                            currentSnapPoint = null;
+                            // Pull toward snap position (magnetic effect)
+                            const pullStrength = 0.3; // How strongly to pull (0-1)
+                            const targetTop = finalSnapY;
+                            newTop = newTop + (targetTop - newTop) * pullStrength;
+                            
+                            // Constrain to valid range
+                            const constrainedAttachmentY = newTop + (dosimeterRect.height * 0.3);
+                            if (constrainedAttachmentY > micTargetY) {
+                                newTop = finalSnapY;
+                            }
+                            if (constrainedAttachmentY < initialAttachmentY) {
+                                newTop = initialAttachmentY - (dosimeterRect.height * 0.3);
+                            }
+                            
+                            if (isLocked && Math.abs(verticalDistance) > verticalSnapThreshold * 2) {
+                                // If locked but dragged away significantly, unlock
+                                dosimeterContainer.dataset.snapped = 'false';
+                                dosimeterContainer.dataset.snapPoint = '';
+                                currentSnapPoint = null;
+                            } else if (!isLocked) {
+                                // In lock zone but not snapped yet
+                                dosimeterContainer.dataset.snapped = 'false';
+                                dosimeterContainer.dataset.snapPoint = '';
+                                currentSnapPoint = null;
+                            }
                         }
                     } else {
-                        // If dragging away, clear snap state and don't apply magnetic attraction
+                        // Not in horizontal lock zone - free movement
+                        // Soft constraint: prevent going below mic top
+                        const dosimeterTopAttachmentY = newTop + (dosimeterRect.height * 0.3);
+                        if (dosimeterTopAttachmentY > micTargetY) {
+                            newTop = finalSnapY;
+                        }
+                        
+                        // Clear snap state
                         dosimeterContainer.dataset.snapped = 'false';
                         dosimeterContainer.dataset.snapPoint = '';
                         currentSnapPoint = null;
                     }
                     
                     // Keep both dosimeter and sound meter at smaller scale while dragging
-                    const soundMeterScale = 0.7; // Sound meter scale
+                    const soundMeterScale = 0.7;
                     dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
                     dosimeterContainer.style.transformOrigin = 'center top';
                     
-                    // Keep sound meter at smaller scale (already set on drag start)
                     const zoomScale = 1 + (currentZoom / 100);
                     const combinedScale = zoomScale * soundMeterScale;
                     deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
                     deviceFrame.style.transformOrigin = 'center center';
                 }
                 
-                // Always update position (snapped state is cleared on touchstart to allow dragging away)
-                dosimeterContainer.style.left = newLeft + 'px';
-                dosimeterContainer.style.top = newTop + 'px';
+                // Smooth position update using requestAnimationFrame
+                requestAnimationFrame(() => {
+                    dosimeterContainer.style.left = newLeft + 'px';
+                    dosimeterContainer.style.top = newTop + 'px';
+                });
                 
                 e.preventDefault();
             }, { passive: false });
@@ -1679,34 +1834,62 @@ console.log('[INIT] Setting up subscription...');
                 isDraggingDosimeter = false;
                 dosimeterPhoto.classList.remove('dragging');
                 
-                // Keep sound meter and dosimeter at smaller scale when dragging stops (always stay at smaller scale)
+                // Keep sound meter and dosimeter at smaller scale when dragging stops
                 const deviceFrame = document.querySelector('.device-frame');
                 if (deviceFrame) {
-                    // Always keep smaller scale when dragging stops
-                    const soundMeterScale = 0.7; // Sound meter scale
-                    const dosimeterScale = 0.6; // Dosimeter scale (smaller)
+                    const soundMeterScale = 0.7;
+                    const dosimeterScale = 0.6;
                     const zoomScale = 1 + (currentZoom / 100);
                     const combinedScale = zoomScale * soundMeterScale;
                     deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
                     deviceFrame.style.transformOrigin = 'center center';
-                    
-                    // Keep dosimeter at smaller scale
                     dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
                     dosimeterContainer.style.transformOrigin = 'center top';
                     
-                    // If snapped, ensure perfect alignment to the 25% point
-                    if (dosimeterContainer.dataset.snapped === 'true' && currentSnapPoint === 'mic') {
+                    // Check if close enough to snap on release
+                    const deviceRect = deviceFrame.getBoundingClientRect();
+                    const dosimeterRect = dosimeterContainer.getBoundingClientRect();
+                    const micSnapPoint = getMicSnapPoint(deviceRect);
+                    
+                    // Calculate current attachment point
+                    const dosimeterCenterX = dosimeterRect.left + (dosimeterRect.width * 0.5);
+                    const dosimeterCenterY = dosimeterRect.top + (dosimeterRect.height * 0.3);
+                    
+                    // Calculate distance to microphone
+                    const micTargetX = deviceRect.left + (deviceRect.width * 0.5);
+                    const micTargetY = micSnapPoint.micY;
+                    const distanceX = micTargetX - dosimeterCenterX;
+                    const distanceY = micTargetY - dosimeterCenterY;
+                    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                    
+                    // Snap threshold - only snap if close enough on release
+                    const snapThreshold = 50; // pixels
+                    
+                    if (distance < snapThreshold) {
+                        // Snap to position calculated from percentages
                         const deviceRect = deviceFrame.getBoundingClientRect();
-                        const micSnapPoint = getMicSnapPoint(deviceRect);
-                        const dosimeterRect = dosimeterContainer.getBoundingClientRect();
+                        const newLeft = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
+                        const newTop = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
                         
-                        // Calculate 25% point between initial position and mic
-                        const initialAttachmentY = dosimeterInitialTop + (dosimeterRect.height * 0.3);
-                        const halfwayY = initialAttachmentY + ((micSnapPoint.micY - initialAttachmentY) * 0.25);
-                        const halfwayTop = halfwayY - (dosimeterRect.height * 0.3);
+                        // Smooth snap with transition
+                        dosimeterContainer.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
+                        dosimeterContainer.style.left = newLeft + 'px';
+                        dosimeterContainer.style.top = newTop + 'px';
                         
-                        dosimeterContainer.style.left = micSnapPoint.x + 'px';
-                        dosimeterContainer.style.top = halfwayTop + 'px';
+                        // Mark as snapped
+                        dosimeterContainer.dataset.snapped = 'true';
+                        dosimeterContainer.dataset.snapPoint = micSnapPoint.id;
+                        currentSnapPoint = micSnapPoint.id;
+                        
+                        // Remove transition after snap completes
+                        setTimeout(() => {
+                            dosimeterContainer.style.transition = '';
+                        }, 200);
+                    } else {
+                        // Not close enough - clear snap state
+                        dosimeterContainer.dataset.snapped = 'false';
+                        dosimeterContainer.dataset.snapPoint = '';
+                        currentSnapPoint = null;
                     }
                 }
                 

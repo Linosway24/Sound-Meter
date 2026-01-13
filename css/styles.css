@@ -66,11 +66,12 @@ body {
 .dosimeter-container {
     position: absolute;
     /* Initial position - will be updated by JavaScript to maintain relative position */
+    /* Positioned in upper third of screen */
     left: 115px;
-    top: 300px;
+    top: 10vh;
     display: block;
-    /* Scale based on viewport height - 25% of simulator size, increased by 25% = 31.25% */
-    height: calc((100vh - 48px) * 0.3125);
+    /* Scale based on viewport height - increased to make dosimeter taller */
+    height: calc((100vh - 48px) * 0.4);
     width: auto; /* Width automatically maintains aspect ratio */
     max-width: calc(50vw - 40px); /* Prevent it from taking too much space, account for left padding */
     z-index: 10000; /* Place in front of simulator */
@@ -2160,6 +2161,118 @@ body {
 }
 
 .zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #58a6ff;
+}
+
+/* Dosimeter Snap Control Panel */
+.dosimeter-snap-control {
+    position: fixed;
+    bottom: 280px;
+    left: 20px;
+    width: 240px;
+    background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.dosimeter-snap-control__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid #30363d;
+    border-radius: 8px 8px 0 0;
+}
+
+.dosimeter-snap-control__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e6edf3;
+}
+
+.dosimeter-snap-control__content {
+    padding: 12px;
+}
+
+.dosimeter-snap-control__current {
+    margin-bottom: 12px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.dosimeter-snap-control__label {
+    font-size: 11px;
+    color: #8b949e;
+    margin-bottom: 4px;
+}
+
+.dosimeter-snap-control__value {
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+    color: #58a6ff;
+    font-weight: 500;
+}
+
+.dosimeter-snap-control__inputs {
+    margin-bottom: 12px;
+}
+
+.dosimeter-snap-control__input-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.dosimeter-snap-control__input-group label {
+    font-size: 12px;
+    color: #e6edf3;
+    flex: 1;
+}
+
+.dosimeter-snap-control__input-group input {
+    flex: 1;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    color: #e6edf3;
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+    max-width: 100px;
+}
+
+.dosimeter-snap-control__input-group input:focus {
+    outline: none;
+    border-color: #58a6ff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.dosimeter-snap-control__buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.dosimeter-snap-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #e6edf3;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dosimeter-snap-btn:hover {
     background: rgba(255, 255, 255, 0.15);
     border-color: #58a6ff;
 }
