@@ -18,14 +18,14 @@
                     type="range" 
                     id="zoom-slider" 
                     class="zoom-control__slider" 
-                    min="0" 
+                    min="-30" 
                     max="200" 
                     value="0" 
                     step="5"
                     oninput="window.setDeviceZoom(this.value)"
                 >
                 <div class="zoom-control__labels">
-                    <span>0%</span>
+                    <span>-30%</span>
                     <span id="zoom-value">0%</span>
                     <span>200%</span>
                 </div>
@@ -56,11 +56,11 @@
             <div class="dosimeter-snap-control__inputs">
                 <div class="dosimeter-snap-control__input-group">
                     <label>X Offset:</label>
-                    <input type="number" id="dosimeter-snap-x" value="-20" step="1" onchange="window.applyDosimeterSnapCoords()" oninput="window.updateDosimeterSnapPreview()">
+                    <input type="number" id="dosimeter-snap-x" value="-213" step="1" onchange="window.applyDosimeterSnapCoords()" oninput="window.updateDosimeterSnapPreview()">
                 </div>
                 <div class="dosimeter-snap-control__input-group">
                     <label>Y Offset:</label>
-                    <input type="number" id="dosimeter-snap-y" value="-166" step="1" onchange="window.applyDosimeterSnapCoords()" oninput="window.updateDosimeterSnapPreview()">
+                    <input type="number" id="dosimeter-snap-y" value="-572" step="1" onchange="window.applyDosimeterSnapCoords()" oninput="window.updateDosimeterSnapPreview()">
                 </div>
                 <div class="dosimeter-snap-control__input-group">
                     <label>Height Multiplier:</label>
@@ -151,11 +151,30 @@
             const isCalibrationPlaying = audioState?.isPlaying && 
                                         audioState.currentPresetName === 'calibration';
             
+            // Track previous state to detect when display turns on
+            const wasOn = dosimeterDisplay.classList.contains('dosimeter-display--on');
+            
             // Show display only when calibration is actually playing, hide when stopped
             if (isCalibrationPlaying) {
                 dosimeterDisplay.classList.add('dosimeter-display--on');
+                // When dosimeter display turns on, zoom the sound meter (which will scale dosimeter proportionally)
+                // This makes the dosimeter zoom in at the same rate as the sound meter
+                if (!wasOn && window.autoZoomToLCD) {
+                    setTimeout(() => {
+                        // Zoom the sound meter - dosimeter will scale proportionally via applyDosimeterTransform
+                        window.autoZoomToLCD();
+                        // Also pan to center the dosimeter
+                        if (window.autoZoomToDosimeter) {
+                            window.autoZoomToDosimeter();
+                        }
+                    }, 150); // Small delay to ensure display is rendered
+                }
             } else {
                 dosimeterDisplay.classList.remove('dosimeter-display--on');
+                // Reset zoom when display turns off
+                if (wasOn && window.setDosimeterZoom) {
+                    window.setDosimeterZoom(0);
+                }
             }
         }
 
@@ -606,22 +625,21 @@ console.log('[INIT] Setting up subscription...');
         let dragStartPanX = 0;
         let dragStartPanY = 0;
         
+        // Update dosimeter visibility based on sound meter zoom level
+        function updateDosimeterVisibility() {
+            const body = document.body;
+            // Hide dosimeter when sound meter is zoomed in (>= -25% zoom)
+            // Dosimeter becomes visible starting at -25% zoom
+            const shouldHide = currentZoom >= -25;
+            body.classList.toggle('hide-dosimeter', shouldHide);
+        }
+        
         function applyDeviceTransform(instant = false) {
             const deviceFrame = document.querySelector('.device-frame');
             if (!deviceFrame) return;
             
-            // Check if dosimeter is snapped - if so, use smaller scale
-            const dosimeterContainer = document.querySelector('.dosimeter-container');
-            const isSnapped = dosimeterContainer && dosimeterContainer.dataset.snapped === 'true';
-            
-            // Convert percentage to scale (0% = 1.0, 100% = 2.0, 200% = 3.0)
+            // Convert percentage to scale (-30% = 0.7, 0% = 1.0, 100% = 2.0, 200% = 3.0)
             let scale = 1 + (currentZoom / 100);
-            
-            // If dosimeter is snapped, apply smaller scale to sound meter
-            if (isSnapped) {
-                const soundMeterScale = 0.7; // Sound meter scale when dosimeter is snapped
-                scale = scale * soundMeterScale;
-            }
             
             // Apply transform with both scale and translation
             deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
@@ -644,6 +662,9 @@ console.log('[INIT] Setting up subscription...');
                 panX = 0;
                 panY = 0;
             }
+            
+            // Update dosimeter visibility based on zoom level
+            updateDosimeterVisibility();
         }
         
         function setDeviceZoom(zoomPercent, instant = false) {
@@ -663,6 +684,11 @@ console.log('[INIT] Setting up subscription...');
             
             // Apply transform (with optional instant flag for smooth animation)
             applyDeviceTransform(instant);
+            
+            // Also update dosimeter transform to scale proportionally with sound meter zoom
+            if (window.applyDosimeterTransform) {
+                applyDosimeterTransform(instant);
+            }
             
             // Update LCD font size after zoom completes (delay to avoid interrupting animation)
             if (instant) {
@@ -805,7 +831,7 @@ console.log('[INIT] Setting up subscription...');
             const slider = document.getElementById('zoom-slider');
             if (!slider) return;
             const current = parseInt(slider.value) || 0;
-            const newZoom = Math.max(0, current - 10);
+            const newZoom = Math.max(-30, current - 10);
             setDeviceZoom(newZoom);
         }
         
@@ -884,6 +910,180 @@ console.log('[INIT] Setting up subscription...');
         // Make auto-zoom function globally accessible
         window.autoZoomToLCD = autoZoomToLCD;
         
+        // Dosimeter zoom functionality - separate from device-frame zoom
+        let dosimeterZoom = 0; // 0% = 1.0 scale
+        let dosimeterPanX = 0; // Pan offset X
+        let dosimeterPanY = 0; // Pan offset Y
+        
+        function applyDosimeterTransform(instant = false) {
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            if (!dosimeterContainer) return;
+            
+            // Get sound meter zoom level to maintain proportionality
+            const soundMeterZoomScale = 1 + (currentZoom / 100);
+            
+            // Base dosimeter scale relative to sound meter (0.6 = 60% of sound meter size)
+            const baseDosimeterScale = 0.6;
+            
+            // If zoomed, maintain proportional size and only apply pan (no additional scaling)
+            if (dosimeterZoom > 0) {
+                // Keep base scale relative to sound meter - don't scale up the dosimeter itself
+                // The "zoom" is achieved by panning to center it, not by scaling it
+                const combinedScale = baseDosimeterScale * soundMeterZoomScale;
+                
+                // Apply transform with scale (maintaining proportion) and translation (panning to center)
+                dosimeterContainer.style.transform = `translate(${dosimeterPanX}px, ${dosimeterPanY}px) scale(${combinedScale})`;
+                dosimeterContainer.style.transformOrigin = 'center center';
+                
+                // Adjust transition duration for smooth animation (unless instant)
+                if (instant) {
+                    dosimeterContainer.style.transition = 'transform 0s';
+                } else {
+                    // Use cubic-bezier for smoother, more natural animation
+                    dosimeterContainer.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                }
+            } else {
+                // No dosimeter zoom - apply base scale relative to sound meter zoom
+                const isSnapped = dosimeterContainer.dataset.snapped === 'true';
+                if (isSnapped) {
+                    // When snapped, use base scale * sound meter zoom to maintain proportion
+                    const combinedScale = baseDosimeterScale * soundMeterZoomScale;
+                    dosimeterContainer.style.transform = `scale(${combinedScale})`;
+                    dosimeterContainer.style.transformOrigin = 'center top';
+                } else {
+                    // Not snapped - maintain base scale relative to sound meter zoom
+                    const combinedScale = baseDosimeterScale * soundMeterZoomScale;
+                    dosimeterContainer.style.transform = `scale(${combinedScale})`;
+                    dosimeterContainer.style.transformOrigin = 'center center';
+                }
+            }
+        }
+        
+        function setDosimeterZoom(zoomPercent, instant = false) {
+            dosimeterZoom = parseInt(zoomPercent) || 0;
+            
+            // Reset pan when zooming to 0
+            if (dosimeterZoom === 0) {
+                dosimeterPanX = 0;
+                dosimeterPanY = 0;
+            }
+            
+            // Apply transform
+            applyDosimeterTransform(instant);
+        }
+        
+        // Auto-zoom to dosimeter display and button area
+        function autoZoomToDosimeter() {
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            const dosimeterPhoto = document.querySelector('.dosimeter-photo');
+            const dosimeterDisplay = document.getElementById('dosimeter-display');
+            const dosimeterButton = document.querySelector('.dosimeter-btn--power');
+            
+            if (!dosimeterContainer || !dosimeterPhoto) {
+                console.warn('[ZOOM] Cannot auto-zoom dosimeter - elements not found');
+                return;
+            }
+            
+            // Wait for layout to be complete
+            requestAnimationFrame(() => {
+                // Get dosimeter container and sound meter
+                const deviceFrame = document.querySelector('.device-frame');
+                if (!deviceFrame) return;
+                
+                // Get dosimeter's CSS position (before transforms) - this is its absolute position
+                const dosimeterLeft = parseFloat(dosimeterContainer.style.left) || 115;
+                const dosimeterTop = parseFloat(dosimeterContainer.style.top) || 0;
+                
+                // Get sound meter's current bounding rect (after its zoom/pan transform)
+                const deviceRect = deviceFrame.getBoundingClientRect();
+                
+                // Get the current scale (base dosimeter scale * sound meter zoom)
+                const soundMeterZoomScale = 1 + (currentZoom / 100);
+                const currentDosimeterScale = 0.6 * soundMeterZoomScale;
+                
+                // Get dosimeter's original dimensions (before any scale)
+                const dosimeterWidth = dosimeterContainer.offsetWidth;
+                const dosimeterHeight = dosimeterContainer.offsetHeight;
+                
+                // Calculate the dosimeter's original center position (before transforms)
+                const dosimeterCenterX = dosimeterLeft + (dosimeterWidth / 2);
+                const dosimeterCenterY = dosimeterTop + (dosimeterHeight / 2);
+                
+                // Calculate the sound meter's original center (before zoom/pan)
+                // With transform origin center center, the center translates by panX/panY
+                // So: originalCenter = currentCenter - pan
+                const deviceOriginalCenterX = (deviceRect.left + deviceRect.width / 2) - panX;
+                const deviceOriginalCenterY = (deviceRect.top + deviceRect.height / 2) - panY;
+                
+                // Get sound meter's original dimensions (before zoom)
+                const deviceOriginalWidth = deviceRect.width / soundMeterZoomScale;
+                const deviceOriginalHeight = deviceRect.height / soundMeterZoomScale;
+                
+                // Calculate the sound meter's original top-left corner (before zoom/pan)
+                const deviceOriginalLeft = deviceOriginalCenterX - deviceOriginalWidth / 2;
+                const deviceOriginalTop = deviceOriginalCenterY - deviceOriginalHeight / 2;
+                
+                // Calculate the dosimeter's position relative to the sound meter's original top-left corner
+                // The dosimeter is positioned at ~8% from top of sound meter (from initializeDosimeterPosition)
+                const relativeX = dosimeterLeft - deviceOriginalLeft;
+                const relativeY = dosimeterTop - deviceOriginalTop;
+                
+                // After sound meter zoom, calculate where the dosimeter should be
+                // The sound meter's new top-left is at: deviceRect.left, deviceRect.top
+                // The dosimeter's new top-left should be at: deviceRect.left + (relativeX * soundMeterZoomScale)
+                // This scales the relative position, so if dosimeter was at top, it stays at top (and can go off-screen)
+                const targetDosimeterLeft = deviceRect.left + (relativeX * soundMeterZoomScale);
+                const offscreenMargin = deviceRect.height * 0.08;
+                const targetDosimeterTop = deviceRect.top + (relativeY * soundMeterZoomScale) - (dosimeterHeight * currentDosimeterScale) - offscreenMargin;
+                
+                // Calculate where the dosimeter center should be after scaling
+                // After dosimeter scales with transform origin center center, we need to account for the scaled size
+                const targetDosimeterCenterX = targetDosimeterLeft + (dosimeterWidth * currentDosimeterScale / 2);
+                const targetDosimeterCenterY = targetDosimeterTop + (dosimeterHeight * currentDosimeterScale / 2);
+                
+                // Calculate pan to move dosimeter center to target position
+                // With transform origin center center, after scale the center position doesn't change
+                // Then translate moves it: finalCenter = dosimeterCenterX + panX
+                const extraXShift = currentZoom > 0 ? 600 : 0;
+                dosimeterPanX = (targetDosimeterCenterX - dosimeterCenterX) + extraXShift;
+                dosimeterPanY = targetDosimeterCenterY - dosimeterCenterY;
+                
+                // Set a zoom flag (non-zero) to trigger panning
+                // The dosimeter will scale proportionally with sound meter zoom via applyDosimeterTransform
+                setDosimeterZoom(1, false);
+                
+                console.log('[ZOOM] Auto-zoomed to dosimeter (maintaining relative position):', {
+                    soundMeterZoom: currentZoom + '%',
+                    soundMeterScale: soundMeterZoomScale.toFixed(2),
+                    dosimeterScale: currentDosimeterScale.toFixed(2),
+                    relativePos: { x: relativeX.toFixed(0), y: relativeY.toFixed(0) },
+                    targetTop: targetDosimeterTop.toFixed(0),
+                    targetCenter: { x: targetDosimeterCenterX.toFixed(0), y: targetDosimeterCenterY.toFixed(0) },
+                    pan: { x: dosimeterPanX.toFixed(0), y: dosimeterPanY.toFixed(0) },
+                    viewportTop: 0,
+                    willBeOffScreen: targetDosimeterTop < 0 ? 'YES' : 'NO'
+                });
+            });
+        }
+        
+        // Make dosimeter zoom functions globally accessible
+        window.autoZoomToDosimeter = autoZoomToDosimeter;
+        window.setDosimeterZoom = setDosimeterZoom;
+        window.applyDosimeterTransform = applyDosimeterTransform;
+        
+        // Initialize dosimeter transform on page load to ensure it scales with sound meter zoom
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    applyDosimeterTransform(true);
+                }, 100);
+            });
+        } else {
+            setTimeout(() => {
+                applyDosimeterTransform(true);
+            }, 100);
+        }
+        
         // Keyboard controls for zoom (override browser zoom)
         document.addEventListener('keydown', function(e) {
             // Check if we're in an input field - if so, don't intercept
@@ -945,7 +1145,7 @@ console.log('[INIT] Setting up subscription...');
                 const slider = document.getElementById('zoom-slider');
                 if (slider) {
                     const current = parseInt(slider.value) || 0;
-                    const newZoom = Math.max(0, Math.min(200, current + delta));
+                    const newZoom = Math.max(-30, Math.min(200, current + delta));
                     setDeviceZoom(newZoom);
                 }
                 return false;
@@ -1180,8 +1380,8 @@ console.log('[INIT] Setting up subscription...');
         // Custom dosimeter snap coordinates (can be adjusted via UI)
         // Using percentages relative to device frame for zoom/pan/resize compatibility
         window.dosimeterSnapCoords = {
-            snapXPercent: 0.48,   // Percentage of device width (0.0 to 1.0) - adjusted left
-            snapYPercent: 0.05  // Percentage of device height (0.0 to 1.0)
+            snapXPercent: 0.1887,   // Percentage of device width (0.0 to 1.0)
+            snapYPercent: -0.2172  // Percentage of device height (can be negative if above device frame)
         };
 
         // Update dosimeter position display
@@ -1269,10 +1469,8 @@ console.log('[INIT] Setting up subscription...');
                 const newLeft = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
                 const newTop = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
                 
-                // Scale dosimeter smaller when snapped
-                const dosimeterScale = 0.6;
-                dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                dosimeterContainer.style.transformOrigin = 'center top';
+                // Scale dosimeter smaller when snapped (only if not zoomed)
+                applyDosimeterTransform(true);
                 
                 dosimeterContainer.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
                 dosimeterContainer.style.left = newLeft + 'px';
@@ -1435,9 +1633,8 @@ console.log('[INIT] Setting up subscription...');
                         deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
                         deviceFrame.style.transformOrigin = 'center center';
                     }
-                    // Scale dosimeter smaller than sound meter
-                    dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                    dosimeterContainer.style.transformOrigin = 'center top';
+                    // Scale dosimeter smaller than sound meter (only if not zoomed)
+                    applyDosimeterTransform(true);
                 }
                 
                 isDraggingDosimeter = true;
@@ -1562,8 +1759,8 @@ console.log('[INIT] Setting up subscription...');
                     
                     // Keep both dosimeter and sound meter at smaller scale while dragging
                     const soundMeterScale = 0.7;
-                    dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                    dosimeterContainer.style.transformOrigin = 'center top';
+                    // Apply dosimeter transform (respects zoom state)
+                    applyDosimeterTransform(true);
                     
                     const zoomScale = 1 + (currentZoom / 100);
                     const combinedScale = zoomScale * soundMeterScale;
@@ -1595,8 +1792,8 @@ console.log('[INIT] Setting up subscription...');
                     const combinedScale = zoomScale * soundMeterScale;
                     deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
                     deviceFrame.style.transformOrigin = 'center center';
-                    dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                    dosimeterContainer.style.transformOrigin = 'center top';
+                    // Apply dosimeter transform (respects zoom state)
+                    applyDosimeterTransform(true);
                     
                     // Check if close enough to snap on release
                     const deviceRect = deviceFrame.getBoundingClientRect();
@@ -1809,8 +2006,8 @@ console.log('[INIT] Setting up subscription...');
                     
                     // Keep both dosimeter and sound meter at smaller scale while dragging
                     const soundMeterScale = 0.7;
-                    dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                    dosimeterContainer.style.transformOrigin = 'center top';
+                    // Apply dosimeter transform (respects zoom state)
+                    applyDosimeterTransform(true);
                     
                     const zoomScale = 1 + (currentZoom / 100);
                     const combinedScale = zoomScale * soundMeterScale;
@@ -1843,8 +2040,8 @@ console.log('[INIT] Setting up subscription...');
                     const combinedScale = zoomScale * soundMeterScale;
                     deviceFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${combinedScale})`;
                     deviceFrame.style.transformOrigin = 'center center';
-                    dosimeterContainer.style.transform = `scale(${dosimeterScale})`;
-                    dosimeterContainer.style.transformOrigin = 'center top';
+                    // Apply dosimeter transform (respects zoom state)
+                    applyDosimeterTransform(true);
                     
                     // Check if close enough to snap on release
                     const deviceRect = deviceFrame.getBoundingClientRect();

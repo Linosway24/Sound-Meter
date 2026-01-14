@@ -90,6 +90,14 @@ body {
     cursor: move; /* Show move cursor */
     /* Match simulator's scaling behavior */
     object-fit: contain;
+    transition: opacity 0.3s ease;
+}
+
+/* Hide dosimeter when sound meter is zoomed in */
+body.hide-dosimeter .dosimeter-photo,
+body.hide-dosimeter .dosimeter-container {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* When dragging, remove the transform to allow free positioning */
