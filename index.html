@@ -157,24 +157,8 @@
             // Show display only when calibration is actually playing, hide when stopped
             if (isCalibrationPlaying) {
                 dosimeterDisplay.classList.add('dosimeter-display--on');
-                // When dosimeter display turns on, zoom the sound meter (which will scale dosimeter proportionally)
-                // This makes the dosimeter zoom in at the same rate as the sound meter
-                if (!wasOn && window.autoZoomToLCD) {
-                    setTimeout(() => {
-                        // Zoom the sound meter - dosimeter will scale proportionally via applyDosimeterTransform
-                        window.autoZoomToLCD();
-                        // Also pan to center the dosimeter
-                        if (window.autoZoomToDosimeter) {
-                            window.autoZoomToDosimeter();
-                        }
-                    }, 150); // Small delay to ensure display is rendered
-                }
             } else {
                 dosimeterDisplay.classList.remove('dosimeter-display--on');
-                // Reset zoom when display turns off
-                if (wasOn && window.setDosimeterZoom) {
-                    window.setDosimeterZoom(0);
-                }
             }
         }
 
@@ -628,9 +612,9 @@ console.log('[INIT] Setting up subscription...');
         // Update dosimeter visibility based on sound meter zoom level
         function updateDosimeterVisibility() {
             const body = document.body;
-            // Hide dosimeter when sound meter is zoomed in (>= -25% zoom)
-            // Dosimeter becomes visible starting at -25% zoom
-            const shouldHide = currentZoom >= -25;
+            // Hide dosimeter only when zoomed out beyond -25% (between -30% and -26%)
+            // Dosimeter is visible at -25% and above (including 0% default state)
+            const shouldHide = currentZoom < -25;
             body.classList.toggle('hide-dosimeter', shouldHide);
         }
         
