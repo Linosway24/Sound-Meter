@@ -389,12 +389,15 @@ console.log('[INIT] Setting up subscription...');
                                 }
                             }
                             
-                            // Walkthrough Step 1: highlight power button when OFF
-                            // Step 2: after power-on, highlight battery area (same style)
+                            // Walkthrough Step 1: powerOn - show panel + highlight power button when OFF
                             if (state.viewId === 'OFF') {
                                 setWalkthroughHighlight('.fn-btn--power', true);
                                 setWalkthroughHighlight('.status-bar__battery', false);
-                                if (window.hideWalkthroughPanel) window.hideWalkthroughPanel();
+                                if (window.showWalkthroughStep && !window.isWalkthroughStepCompleted?.('powerOn')) {
+                                    window.showWalkthroughStep('powerOn');
+                                } else if (window.hideWalkthroughPanel && window.isWalkthroughStepCompleted?.('powerOn')) {
+                                    window.hideWalkthroughPanel();
+                                }
                             } else {
                                 clearWalkthroughHighlights();
                             }
@@ -461,7 +464,9 @@ console.log('[INIT] Setting up subscription...');
                                         window.showWalkthroughStep('batteryCheck');
                                     }
                                 }
-                                
+                                // Walkthrough navigateToSetup: highlight down arrow until SETUP selected, then ENTER
+                                if (window.updateWalkthroughForState) window.updateWalkthroughForState(state);
+
                                 // Update font size after content is rendered (wait for layout)
                                 requestAnimationFrame(() => {
                                     updateLCDFontSize();
@@ -1363,6 +1368,7 @@ console.log('[INIT] Setting up subscription...');
                         } else if (window.isWalkthroughStepCompleted?.('batteryCheck')) {
                             setWalkthroughHighlight('.status-bar__battery', false);
                         }
+                        if (window.updateWalkthroughForState) window.updateWalkthroughForState(state);
 
                         // Update font size after render
                         updateLCDFontSize();

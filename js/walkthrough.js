@@ -16,7 +16,17 @@
      * - buttons: [{ id, label }, ...]
      * - onButtonClick(buttonId, stepId): custom handler; return false to stay, true/nothing to advance
      */
+    const HOME_MENU_SETUP_INDEX = 3; // SETUP is at index 3 in home menu
+    const SETUP_MENU_SIG_INPUT_INDEX = 6; // SIG INPUT is at index 6 in setup menu (right column)
+    const SETUP_MENU_METER_SET_INDEX = 1; // METER SET is at index 1 in setup menu (left column)
+    const SETUP_MENU_LEFT_COLUMN_MAX = 5; // Left column = indices 0-5, right = 6-10
+
     const walkthroughSteps = {
+        powerOn: {
+            text: 'Press the power button to turn on the device.',
+            showButtons: false,
+            buttons: [],
+        },
         batteryCheck: {
             text: 'Are the batteries fully charged?',
             showButtons: true,
@@ -38,9 +48,54 @@
                 }
             },
         },
+        navigateToSetup: {
+            text: 'Press the DOWN arrow until SETUP is selected.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: highlight and instruction updated via updateWalkthroughForState
+        },
+        navigateToSigInput: {
+            text: 'Press the RIGHT arrow until SIG INPUT is selected.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: highlight RIGHT until SIG INPUT (index 6), then ENTER
+        },
+        rangeCapacityCheck: {
+            text: 'Confirm Range Capacity',
+            showButtons: true,
+            buttons: [
+                { id: 'good', label: 'GOOD' },
+                { id: 'notgood', label: 'NOT GOOD' },
+            ],
+            onButtonClick: function (buttonId, stepId) {
+                if (buttonId === 'good') {
+                    if (typeof window.setWalkthroughHighlight === 'function') {
+                        window.setWalkthroughHighlight('#sig_input_list .menu-item:nth-child(2)', false);
+                    }
+                    hidePanel();
+                    advanceWalkthroughStep(stepId);
+                } else if (buttonId === 'notgood') {
+                    showWalkthroughFeedback(
+                        'Please verify the range capacity setting before proceeding.'
+                    );
+                }
+            },
+        },
+        escToSetup: {
+            text: 'Press ESC to go back to the Setup screen.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: highlight power button (ESC) when on sig_input_menu
+        },
+        navigateToMeterSet: {
+            text: 'Press the LEFT arrow to switch to the left column.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: highlight LEFT when on right column (6-10), then DOWN until METER SET (index 1), then ENTER
+        },
     };
 
-    const stepOrder = ['batteryCheck'];
+    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet'];
     let completedSteps = new Set();
     let currentStepId = null;
 
@@ -88,10 +143,168 @@
         const nextId = stepOrder[idx + 1];
         if (nextId) {
             showWalkthroughStep(nextId);
+            if (typeof window.setWalkthroughHighlight === 'function') {
+                const state = typeof window.getMainFSMState === 'function' ? window.getMainFSMState() : null;
+                const sh = window.setWalkthroughHighlight;
+                if (nextId === 'navigateToSetup') applyNavigateToSetupHighlight(state);
+                else if (nextId === 'navigateToSigInput') applyNavigateToSigInputHighlight(state);
+                else if (nextId === 'rangeCapacityCheck') {
+                    sh('.nav__btn--right', false);
+                    sh('.nav__btn--enter', false);
+                    sh('#sig_input_list .menu-item:nth-child(2)', true);
+                } else if (nextId === 'escToSetup') applyEscToSetupHighlight(state);
+                else if (nextId === 'navigateToMeterSet') applyNavigateToMeterSetHighlight(state);
+            }
         } else {
             currentStepId = null;
             setPanelVisible(false);
         }
+    }
+
+    /**
+     * Apply highlight for navigateToSigInput step (setup menu: RIGHT until SIG INPUT, then ENTER).
+     */
+    function applyNavigateToSigInputHighlight(state) {
+        if (!state) return;
+        const setHighlight = window.setWalkthroughHighlight;
+        if (!setHighlight) return;
+        const isSetupMenu = state.viewId === 'setup_menu';
+        const sigInputSelected = state.menu?.selectedIndex === SETUP_MENU_SIG_INPUT_INDEX;
+        setHighlight('.nav__btn--right', isSetupMenu && !sigInputSelected);
+        setHighlight('.nav__btn--enter', isSetupMenu && sigInputSelected);
+        const instructionEl = getInstructionEl();
+        if (instructionEl) {
+            instructionEl.textContent = sigInputSelected
+                ? 'Press ENTER to open SIG INPUT.'
+                : 'Press the RIGHT arrow until SIG INPUT is selected.';
+        }
+    }
+
+    /**
+     * Apply highlight for escToSetup step (sig_input_menu: power button = ESC).
+     */
+    function applyEscToSetupHighlight(state) {
+        if (!state) return;
+        const setHighlight = window.setWalkthroughHighlight;
+        if (!setHighlight) return;
+        const isSigInput = state.viewId === 'sig_input_menu';
+        setHighlight('.fn-btn--power', isSigInput);
+    }
+
+    /** Right column in setup menu = indices 6–10 (SIG INPUT, etc.). */
+    const SETUP_MENU_RIGHT_COLUMN_START = 6;
+
+    /**
+     * Apply highlight for navigateToMeterSet step.
+     * Phase 1: On right column (6–10) → highlight LEFT first.
+     * Phase 2: On left column → highlight DOWN until METER SET.
+     * Phase 3: On METER SET → highlight ENTER.
+     */
+    function applyNavigateToMeterSetHighlight(state) {
+        if (!state) return;
+        const setHighlight = window.setWalkthroughHighlight;
+        if (!setHighlight) return;
+        const isSetupMenu = state.viewId === 'setup_menu';
+        const selectedIndex = state.menu?.selectedIndex ?? 0;
+        const onRightColumn = selectedIndex >= SETUP_MENU_RIGHT_COLUMN_START;
+        const meterSetSelected = selectedIndex === SETUP_MENU_METER_SET_INDEX;
+
+        setHighlight('.nav__btn--left', isSetupMenu && onRightColumn);
+        setHighlight('.nav__btn--down', isSetupMenu && !onRightColumn && !meterSetSelected);
+        setHighlight('.nav__btn--enter', isSetupMenu && meterSetSelected);
+
+        const instructionEl = getInstructionEl();
+        if (instructionEl) {
+            if (onRightColumn) {
+                instructionEl.textContent = 'Press the LEFT arrow to switch to the left column.';
+            } else if (meterSetSelected) {
+                instructionEl.textContent = 'Press ENTER to open Meter Set.';
+            } else {
+                instructionEl.textContent = 'Press the DOWN arrow until METER SET is selected.';
+            }
+        }
+    }
+
+    /**
+     * Apply highlight for navigateToSetup step (home: DOWN until SETUP, then ENTER).
+     */
+    function applyNavigateToSetupHighlight(state) {
+        if (!state) return;
+        const setHighlight = window.setWalkthroughHighlight;
+        if (!setHighlight) return;
+        const isHome = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim';
+        const setupSelected = state.menu?.selectedIndex === HOME_MENU_SETUP_INDEX;
+        setHighlight('.nav__btn--down', isHome && !setupSelected);
+        setHighlight('.nav__btn--enter', isHome && setupSelected);
+        const instructionEl = getInstructionEl();
+        if (instructionEl) {
+            instructionEl.textContent = setupSelected
+                ? 'Press ENTER to open Setup.'
+                : 'Press the DOWN arrow until SETUP is selected.';
+        }
+    }
+
+    /**
+     * Update walkthrough based on FSM state. Called from subscription callback.
+     * Handles state-driven steps (navigateToSetup, navigateToSigInput, escToSetup, navigateToMeterSet).
+     */
+    function updateWalkthroughForState(state) {
+        if (!state) return;
+        const setHighlight = window.setWalkthroughHighlight;
+        if (!setHighlight) return;
+
+        if (currentStepId === 'powerOn' && state.viewId !== 'OFF') {
+            setHighlight('.fn-btn--power', false);
+            advanceWalkthroughStep('powerOn');
+            return;
+        }
+
+        if (currentStepId === 'navigateToSetup') {
+            if (state.viewId === 'setup_menu') {
+                setHighlight('.nav__btn--down', false);
+                setHighlight('.nav__btn--enter', false);
+                advanceWalkthroughStep('navigateToSetup');
+                return;
+            }
+            applyNavigateToSetupHighlight(state);
+            return;
+        }
+
+        if (currentStepId === 'navigateToSigInput') {
+            if (state.viewId === 'sig_input_menu') {
+                setHighlight('.nav__btn--right', false);
+                setHighlight('.nav__btn--enter', false);
+                advanceWalkthroughStep('navigateToSigInput');
+                return;
+            }
+            applyNavigateToSigInputHighlight(state);
+            return;
+        }
+
+        if (currentStepId === 'escToSetup') {
+            if (state.viewId === 'setup_menu') {
+                setHighlight('.fn-btn--power', false);
+                advanceWalkthroughStep('escToSetup');
+                return;
+            }
+            applyEscToSetupHighlight(state);
+            return;
+        }
+
+        if (currentStepId === 'navigateToMeterSet') {
+            if (state.viewId === 'meter_set_menu') {
+                setHighlight('.nav__btn--left', false);
+                setHighlight('.nav__btn--down', false);
+                setHighlight('.nav__btn--enter', false);
+                advanceWalkthroughStep('navigateToMeterSet');
+                return;
+            }
+            applyNavigateToMeterSetHighlight(state);
+        }
+    }
+
+    function getCurrentStepId() {
+        return currentStepId;
     }
 
     /**
@@ -180,4 +393,5 @@
     window.showWalkthroughFeedback = showWalkthroughFeedback;
     window.isWalkthroughStepCompleted = isStepCompleted;
     window.resetWalkthrough = resetWalkthrough;
+    window.updateWalkthroughForState = updateWalkthroughForState;
 })();

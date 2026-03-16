@@ -644,11 +644,12 @@ body.hide-dosimeter .dosimeter-container {
   }
 }
 
-/* Allow battery highlight to be visible (parents have overflow:hidden) */
+/* Allow walkthrough highlight to be visible (parents have overflow:hidden) */
 /* Battery lives in lcd__main (status bar is rendered in mainHTML), not lcd__status */
 .lcd:has(.status-bar__battery.walkthrough-highlight),
 .lcd__status:has(.status-bar__battery.walkthrough-highlight),
-.lcd__main:has(.status-bar__battery.walkthrough-highlight) {
+.lcd__main:has(.status-bar__battery.walkthrough-highlight),
+.lcd__main:has(.menu-item.walkthrough-highlight) {
   overflow: visible;
 }
 
