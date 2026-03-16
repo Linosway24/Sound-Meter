@@ -626,6 +626,128 @@ body.hide-dosimeter .dosimeter-container {
   height: 4.478%;
 }
 
+/* Walkthrough step highlight - pulsing circular focus ring */
+/* Use outline (not clipped by overflow) + box-shadow for thickness; outline ensures visibility on resize */
+.walkthrough-highlight {
+  animation: walkthrough-pulse 1.5s ease-in-out infinite;
+}
+@keyframes walkthrough-pulse {
+  0%, 100% {
+    outline: 8px solid rgba(66, 133, 244, 0.8);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.5);
+  }
+  50% {
+    outline: 12px solid rgba(66, 133, 244, 0.4);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 8px rgba(66, 133, 244, 0.2);
+  }
+}
+
+/* Allow battery highlight to be visible (parents have overflow:hidden) */
+/* Battery lives in lcd__main (status bar is rendered in mainHTML), not lcd__status */
+.lcd:has(.status-bar__battery.walkthrough-highlight),
+.lcd__status:has(.status-bar__battery.walkthrough-highlight),
+.lcd__main:has(.status-bar__battery.walkthrough-highlight) {
+  overflow: visible;
+}
+
+/* Keep highlight bright when backlight is off - counteracts parent filter (grayscale(0.4) brightness(0.8)) */
+.lcd--backlight-off .status-bar__battery.walkthrough-highlight {
+  filter: brightness(2.2) saturate(1.8);
+}
+
+/* Walkthrough panel - matches zoom/dosimeter panel layout */
+.walkthrough-panel {
+  position: fixed;
+  bottom: 540px;
+  left: 20px;
+  width: 240px;
+  background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.walkthrough-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid #30363d;
+  border-radius: 8px 8px 0 0;
+}
+
+.walkthrough-panel__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.walkthrough-panel__content {
+  padding: 12px;
+}
+
+.walkthrough-panel__instruction {
+  font-size: 13px;
+  color: #e6edf3;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.walkthrough-panel__feedback {
+  font-size: 12px;
+  color: #f85149;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.walkthrough-panel__buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.walkthrough-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.walkthrough-btn--good {
+  background: linear-gradient(180deg, #238636 0%, #196c2e 100%);
+  border: 1px solid #2ea043;
+  color: #fff;
+}
+
+.walkthrough-btn--good:hover {
+  background: linear-gradient(180deg, #2ea043 0%, #238636 100%);
+  border-color: #3fb950;
+}
+
+.walkthrough-btn--notgood {
+  background: linear-gradient(180deg, #da3633 0%, #b62324 100%);
+  border: 1px solid #f85149;
+  color: #fff;
+}
+
+.walkthrough-btn--notgood:hover {
+  background: linear-gradient(180deg, #f85149 0%, #da3633 100%);
+  border-color: #ff7b72;
+}
+
+.walkthrough-btn:active {
+  transform: scale(0.97);
+}
+
 /* Dialog overlay */
 .dialog-overlay[aria-hidden="true"] { display: none; }
 .dialog-overlay {
@@ -1396,6 +1518,20 @@ body.hide-dosimeter .dosimeter-container {
         var(--battery-color, #4ade80) 0%, 
         var(--battery-color, #4ade80) var(--battery-level, 100%), 
         transparent var(--battery-level, 100%));
+}
+/* Battery tip (positive terminal nub) - curved cap on right like } */
+.status-bar__battery::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -0.35em;
+    transform: translateY(-50%);
+    width: 0.25em;
+    height: 0.55em;
+    background: var(--battery-color, #4ade80);
+    border: 1px solid #3a8a5a;
+    border-left: none;
+    border-radius: 0 40% 40% 0;
 }
 
 /* Battery level colors */

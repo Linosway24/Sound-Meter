@@ -115,6 +115,18 @@
         </div>
     </div>
 
+    <!-- Walkthrough Panel - matches zoom/dosimeter layout -->
+    <div id="walkthrough-panel" class="walkthrough-panel" style="display: none;">
+        <div class="walkthrough-panel__header">
+            <span class="walkthrough-panel__title">📋 Walkthrough</span>
+        </div>
+        <div class="walkthrough-panel__content">
+            <div id="walkthrough-instruction" class="walkthrough-panel__instruction"></div>
+            <div id="walkthrough-feedback" class="walkthrough-panel__feedback" style="display: none;"></div>
+            <div id="walkthrough-buttons" class="walkthrough-panel__buttons"></div>
+        </div>
+    </div>
+
     <script>
         function toggleAudioPanel() {
             const panel = document.getElementById('audio-panel');
@@ -134,6 +146,22 @@
                 window.AudioPlayer.stopAllVideos();
             }
         }
+
+        function setWalkthroughHighlight(selector, enabled) {
+            const el = document.querySelector(selector);
+            if (!el) return;
+            if (enabled) {
+                el.classList.add('walkthrough-highlight');
+            } else {
+                el.classList.remove('walkthrough-highlight');
+            }
+        }
+
+        function clearWalkthroughHighlights() {
+            document.querySelectorAll('.walkthrough-highlight').forEach(el => el.classList.remove('walkthrough-highlight'));
+        }
+        window.setWalkthroughHighlight = setWalkthroughHighlight;
+        window.clearWalkthroughHighlights = clearWalkthroughHighlights;
 
         // Dosimeter button press state
         let dosimeterPressState = {
@@ -272,6 +300,7 @@
     
     <!-- FSM integration -->
     <script src="js/screen-renderer.js"></script>
+    <script src="js/walkthrough.js"></script>
     <!-- FSM will be loaded conditionally in initializeApp -->
     
     <!-- Development/debugging scripts -->
@@ -360,6 +389,16 @@ console.log('[INIT] Setting up subscription...');
                                 }
                             }
                             
+                            // Walkthrough Step 1: highlight power button when OFF
+                            // Step 2: after power-on, highlight battery area (same style)
+                            if (state.viewId === 'OFF') {
+                                setWalkthroughHighlight('.fn-btn--power', true);
+                                setWalkthroughHighlight('.status-bar__battery', false);
+                                if (window.hideWalkthroughPanel) window.hideWalkthroughPanel();
+                            } else {
+                                clearWalkthroughHighlights();
+                            }
+
                             // Handle OFF state - clear display
                             if (state.viewId === 'OFF') {
                                 if (window.updateMainArea) {
@@ -412,6 +451,15 @@ console.log('[INIT] Setting up subscription...');
                                 // Update status area with rendered content first
                                 if (window.updateStatusArea) {
                                     window.updateStatusArea(rendered.statusHTML || '');
+                                }
+                                
+                                // Walkthrough Step 2: after power-on (past boot), highlight battery and show panel if not completed
+                                if (state.viewId !== 'boot_screen' && (rendered.mainHTML || '').includes('status-bar__battery')) {
+                                    const batteryStepDone = window.isWalkthroughStepCompleted?.('batteryCheck');
+                                    setWalkthroughHighlight('.status-bar__battery', !batteryStepDone);
+                                    if (window.showWalkthroughStep && !batteryStepDone) {
+                                        window.showWalkthroughStep('batteryCheck');
+                                    }
                                 }
                                 
                                 // Update font size after content is rendered (wait for layout)
@@ -1305,7 +1353,17 @@ console.log('[INIT] Setting up subscription...');
                         if (window.updateMainArea) window.updateMainArea(rendered.mainHTML);
                         if (window.updateStatusArea) window.updateStatusArea(rendered.statusHTML);
                         if (window.updateSoftKeyLabels) window.updateSoftKeyLabels(rendered.softkeys);
-                        
+
+                        // Re-apply walkthrough highlight (re-render wipes it) - only if battery step not completed
+                        if (state.viewId !== 'boot_screen' && (rendered.mainHTML || '').includes('status-bar__battery') && !window.isWalkthroughStepCompleted?.('batteryCheck')) {
+                            setWalkthroughHighlight('.status-bar__battery', true);
+                            if (window.showWalkthroughStep) {
+                                window.showWalkthroughStep('batteryCheck');
+                            }
+                        } else if (window.isWalkthroughStepCompleted?.('batteryCheck')) {
+                            setWalkthroughHighlight('.status-bar__battery', false);
+                        }
+
                         // Update font size after render
                         updateLCDFontSize();
                         
