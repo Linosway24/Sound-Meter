@@ -93,9 +93,64 @@
             buttons: [],
             // State-driven: highlight LEFT when on right column (6-10), then DOWN until METER SET (index 1), then ENTER
         },
+        confirmMeterParameters: {
+            text: 'Confirm meter Parameters.',
+            showButtons: true,
+            buttons: [
+                { id: 'good', label: 'GOOD' },
+                { id: 'notgood', label: 'NOT GOOD' },
+            ],
+            onButtonClick: function (buttonId, stepId) {
+                if (buttonId === 'good') {
+                    if (typeof window.clearWalkthroughHighlights === 'function') window.clearWalkthroughHighlights();
+                    advanceWalkthroughStep(stepId);
+                    if (typeof window.dispatch === 'function') {
+                        window.dispatch({ type: 'ESC' });
+                        window.dispatch({ type: 'ESC' });
+                    }
+                } else if (buttonId === 'notgood') {
+                    showWalkthroughFeedback(
+                        'Please verify the meter parameters before proceeding.'
+                    );
+                }
+            },
+        },
+        softKeysIntro: {
+            text: 'Use the soft keys to access features. Soft key 2 (CAL) is highlighted.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: highlight soft-keys-region (rectangle) + soft-key--2 (primary)
+        },
+        confirmCalibratorSettings: {
+            text: 'Is the calibrator set to 114 dB and 1000 Hz?',
+            showButtons: true,
+            buttons: [
+                { id: 'good', label: 'GOOD' },
+                { id: 'notgood', label: 'NOT GOOD' },
+            ],
+            onButtonClick: function (buttonId, stepId) {
+                if (buttonId === 'good') {
+                    if (typeof window.setWalkthroughHighlight === 'function') {
+                        window.setWalkthroughHighlight('.dosimeter-btn--power', false);
+                    }
+                    hidePanel();
+                    advanceWalkthroughStep(stepId);
+                } else if (buttonId === 'notgood') {
+                    showWalkthroughFeedback(
+                        'Please verify the calibrator is set to 114 dB and 1000 Hz before proceeding.'
+                    );
+                }
+            },
+        },
+        dragCalibratorToMeter: {
+            text: 'Drag the calibrator onto the sound meter\'s microphone. Position it over the microphone at the top. →',
+            showButtons: false,
+            buttons: [],
+            // State-driven: highlight dosimeter; advance when data-snapped="true"
+        },
     };
 
-    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet'];
+    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter'];
     let completedSteps = new Set();
     let currentStepId = null;
 
@@ -154,6 +209,13 @@
                     sh('#sig_input_list .menu-item:nth-child(2)', true);
                 } else if (nextId === 'escToSetup') applyEscToSetupHighlight(state);
                 else if (nextId === 'navigateToMeterSet') applyNavigateToMeterSetHighlight(state);
+                else if (nextId === 'softKeysIntro') applySoftKeysIntroHighlight(state);
+                else if (nextId === 'confirmCalibratorSettings') {
+                    sh('.dosimeter-btn--power', false);
+                } else if (nextId === 'dragCalibratorToMeter') {
+                    window.prepareDragCalibratorStep?.();
+                    sh('.dosimeter-container', true);
+                }
             }
         } else {
             currentStepId = null;
@@ -177,6 +239,32 @@
             instructionEl.textContent = sigInputSelected
                 ? 'Press ENTER to open SIG INPUT.'
                 : 'Press the RIGHT arrow until SIG INPUT is selected.';
+        }
+    }
+
+    /**
+     * Apply highlight for softKeysIntro step.
+     * Home: rectangle around soft keys, primary on soft key 2.
+     * Cal menu: highlight ENTER.
+     * Cal running: highlight calibrator power button.
+     */
+    function applySoftKeysIntroHighlight(state) {
+        if (!state) return;
+        const setHighlight = window.setWalkthroughHighlight;
+        const setPrimary = window.setWalkthroughPrimaryFocus;
+        if (!setHighlight || !setPrimary) return;
+        const isHome = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim';
+        const isCalMenu = state.viewId === 'cal_menu';
+        const isCalRunning = state.viewId === 'cal_running';
+        setHighlight('.soft-keys-region', isHome);
+        setPrimary('.soft-key--2', isHome);
+        setHighlight('.nav__btn--enter', isCalMenu);
+        setHighlight('.dosimeter-btn--power', isCalRunning);
+        const instructionEl = getInstructionEl();
+        if (instructionEl) {
+            if (isCalRunning) instructionEl.textContent = 'Press the power button on the calibrator to turn it on.';
+            else if (isCalMenu) instructionEl.textContent = 'Press ENTER to start calibration.';
+            else if (isHome) instructionEl.textContent = 'Use the soft keys to access features. Soft key 2 (CAL) is highlighted.';
         }
     }
 
@@ -300,6 +388,34 @@
                 return;
             }
             applyNavigateToMeterSetHighlight(state);
+            return;
+        }
+
+        if (currentStepId === 'softKeysIntro') {
+            const isCalRunning = state.viewId === 'cal_running';
+            const isCalibratorDisplayOn = document.querySelector('.dosimeter-display.dosimeter-display--on');
+            if (isCalRunning && isCalibratorDisplayOn) {
+                setHighlight('.dosimeter-btn--power', false);
+                advanceWalkthroughStep('softKeysIntro');
+                return;
+            }
+            applySoftKeysIntroHighlight(state);
+        }
+
+        if (currentStepId === 'confirmCalibratorSettings') {
+            if (state.viewId !== 'cal_running') {
+                setHighlight('.dosimeter-btn--power', false);
+            }
+        }
+
+        if (currentStepId === 'dragCalibratorToMeter') {
+            const container = document.querySelector('.dosimeter-container');
+            if (container?.dataset.snapped === 'true') {
+                setHighlight('.dosimeter-container', false);
+                advanceWalkthroughStep('dragCalibratorToMeter');
+                return;
+            }
+            setHighlight('.dosimeter-container', true);
         }
     }
 
@@ -394,4 +510,5 @@
     window.isWalkthroughStepCompleted = isStepCompleted;
     window.resetWalkthrough = resetWalkthrough;
     window.updateWalkthroughForState = updateWalkthroughForState;
+    window.getCurrentStepId = getCurrentStepId;
 })();

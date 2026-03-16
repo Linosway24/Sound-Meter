@@ -549,6 +549,29 @@ body.hide-dosimeter .dosimeter-container {
   height: 3.876%;
 }
 
+/* Soft keys region - bounding box for walkthrough rectangle highlight */
+.soft-keys-region {
+  position: absolute;
+  top: 72.578%;
+  left: 25.511%;
+  width: 51.934%;
+  height: 3.876%;
+  pointer-events: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+/* Soft keys region: muted teal (context) - distinct from primary blue */
+.soft-keys-region.walkthrough-highlight {
+  border: 3px solid rgba(0, 150, 136, 0.6);
+  background: rgba(0, 150, 136, 0.08);
+}
+/* Primary focus - stronger highlight for soft key 2 */
+.soft-key.walkthrough-highlight.walkthrough-highlight--primary {
+  z-index: 1;
+  animation: walkthrough-pulse 1.2s ease-in-out infinite;
+  outline-color: rgba(66, 133, 244, 1);
+}
+
 /* Navigation buttons - positioned absolutely, no container needed */
 .nav__btn {
   /* Base positioning removed - individual buttons have specific positions */
@@ -630,6 +653,30 @@ body.hide-dosimeter .dosimeter-container {
 /* Use outline (not clipped by overflow) + box-shadow for thickness; outline ensures visibility on resize */
 .walkthrough-highlight {
   animation: walkthrough-pulse 1.5s ease-in-out infinite;
+}
+
+/* Rectangle around soft keys area (subtle border) */
+.soft-keys-region.walkthrough-highlight {
+  animation: walkthrough-pulse-region 1.5s ease-in-out infinite;
+}
+
+@keyframes walkthrough-pulse-region {
+  0%, 100% {
+    outline: 4px solid rgba(0, 150, 136, 0.6);
+    outline-offset: 2px;
+  }
+  50% {
+    outline: 6px solid rgba(0, 150, 136, 0.4);
+    outline-offset: 4px;
+  }
+}
+
+/* Primary focus - stronger highlight (e.g. soft key 2) */
+.walkthrough-highlight--primary {
+  animation: walkthrough-pulse 1.2s ease-in-out infinite;
+}
+.walkthrough-highlight--primary {
+  box-shadow: 0 0 0 6px rgba(66, 133, 244, 0.6) !important;
 }
 @keyframes walkthrough-pulse {
   0%, 100% {
