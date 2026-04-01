@@ -19,6 +19,7 @@
      * - onButtonClick(buttonId, stepId): custom handler; return false to stay, true/nothing to advance
      */
     const HOME_MENU_SETUP_INDEX = 3; // SETUP is at index 3 in home menu
+    const HOME_MENU_CURRENT_STUDY_INDEX = 1; // VIEW CURRENT STUDY in MENU_ITEMS
     const SETUP_MENU_SIG_INPUT_INDEX = 6; // SIG INPUT is at index 6 in setup menu (right column)
     const SETUP_MENU_METER_SET_INDEX = 1; // METER SET is at index 1 in setup menu (left column)
     const SETUP_MENU_LEFT_COLUMN_MAX = 5; // Left column = indices 0-5, right = 6-10
@@ -197,9 +198,30 @@
             showButtons: false,
             buttons: [],
         },
+        openCurrentStudy: {
+            title: 'View current study',
+            text: 'On the start screen, use the UP and DOWN arrows until VIEW CURRENT STUDY is highlighted, then press ENTER to open the current study screen.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: UP/DOWN until menu index 1, then ENTER (see applyOpenCurrentStudyHighlight).
+        },
+        selectSlmTimeConstantF: {
+            title: 'Fast response',
+            text: 'Press the second soft key (F-S-I) until F is underlined — that selects fast time response (as opposed to slow S or impulse I). Press repeatedly to cycle the underline across F, S, and I.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: SOFT2 cycles time constant; done when state.slm.timeConstant === 'F'.
+        },
+        selectSlmWeightingZ: {
+            title: 'Z weighting',
+            text: 'Press the third soft key (A-C-Z-F) until Z is underlined — that selects Z frequency weighting. Each press cycles which letter is underlined.',
+            showButtons: false,
+            buttons: [],
+            // State-driven: SOFT3 cycles weighting; done when state.slm.weighting === 'Z'.
+        },
     };
 
-    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter', 'stopCalibrationWithEnter', 'escToHomeAfterCal'];
+    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter', 'stopCalibrationWithEnter', 'escToHomeAfterCal', 'openCurrentStudy', 'selectSlmTimeConstantF', 'selectSlmWeightingZ'];
     let completedSteps = new Set();
     let currentStepId = null;
     /** Cancels stale deferred reveals when another step hides the panel. */
@@ -253,6 +275,20 @@
                 return '.nav__btn--enter';
             case 'escToHomeAfterCal':
                 return '.fn-btn--power';
+            case 'openCurrentStudy':
+                if (!state) return '.nav__btn--down';
+                {
+                    const isHome = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim';
+                    const idx = state.menu?.selectedIndex ?? 0;
+                    if (!isHome) return '.device-frame';
+                    if (idx < HOME_MENU_CURRENT_STUDY_INDEX) return '.nav__btn--down';
+                    if (idx > HOME_MENU_CURRENT_STUDY_INDEX) return '.nav__btn--up';
+                    return '.nav__btn--enter';
+                }
+            case 'selectSlmTimeConstantF':
+                return '.soft-key--2';
+            case 'selectSlmWeightingZ':
+                return '.soft-key--3';
             case 'navigateToSetup':
                 if (!state) return '.nav__btn--down';
                 {
@@ -654,6 +690,12 @@
                 } else if (nextId === 'escToHomeAfterCal') {
                     const st = typeof window.getMainFSMState === 'function' ? window.getMainFSMState() : null;
                     if (st && st.viewId === 'cal_menu') sh('.fn-btn--power', true);
+                } else if (nextId === 'openCurrentStudy') {
+                    applyOpenCurrentStudyHighlight(state);
+                } else if (nextId === 'selectSlmTimeConstantF') {
+                    applySelectSlmTimeConstantFHighlight(state);
+                } else if (nextId === 'selectSlmWeightingZ') {
+                    applySelectSlmWeightingZHighlight(state);
                 }
             }
         } else {
@@ -784,6 +826,65 @@
         setWalkthroughPanelTitle(setupSelected ? 'Open Setup' : 'Select Setup');
     }
 
+    /** Home start screen: UP/DOWN until VIEW CURRENT STUDY (index 1), then ENTER → SLM. */
+    function applyOpenCurrentStudyHighlight(state) {
+        if (!state) return;
+        const setHighlight = window.setWalkthroughHighlight;
+        if (!setHighlight) return;
+        const isHome = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim';
+        if (!isHome) return;
+        const idx = Math.max(0, Math.min(state.menu?.selectedIndex ?? 0, 4));
+        const t = HOME_MENU_CURRENT_STUDY_INDEX;
+        const needDown = idx < t;
+        const needUp = idx > t;
+        const onTarget = idx === t;
+        setHighlight('.nav__btn--up', needUp);
+        setHighlight('.nav__btn--down', needDown);
+        setHighlight('.nav__btn--enter', onTarget);
+        const instructionEl = getInstructionEl();
+        if (instructionEl) {
+            if (onTarget) {
+                instructionEl.textContent = 'Press ENTER to open View Current Study.';
+            } else if (needDown) {
+                instructionEl.textContent = 'Press the DOWN arrow until VIEW CURRENT STUDY is selected.';
+            } else {
+                instructionEl.textContent = 'Press the UP arrow until VIEW CURRENT STUDY is selected.';
+            }
+        }
+        setWalkthroughPanelTitle(onTarget ? 'Open current study' : 'Select View Current Study');
+    }
+
+    function isWalkthroughSlmMeasurementView(viewId) {
+        if (!viewId || typeof viewId !== 'string') return false;
+        return (
+            viewId.startsWith('slm_home') ||
+            viewId.startsWith('slm_graph_1of1') ||
+            viewId.startsWith('slm_graph_1of3')
+        );
+    }
+
+    /** SLM: highlight second soft key until fast time constant F is selected (state.slm.timeConstant === 'F'). */
+    function applySelectSlmTimeConstantFHighlight(state) {
+        if (!state || !isWalkthroughSlmMeasurementView(state.viewId)) return;
+        if (state.slm?.timeConstant === 'F') return;
+        const setHighlight = window.setWalkthroughHighlight;
+        const setPrimary = window.setWalkthroughPrimaryFocus;
+        if (!setHighlight || !setPrimary) return;
+        setHighlight('.soft-keys-region', true);
+        setPrimary('.soft-key--2', true);
+    }
+
+    /** SLM: highlight third soft key until Z weighting is selected (state.slm.weighting === 'Z'). */
+    function applySelectSlmWeightingZHighlight(state) {
+        if (!state || !isWalkthroughSlmMeasurementView(state.viewId)) return;
+        if (state.slm?.weighting === 'Z') return;
+        const setHighlight = window.setWalkthroughHighlight;
+        const setPrimary = window.setWalkthroughPrimaryFocus;
+        if (!setHighlight || !setPrimary) return;
+        setHighlight('.soft-keys-region', true);
+        setPrimary('.soft-key--3', true);
+    }
+
     /** Completes the drag-to-microphone step when `data-snapped` is true (FSM state not required). */
     function tryCompleteDragCalibratorStep() {
         if (currentStepId !== 'dragCalibratorToMeter') return;
@@ -799,7 +900,7 @@
 
     /**
      * Update walkthrough based on FSM state. Called from subscription callback.
-     * Handles state-driven steps (navigateToSetup, navigateToSigInput, escToSetup, navigateToMeterSet).
+     * Handles state-driven steps (navigateToSetup, navigateToSigInput, escToSetup, navigateToMeterSet, openCurrentStudy, selectSlmTimeConstantF, selectSlmWeightingZ).
      */
     function updateWalkthroughForState(state) {
         try {
@@ -903,6 +1004,55 @@
                     setHighlight('.fn-btn--power', true);
                 } else {
                     setHighlight('.fn-btn--power', false);
+                }
+                return;
+            }
+
+            if (currentStepId === 'openCurrentStudy') {
+                if (isWalkthroughSlmMeasurementView(state.viewId)) {
+                    setHighlight('.nav__btn--up', false);
+                    setHighlight('.nav__btn--down', false);
+                    setHighlight('.nav__btn--enter', false);
+                    advanceWalkthroughStep('openCurrentStudy');
+                    return;
+                }
+                const isHomeOpenStudy = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim';
+                if (isHomeOpenStudy) {
+                    applyOpenCurrentStudyHighlight(state);
+                }
+                return;
+            }
+
+            if (currentStepId === 'selectSlmTimeConstantF') {
+                if (isWalkthroughSlmMeasurementView(state.viewId) && state.slm && state.slm.timeConstant === 'F') {
+                    const setPrimary = window.setWalkthroughPrimaryFocus;
+                    if (typeof setPrimary === 'function') {
+                        setPrimary('.soft-key--2', false);
+                    }
+                    setHighlight('.soft-keys-region', false);
+                    setHighlight('.soft-key--2', false);
+                    advanceWalkthroughStep('selectSlmTimeConstantF');
+                    return;
+                }
+                if (isWalkthroughSlmMeasurementView(state.viewId)) {
+                    applySelectSlmTimeConstantFHighlight(state);
+                }
+                return;
+            }
+
+            if (currentStepId === 'selectSlmWeightingZ') {
+                if (isWalkthroughSlmMeasurementView(state.viewId) && state.slm && state.slm.weighting === 'Z') {
+                    const setPrimary = window.setWalkthroughPrimaryFocus;
+                    if (typeof setPrimary === 'function') {
+                        setPrimary('.soft-key--3', false);
+                    }
+                    setHighlight('.soft-keys-region', false);
+                    setHighlight('.soft-key--3', false);
+                    advanceWalkthroughStep('selectSlmWeightingZ');
+                    return;
+                }
+                if (isWalkthroughSlmMeasurementView(state.viewId)) {
+                    applySelectSlmWeightingZHighlight(state);
                 }
                 return;
             }
