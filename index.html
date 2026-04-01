@@ -673,6 +673,8 @@ console.log('[INIT] Setting up subscription...');
         let currentZoom = 0; // 0% = 1.0 scale
         let panX = 0; // Pan offset X
         let panY = 0; // Pan offset Y
+        /** Saved when walkthrough opens the drag-calibrator step; restored on esc-to-home step. */
+        let walkthroughDeviceViewBeforeDragCal = null;
         let isDragging = false;
         let dragStartX = 0;
         let dragStartY = 0;
@@ -1371,6 +1373,32 @@ console.log('[INIT] Setting up subscription...');
             const r = stage.getBoundingClientRect();
             return { left: viewportX - r.left, top: viewportY - r.top };
         }
+
+        /**
+         * Snap calibrator to the configured mic position (same math as drag release).
+         * Used by walkthrough Start so learners are not stuck if auto-snap never latches.
+         */
+        window.applyDosimeterSnapToMicrophonePosition = function () {
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            const dosimeterPhoto = document.querySelector('.dosimeter-photo');
+            const deviceFrame = document.querySelector('.device-frame');
+            if (!dosimeterContainer || !deviceFrame || !window.dosimeterSnapCoords) return false;
+            const deviceRect = deviceFrame.getBoundingClientRect();
+            const snapLeftV = deviceRect.left + deviceRect.width * window.dosimeterSnapCoords.snapXPercent;
+            const snapTopV = deviceRect.top + deviceRect.height * window.dosimeterSnapCoords.snapYPercent;
+            const sr = viewportToStageRelative(snapLeftV, snapTopV);
+            dosimeterContainer.style.transition = 'left 0.25s ease-out, top 0.25s ease-out';
+            if (dosimeterPhoto) dosimeterPhoto.style.transform = 'none';
+            dosimeterContainer.style.left = sr.left + 'px';
+            dosimeterContainer.style.top = sr.top + 'px';
+            dosimeterContainer.dataset.snapped = 'true';
+            dosimeterContainer.dataset.snapPoint = 'mic';
+            const dr = dosimeterContainer.getBoundingClientRect();
+            dosimeterRelativePosition = { left: dr.left, top: dr.top };
+            lastSimulatorRect = deviceFrame.getBoundingClientRect();
+            setTimeout(() => { dosimeterContainer.style.transition = ''; }, 280);
+            return true;
+        };
         
         // Update dosimeter position relative to simulator on resize
         function updateDosimeterRelativePosition() {
@@ -1500,6 +1528,34 @@ console.log('[INIT] Setting up subscription...');
             // Store viewport position for resize handling
             dosimeterRelativePosition = { left: targetViewportX, top: targetViewportY };
         }
+
+        /** After walkthrough ENTER ends calibration: stop 1 kHz tone and park calibrator beside the meter. */
+        window.finishWalkthroughCalibrationCleanup = function () {
+            try {
+                window.AudioPlayer?.stop();
+            } catch (e) {
+                /* ignore */
+            }
+            const dosimeterContainer = document.querySelector('.dosimeter-container');
+            const dosimeterPhoto = document.querySelector('.dosimeter-photo');
+            if (dosimeterContainer) {
+                dosimeterContainer.dataset.snapped = 'false';
+                dosimeterContainer.dataset.snapPoint = '';
+                dosimeterContainer.style.transition = '';
+            }
+            if (dosimeterPhoto) {
+                dosimeterPhoto.style.transform = '';
+            }
+            if (typeof updateDosimeterDisplay === 'function') {
+                updateDosimeterDisplay();
+            }
+            if (typeof initializeDosimeterPosition === 'function') {
+                initializeDosimeterPosition();
+            }
+            if (typeof applyDosimeterTransform === 'function') {
+                applyDosimeterTransform(true);
+            }
+        };
         
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -1532,6 +1588,11 @@ console.log('[INIT] Setting up subscription...');
 
         // Zoom out and reposition when entering drag-calibrator step so both meter and calibrator fit
         window.prepareDragCalibratorStep = function() {
+            walkthroughDeviceViewBeforeDragCal = {
+                zoom: currentZoom,
+                panX: panX,
+                panY: panY,
+            };
             setDeviceZoom(-25, true);
             panX = 0;
             panY = 0;
@@ -1540,6 +1601,37 @@ console.log('[INIT] Setting up subscription...');
                 initializeDosimeterPosition();
                 if (window.applyDosimeterTransform) applyDosimeterTransform(true);
             });
+        };
+
+        /** Restore meter zoom/pan from before prepareDragCalibratorStep (walkthrough “Back to start” step). */
+        window.restoreWalkthroughZoomBeforeDragCalibrator = function () {
+            if (!walkthroughDeviceViewBeforeDragCal) return;
+            const s = walkthroughDeviceViewBeforeDragCal;
+            walkthroughDeviceViewBeforeDragCal = null;
+            currentZoom = parseInt(s.zoom, 10) || 0;
+            if (currentZoom === 0) {
+                panX = 0;
+                panY = 0;
+            } else {
+                panX = s.panX || 0;
+                panY = s.panY || 0;
+            }
+            const zoomValue = document.getElementById('zoom-value');
+            const zoomSlider = document.getElementById('zoom-slider');
+            if (zoomValue) zoomValue.textContent = currentZoom + '%';
+            if (zoomSlider) zoomSlider.value = currentZoom;
+            applyDeviceTransform(false);
+            if (window.applyDosimeterTransform) {
+                applyDosimeterTransform(false);
+            }
+            setTimeout(() => {
+                requestAnimationFrame(() => {
+                    updateLCDFontSize();
+                });
+            }, 850);
+            if (window.scheduleWalkthroughPanelPosition) {
+                setTimeout(() => window.scheduleWalkthroughPanelPosition(), 900);
+            }
         };
 
         // Update dosimeter position display
@@ -1734,9 +1826,7 @@ console.log('[INIT] Setting up subscription...');
             let currentSnapPoint = null; // Track which snap point we're snapped to
             
             function notifyWalkthroughOnSnap() {
-                if (window.getCurrentStepId?.() === 'dragCalibratorToMeter') {
-                    window.updateWalkthroughForState?.(window.getMainFSMState?.());
-                }
+                window.tryCompleteDragCalibratorStep?.();
             }
             
             // Get microphone snap point (the only snap point)
@@ -1770,12 +1860,6 @@ console.log('[INIT] Setting up subscription...');
                 };
             }
 
-            function notifyWalkthroughOnSnap() {
-                if (window.getCurrentStepId?.() === 'dragCalibratorToMeter') {
-                    window.updateWalkthroughForState?.(window.getMainFSMState?.());
-                }
-            }
-            
             // Mouse events - only drag when clicking on the photo, not the button
             dosimeterPhoto.addEventListener('mousedown', function(e) {
                 // Don't drag if clicking on the button
@@ -1850,7 +1934,7 @@ console.log('[INIT] Setting up subscription...');
                     const finalSnapY = snapTargetY;
                     
                     // Horizontal lock zone - when close horizontally, lock X and allow vertical sliding
-                    const horizontalLockZone = 80; // pixels
+                    const horizontalLockZone = 140; // pixels (wider for zoom / scale)
                     const isInHorizontalLockZone = horizontalDistance < horizontalLockZone;
                     
                     // Check if already locked/snapped
@@ -1865,7 +1949,7 @@ console.log('[INIT] Setting up subscription...');
                         
                         // When in lock zone, pull toward snap position vertically
                         const verticalDistance = dosimeterTopAttachmentY - micTargetY;
-                        const verticalSnapThreshold = 30; // pixels
+                        const verticalSnapThreshold = 48; // pixels
                         
                         if (Math.abs(verticalDistance) < verticalSnapThreshold) {
                             // Close enough - snap to final position
@@ -1930,6 +2014,9 @@ console.log('[INIT] Setting up subscription...');
             document.addEventListener('mouseup', function() {
                 // Only handle dosimeter drag if we were actually dragging the dosimeter
                 if (!isDraggingDosimeter) return;
+
+                /** If true, mousemove already latched snap; release must not clear it after transform reflow. */
+                const wasSnappedBeforeEnd = dosimeterContainer.dataset.snapped === 'true';
                 
                 isDraggingDosimeter = false;
                 dosimeterPhoto.classList.remove('dragging');
@@ -1956,35 +2043,29 @@ console.log('[INIT] Setting up subscription...');
                     const distanceY = micTargetY - dosimeterCenterY;
                     const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
                     
-                    // Snap threshold - only snap if close enough on release
-                    const snapThreshold = 50; // pixels
+                    // Pixels — slightly forgiving; reflow after applyDosimeterTransform can inflate distance vs drag
+                    const snapThreshold = 72;
                     
-                    if (distance < snapThreshold) {
-                        // Snap to position calculated from percentages (viewport), convert to stage-relative
-                        const deviceRect = deviceFrame.getBoundingClientRect();
+                    if (wasSnappedBeforeEnd || distance < snapThreshold) {
                         const snapLeftV = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
                         const snapTopV = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
                         const sr = viewportToStageRelative(snapLeftV, snapTopV);
                         
-                        // Smooth snap with transition
-                        dosimeterContainer.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
+                        dosimeterContainer.style.transition = wasSnappedBeforeEnd ? '' : 'left 0.2s ease-out, top 0.2s ease-out';
                         dosimeterContainer.style.left = sr.left + 'px';
                         dosimeterContainer.style.top = sr.top + 'px';
                         
-                        // Mark as snapped
                         dosimeterContainer.dataset.snapped = 'true';
                         dosimeterContainer.dataset.snapPoint = micSnapPoint.id;
                         currentSnapPoint = micSnapPoint.id;
-                        if (window.getCurrentStepId?.() === 'dragCalibratorToMeter') {
-                            window.updateWalkthroughForState?.(window.getMainFSMState?.());
-                        }
+                        notifyWalkthroughOnSnap();
                         
-                        // Remove transition after snap completes
-                        setTimeout(() => {
-                            dosimeterContainer.style.transition = '';
-                        }, 200);
+                        if (!wasSnappedBeforeEnd) {
+                            setTimeout(() => {
+                                dosimeterContainer.style.transition = '';
+                            }, 200);
+                        }
                     } else {
-                        // Not close enough - clear snap state
                         dosimeterContainer.dataset.snapped = 'false';
                         dosimeterContainer.dataset.snapPoint = '';
                         currentSnapPoint = null;
@@ -2077,7 +2158,7 @@ console.log('[INIT] Setting up subscription...');
                     const finalSnapY = snapTargetY;
                     
                     // Horizontal lock zone - when close horizontally, lock X and allow vertical sliding
-                    const horizontalLockZone = 80; // pixels
+                    const horizontalLockZone = 140; // pixels (wider for zoom / scale)
                     const isInHorizontalLockZone = horizontalDistance < horizontalLockZone;
                     
                     // Check if already locked/snapped
@@ -2092,7 +2173,7 @@ console.log('[INIT] Setting up subscription...');
                         
                         // When in lock zone, pull toward snap position vertically
                         const verticalDistance = dosimeterTopAttachmentY - micTargetY;
-                        const verticalSnapThreshold = 30; // pixels
+                        const verticalSnapThreshold = 48; // pixels
                         
                         if (Math.abs(verticalDistance) < verticalSnapThreshold) {
                             // Close enough - snap to final position
@@ -2165,6 +2246,8 @@ console.log('[INIT] Setting up subscription...');
             document.addEventListener('touchend', function() {
                 // Only handle dosimeter drag if we were actually dragging the dosimeter
                 if (!isDraggingDosimeter) return;
+
+                const wasSnappedBeforeEnd = dosimeterContainer.dataset.snapped === 'true';
                 
                 isDraggingDosimeter = false;
                 dosimeterPhoto.classList.remove('dragging');
@@ -2175,50 +2258,41 @@ console.log('[INIT] Setting up subscription...');
                     applyDeviceTransform(true);
                     applyDosimeterTransform(true);
                     
-                    // Check if close enough to snap on release
                     const deviceRect = deviceFrame.getBoundingClientRect();
                     const dosimeterRect = dosimeterContainer.getBoundingClientRect();
                     const micSnapPoint = getMicSnapPoint(deviceRect);
                     
-                    // Calculate current attachment point
                     const dosimeterCenterX = dosimeterRect.left + (dosimeterRect.width * 0.5);
                     const dosimeterCenterY = dosimeterRect.top + (dosimeterRect.height * 0.3);
                     
-                    // Calculate distance to microphone
                     const micTargetX = deviceRect.left + (deviceRect.width * 0.5);
                     const micTargetY = micSnapPoint.micY;
                     const distanceX = micTargetX - dosimeterCenterX;
                     const distanceY = micTargetY - dosimeterCenterY;
                     const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
                     
-                    // Snap threshold - only snap if close enough on release
-                    const snapThreshold = 50; // pixels
+                    const snapThreshold = 72;
                     
-                    if (distance < snapThreshold) {
-                        // Snap to position calculated from percentages (viewport), convert to stage-relative
-                        const deviceRect = deviceFrame.getBoundingClientRect();
+                    if (wasSnappedBeforeEnd || distance < snapThreshold) {
                         const snapLeftV = deviceRect.left + (deviceRect.width * window.dosimeterSnapCoords.snapXPercent);
                         const snapTopV = deviceRect.top + (deviceRect.height * window.dosimeterSnapCoords.snapYPercent);
                         const sr = viewportToStageRelative(snapLeftV, snapTopV);
                         
-                        // Smooth snap with transition
-                        dosimeterContainer.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
+                        dosimeterContainer.style.transition = wasSnappedBeforeEnd ? '' : 'left 0.2s ease-out, top 0.2s ease-out';
                         dosimeterContainer.style.left = sr.left + 'px';
                         dosimeterContainer.style.top = sr.top + 'px';
                         
-                        // Mark as snapped
                         dosimeterContainer.dataset.snapped = 'true';
                         dosimeterContainer.dataset.snapPoint = micSnapPoint.id;
                         currentSnapPoint = micSnapPoint.id;
-                        if (window.getCurrentStepId?.() === 'dragCalibratorToMeter') {
-                            window.updateWalkthroughForState?.(window.getMainFSMState?.());
+                        notifyWalkthroughOnSnap();
+                        
+                        if (!wasSnappedBeforeEnd) {
+                            setTimeout(() => {
+                                dosimeterContainer.style.transition = '';
+                            }, 200);
                         }
-                        // Remove transition after snap completes
-                        setTimeout(() => {
-                            dosimeterContainer.style.transition = '';
-                        }, 200);
                     } else {
-                        // Not close enough - clear snap state
                         dosimeterContainer.dataset.snapped = 'false';
                         dosimeterContainer.dataset.snapPoint = '';
                         currentSnapPoint = null;

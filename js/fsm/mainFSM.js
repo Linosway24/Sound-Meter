@@ -184,7 +184,8 @@
             formatting: null,
             cal: null,
             measurementRuntime: null,
-            powerOffCountdown: null
+            powerOffCountdown: null,
+            walkthroughCalRamp: null
         },
         powerOff: {
             countdown: null, // 3, 2, 1, or null
@@ -466,7 +467,7 @@
     // Timer management
     function _clearTimer(timerName) {
         if (_state.timers[timerName]) {
-            if (timerName === 'measurementRuntime' || timerName === 'measurementUpdate') {
+            if (timerName === 'measurementRuntime' || timerName === 'measurementUpdate' || timerName === 'walkthroughCalRamp') {
                 clearInterval(_state.timers[timerName]);
             } else {
                 clearTimeout(_state.timers[timerName]);
@@ -751,7 +752,7 @@
                 selectedIndex: 0,
                 selectedType: null // Stores the selected measurement type: 'L_', 'L_AVG', 'L_PK', 'L_Mx', 'L_Mn'
             },
-            timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null, measurementUpdate: null, powerOffCountdown: null, stopCountdown: null },
+            timers: { stopHold: null, formatting: null, cal: null, measurementRuntime: null, measurementUpdate: null, powerOffCountdown: null, stopCountdown: null, walkthroughCalRamp: null },
             powerOff: {
                 countdown: null, // 3, 2, 1, or null
                 previousViewId: null // Store the view we came from
@@ -5698,10 +5699,63 @@
         }
     }
 
+    /**
+     * Walkthrough: after calibrator is on the mic, animate SLM reading 125 → 114 dB on cal_running.
+     * Stops the default cal interval so the scripted ramp is visible.
+     */
+    function beginWalkthroughCalSPLRamp125To114(options) {
+        const onComplete =
+            typeof options === 'function' ? options : options && typeof options.onComplete === 'function' ? options.onComplete : null;
+        if (_state.viewId !== 'cal_running') {
+            console.warn('[WALKTHROUGH CAL] beginWalkthroughCalSPLRamp125To114: expected cal_running, got', _state.viewId);
+            return;
+        }
+        _clearTimer('cal');
+        _clearTimer('walkthroughCalRamp');
+        if (!_state.calibration) {
+            _state.calibration = { selectedIndex: 0, adjustment: {} };
+        }
+        if (!_state.calibration.adjustment) {
+            _state.calibration.adjustment = {};
+        }
+        _state.calibration.adjustment.manuallyAdjusted = true;
+        const from = 125;
+        const to = 114;
+        const durationMs = 6500;
+        const t0 = Date.now();
+        _state.measurement.currentSPL = from;
+        _emit();
+        _state.timers.walkthroughCalRamp = setInterval(() => {
+            if (_state.viewId !== 'cal_running') {
+                _clearTimer('walkthroughCalRamp');
+                _state.calibration.adjustment.manuallyAdjusted = false;
+                return;
+            }
+            const elapsed = Date.now() - t0;
+            let u = Math.min(1, elapsed / durationMs);
+            u = 1 - Math.pow(1 - u, 3);
+            const v = from + (to - from) * u;
+            _state.measurement.currentSPL = Math.round(v * 10) / 10;
+            _emit();
+            if (elapsed >= durationMs) {
+                _clearTimer('walkthroughCalRamp');
+                _state.measurement.currentSPL = to;
+                _state.calibration.adjustment.manuallyAdjusted = false;
+                _emit();
+                try {
+                    onComplete?.();
+                } catch (e) {
+                    console.warn('[WALKTHROUGH CAL] ramp onComplete failed:', e);
+                }
+            }
+        }, 80);
+    }
+
     // Export to window
     window.initMainFSM = initMainFSM;
     window.subscribeMainFSM = subscribe;
     window.getMainFSMState = getState;
     window.dispatch = dispatch;
+    window.beginWalkthroughCalSPLRamp125To114 = beginWalkthroughCalSPLRamp125To114;
 })();
 

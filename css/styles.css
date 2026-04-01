@@ -780,6 +780,7 @@ body.hide-dosimeter .dosimeter-container {
   color: #eef3f9;
   line-height: 1.6;
   margin-bottom: 18px;
+  white-space: pre-line;
 }
 
 .walkthrough-panel__feedback {

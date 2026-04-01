@@ -155,15 +155,51 @@
             },
         },
         dragCalibratorToMeter: {
-            title: 'Position calibrator',
-            text: 'Drag the calibrator onto the sound meter\'s microphone. Position it over the microphone at the top. →',
+            title: 'Calibrator on the meter',
+            text: 'Drag the calibrator onto the sound meter microphone (top center). When you are ready, press Start — the calibrator will lock onto the mic, the reading will move from 125 dB down to 114 dB, and the next instructions will appear when the reading reaches 114 dB.',
+            showButtons: true,
+            buttons: [{ id: 'good', label: 'Start' }],
+            onButtonClick: function (buttonId, stepId) {
+                if (buttonId !== 'good') return;
+                const snapped = window.applyDosimeterSnapToMicrophonePosition?.() === true;
+                if (!snapped) {
+                    showWalkthroughFeedback(
+                        'Could not snap the calibrator to the meter. Make sure the simulator is visible, then try again.'
+                    );
+                    return;
+                }
+                showWalkthroughFeedback('');
+                if (typeof window.clearWalkthroughHighlights === 'function') {
+                    window.clearWalkthroughHighlights();
+                }
+                if (typeof window.setWalkthroughHighlight === 'function') {
+                    window.setWalkthroughHighlight('.dosimeter-container', false);
+                }
+                const panel = document.getElementById('walkthrough-panel');
+                if (panel) panel.style.display = 'none';
+                window.beginWalkthroughCalSPLRamp125To114?.({
+                    onComplete: function () {
+                        advanceWalkthroughStep(stepId);
+                    },
+                });
+            },
+            // Snap during drag only updates highlight (tryCompleteDragCalibratorStep); Start runs the ramp and advances.
+        },
+        stopCalibrationWithEnter: {
+            title: 'End calibration',
+            text: 'When the reading stabilizes at 114 dB, press ENTER to complete the calibration.\n\nIn the field, you would then turn off and remove the calibrator. The simulator performs these steps automatically.',
             showButtons: false,
             buttons: [],
-            // State-driven: highlight dosimeter; advance when data-snapped="true"
+        },
+        escToHomeAfterCal: {
+            title: 'Back to start screen',
+            text: 'Press ESC to leave the calibration menu and return to the start screen (home).',
+            showButtons: false,
+            buttons: [],
         },
     };
 
-    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter'];
+    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter', 'stopCalibrationWithEnter', 'escToHomeAfterCal'];
     let completedSteps = new Set();
     let currentStepId = null;
     /** Cancels stale deferred reveals when another step hides the panel. */
@@ -213,6 +249,10 @@
                 return '.dosimeter-btn--power';
             case 'dragCalibratorToMeter':
                 return '.dosimeter-container';
+            case 'stopCalibrationWithEnter':
+                return '.nav__btn--enter';
+            case 'escToHomeAfterCal':
+                return '.fn-btn--power';
             case 'navigateToSetup':
                 if (!state) return '.nav__btn--down';
                 {
@@ -587,6 +627,9 @@
         const idx = stepOrder.indexOf(completedStepId);
         const nextId = stepOrder[idx + 1];
         if (nextId) {
+            if (nextId === 'escToHomeAfterCal') {
+                window.restoreWalkthroughZoomBeforeDragCalibrator?.();
+            }
             showWalkthroughStep(nextId);
             if (typeof window.setWalkthroughHighlight === 'function') {
                 const state = typeof window.getMainFSMState === 'function' ? window.getMainFSMState() : null;
@@ -605,6 +648,12 @@
                 } else if (nextId === 'dragCalibratorToMeter') {
                     window.prepareDragCalibratorStep?.();
                     sh('.dosimeter-container', true);
+                } else if (nextId === 'stopCalibrationWithEnter') {
+                    const st = typeof window.getMainFSMState === 'function' ? window.getMainFSMState() : null;
+                    if (st && st.viewId === 'cal_running') sh('.nav__btn--enter', true);
+                } else if (nextId === 'escToHomeAfterCal') {
+                    const st = typeof window.getMainFSMState === 'function' ? window.getMainFSMState() : null;
+                    if (st && st.viewId === 'cal_menu') sh('.fn-btn--power', true);
                 }
             }
         } else {
@@ -735,15 +784,31 @@
         setWalkthroughPanelTitle(setupSelected ? 'Open Setup' : 'Select Setup');
     }
 
+    /** Completes the drag-to-microphone step when `data-snapped` is true (FSM state not required). */
+    function tryCompleteDragCalibratorStep() {
+        if (currentStepId !== 'dragCalibratorToMeter') return;
+        const setHighlight = window.setWalkthroughHighlight;
+        if (!setHighlight) return;
+        const container = document.querySelector('.dosimeter-container');
+        if (container?.dataset.snapped === 'true') {
+            setHighlight('.dosimeter-container', false);
+        } else {
+            setHighlight('.dosimeter-container', true);
+        }
+    }
+
     /**
      * Update walkthrough based on FSM state. Called from subscription callback.
      * Handles state-driven steps (navigateToSetup, navigateToSigInput, escToSetup, navigateToMeterSet).
      */
     function updateWalkthroughForState(state) {
         try {
-            if (!state) return;
             const setHighlight = window.setWalkthroughHighlight;
             if (!setHighlight) return;
+            if (!state) {
+                if (currentStepId === 'dragCalibratorToMeter') tryCompleteDragCalibratorStep();
+                return;
+            }
 
             if (currentStepId === 'powerOn' && state.viewId !== 'OFF') {
                 setHighlight('.fn-btn--power', false);
@@ -812,14 +877,39 @@
                 }
             }
 
-            if (currentStepId === 'dragCalibratorToMeter') {
-                const container = document.querySelector('.dosimeter-container');
-                if (container?.dataset.snapped === 'true') {
-                    setHighlight('.dosimeter-container', false);
-                    advanceWalkthroughStep('dragCalibratorToMeter');
+            if (currentStepId === 'stopCalibrationWithEnter') {
+                if (state.viewId === 'cal_menu') {
+                    setHighlight('.nav__btn--enter', false);
+                    window.finishWalkthroughCalibrationCleanup?.();
+                    advanceWalkthroughStep('stopCalibrationWithEnter');
                     return;
                 }
-                setHighlight('.dosimeter-container', true);
+                if (state.viewId === 'cal_running') {
+                    setHighlight('.nav__btn--enter', true);
+                } else {
+                    setHighlight('.nav__btn--enter', false);
+                }
+                return;
+            }
+
+            if (currentStepId === 'escToHomeAfterCal') {
+                const isHome = state.viewId === 'home_screen' || state.viewId === 'home_screen_dim';
+                if (isHome) {
+                    setHighlight('.fn-btn--power', false);
+                    advanceWalkthroughStep('escToHomeAfterCal');
+                    return;
+                }
+                if (state.viewId === 'cal_menu') {
+                    setHighlight('.fn-btn--power', true);
+                } else {
+                    setHighlight('.fn-btn--power', false);
+                }
+                return;
+            }
+
+            if (currentStepId === 'dragCalibratorToMeter') {
+                tryCompleteDragCalibratorStep();
+                return;
             }
         } finally {
             if (state && currentStepId) {
@@ -945,4 +1035,5 @@
     window.updateWalkthroughForState = updateWalkthroughForState;
     window.getCurrentStepId = getCurrentStepId;
     window.scheduleWalkthroughPanelPosition = scheduleWalkthroughPanelPosition;
+    window.tryCompleteDragCalibratorStep = tryCompleteDragCalibratorStep;
 })();
