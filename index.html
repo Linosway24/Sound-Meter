@@ -115,10 +115,10 @@
         </div>
     </div>
 
-    <!-- Walkthrough Panel - top-right (Sound Simulator slot) -->
+    <!-- Walkthrough Panel — position set by JS to float near the active control -->
     <div id="walkthrough-panel" class="walkthrough-panel" style="display: none;">
         <div class="walkthrough-panel__header">
-            <span class="walkthrough-panel__title">📋 Walkthrough</span>
+            <span id="walkthrough-panel-title" class="walkthrough-panel__title">Power on</span>
         </div>
         <div class="walkthrough-panel__content">
             <div id="walkthrough-instruction" class="walkthrough-panel__instruction"></div>
@@ -668,6 +668,8 @@ console.log('[INIT] Setting up subscription...');
         window.updateLCDFontSize = updateLCDFontSize;
         
         // Device zoom functionality - only affects device-frame, not other UI elements
+        /** True when `.device-frame` is not running a smooth transform animation (see applyDeviceTransform). */
+        window.soundMeterTransformSettled = true;
         let currentZoom = 0; // 0% = 1.0 scale
         let panX = 0; // Pan offset X
         let panY = 0; // Pan offset Y
@@ -686,9 +688,17 @@ console.log('[INIT] Setting up subscription...');
             body.classList.toggle('hide-dosimeter', shouldHide);
         }
         
+        applyDeviceTransform._settleToken = 0;
+        applyDeviceTransform._cancelSettle = null;
+
         function applyDeviceTransform(instant = false) {
             const deviceFrame = document.querySelector('.device-frame');
             if (!deviceFrame) return;
+
+            if (typeof applyDeviceTransform._cancelSettle === 'function') {
+                applyDeviceTransform._cancelSettle();
+                applyDeviceTransform._cancelSettle = null;
+            }
             
             // Convert percentage to scale (-30% = 0.7, 0% = 1.0, 100% = 2.0, 200% = 3.0)
             let scale = 1 + (currentZoom / 100);
@@ -700,9 +710,35 @@ console.log('[INIT] Setting up subscription...');
             // Adjust transition duration for smooth animation (unless instant)
             if (instant) {
                 deviceFrame.style.transition = 'transform 0s';
+                applyDeviceTransform._settleToken++;
+                window.soundMeterTransformSettled = true;
             } else {
                 // Use cubic-bezier for smoother, more natural animation
                 deviceFrame.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                window.soundMeterTransformSettled = false;
+                const myToken = ++applyDeviceTransform._settleToken;
+                let done = false;
+                const finish = () => {
+                    if (done) return;
+                    done = true;
+                    deviceFrame.removeEventListener('transitionend', onEnd);
+                    clearTimeout(settleTimeoutId);
+                    applyDeviceTransform._cancelSettle = null;
+                    if (myToken !== applyDeviceTransform._settleToken) return;
+                    window.soundMeterTransformSettled = true;
+                    window.dispatchEvent(new CustomEvent('soundmeter-transform-idle'));
+                };
+                const onEnd = (e) => {
+                    if (e.target !== deviceFrame || e.propertyName !== 'transform') return;
+                    finish();
+                };
+                deviceFrame.addEventListener('transitionend', onEnd);
+                const settleTimeoutId = setTimeout(finish, 950);
+                applyDeviceTransform._cancelSettle = () => {
+                    if (done) return;
+                    deviceFrame.removeEventListener('transitionend', onEnd);
+                    clearTimeout(settleTimeoutId);
+                };
             }
             
             // Enable/disable cursor based on zoom
@@ -718,7 +754,31 @@ console.log('[INIT] Setting up subscription...');
             // Update dosimeter visibility based on zoom level
             updateDosimeterVisibility();
         }
-        
+
+        /**
+         * Run callback after `.device-frame` transform is stable (zoom/pan animation finished or instant update).
+         * Used so the walkthrough panel can appear once instead of jumping after auto-zoom.
+         */
+        window.runAfterSoundMeterTransformIdle = function (cb) {
+            if (typeof cb !== 'function') return;
+            if (window.soundMeterTransformSettled) {
+                requestAnimationFrame(() => requestAnimationFrame(cb));
+                return;
+            }
+            let ran = false;
+            const run = () => {
+                if (ran) return;
+                ran = true;
+                window.removeEventListener('soundmeter-transform-idle', onIdle);
+                cb();
+            };
+            const onIdle = () => run();
+            window.addEventListener('soundmeter-transform-idle', onIdle);
+            requestAnimationFrame(() => {
+                if (window.soundMeterTransformSettled) run();
+            });
+        };
+
         function setDeviceZoom(zoomPercent, instant = false) {
             currentZoom = parseInt(zoomPercent) || 0;
             const zoomValue = document.getElementById('zoom-value');
@@ -752,6 +812,13 @@ console.log('[INIT] Setting up subscription...');
                         updateLCDFontSize();
                     });
                 }, 850); // Slightly longer than transition duration
+            }
+            if (window.scheduleWalkthroughPanelPosition) {
+                if (instant) {
+                    requestAnimationFrame(() => window.scheduleWalkthroughPanelPosition());
+                } else {
+                    setTimeout(() => window.scheduleWalkthroughPanelPosition(), 900);
+                }
             }
         }
         
@@ -813,6 +880,9 @@ console.log('[INIT] Setting up subscription...');
                     // When done panning, restore proper scale using applyDeviceTransform
                     // This respects zoom level and only applies 0.7 scale if dosimeter is snapped
                     applyDeviceTransform(false); // Use smooth transition
+                    if (window.scheduleWalkthroughPanelPosition) {
+                        requestAnimationFrame(() => window.scheduleWalkthroughPanelPosition());
+                    }
                 }
             });
             
@@ -860,6 +930,9 @@ console.log('[INIT] Setting up subscription...');
                     // When done panning, restore proper scale using applyDeviceTransform
                     // This respects zoom level and only applies 0.7 scale if dosimeter is snapped
                     applyDeviceTransform(false); // Use smooth transition
+                    if (window.scheduleWalkthroughPanelPosition) {
+                        requestAnimationFrame(() => window.scheduleWalkthroughPanelPosition());
+                    }
                 }
             });
         }
@@ -1924,6 +1997,9 @@ console.log('[INIT] Setting up subscription...');
                     dosimeterRelativePosition = { left: dosimeterRect.left, top: dosimeterRect.top };
                     lastSimulatorRect = deviceFrame.getBoundingClientRect();
                 }
+                if (window.scheduleWalkthroughPanelPosition) {
+                    requestAnimationFrame(() => window.scheduleWalkthroughPanelPosition());
+                }
             });
             
             // Touch events for mobile
@@ -2154,6 +2230,9 @@ console.log('[INIT] Setting up subscription...');
                     const dosimeterRect = dosimeterContainer.getBoundingClientRect();
                     dosimeterRelativePosition = { left: dosimeterRect.left, top: dosimeterRect.top };
                     lastSimulatorRect = deviceFrame.getBoundingClientRect();
+                }
+                if (window.scheduleWalkthroughPanelPosition) {
+                    requestAnimationFrame(() => window.scheduleWalkthroughPanelPosition());
                 }
             });
         }
