@@ -705,17 +705,19 @@ body.hide-dosimeter .dosimeter-container {
   filter: brightness(2.2) saturate(1.8);
 }
 
-/* Walkthrough panel - matches zoom/dosimeter panel layout */
+/* Walkthrough panel - top-right (same slot as Sound Simulator) */
 .walkthrough-panel {
   position: fixed;
-  bottom: 540px;
-  left: 20px;
-  width: 240px;
+  top: 20px;
+  right: 20px;
+  width: 280px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
   border: 1px solid #30363d;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -726,7 +728,7 @@ body.hide-dosimeter .dosimeter-container {
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.05);
   border-bottom: 1px solid #30363d;
-  border-radius: 8px 8px 0 0;
+  border-radius: 12px 12px 0 0;
 }
 
 .walkthrough-panel__title {
@@ -2357,7 +2359,7 @@ body.hide-dosimeter .dosimeter-container {
     border-color: #58a6ff;
 }
 
-/* Dosimeter Snap Control Panel */
+/* Dosimeter Snap Control Panel (hidden; remove display:none to restore) */
 .dosimeter-snap-control {
     position: fixed;
     bottom: 280px;
@@ -2369,6 +2371,7 @@ body.hide-dosimeter .dosimeter-container {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     font-family: ui-sans-serif, system-ui, sans-serif;
+    display: none;
 }
 
 .dosimeter-snap-control__header {
@@ -2474,7 +2477,7 @@ body.hide-dosimeter .dosimeter-container {
 }
 
 /* ========================================
-   Audio Control Panel
+   Audio Control Panel (hidden; remove display:none to restore Sound Simulator)
    ======================================== */
 
 .audio-panel {
@@ -2489,6 +2492,7 @@ body.hide-dosimeter .dosimeter-container {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     z-index: 9999;
     overflow: hidden;
+    display: none;
 }
 
 .audio-panel__header {
@@ -2635,7 +2639,7 @@ body.hide-dosimeter .dosimeter-container {
 }
 
 /* Fan Video Overlay */
-/* Sound Video Panel - Side panel with all videos */
+/* Sound Video Panel - Side panel with all videos (hidden; use display:flex to restore) */
 .sound-video-panel {
     position: fixed;
     top: 20px;
@@ -2646,7 +2650,7 @@ body.hide-dosimeter .dosimeter-container {
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     z-index: 99999;
-    display: flex;
+    display: none;
     flex-direction: column;
     overflow: hidden;
     backdrop-filter: blur(10px);

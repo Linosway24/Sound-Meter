@@ -115,7 +115,7 @@
         </div>
     </div>
 
-    <!-- Walkthrough Panel - matches zoom/dosimeter layout -->
+    <!-- Walkthrough Panel - top-right (Sound Simulator slot) -->
     <div id="walkthrough-panel" class="walkthrough-panel" style="display: none;">
         <div class="walkthrough-panel__header">
             <span class="walkthrough-panel__title">📋 Walkthrough</span>
@@ -764,7 +764,7 @@ console.log('[INIT] Setting up subscription...');
             // Helper function to check if we should allow panning
             function shouldAllowPanning(e) {
                 if (currentZoom === 0) return false; // Only allow panning when zoomed
-                if (e.target.closest('.zoom-control') || e.target.closest('.audio-panel')) return false;
+                if (e.target.closest('.zoom-control') || e.target.closest('.audio-panel') || e.target.closest('.walkthrough-panel')) return false;
                 
                 // Don't start panning if clicking on a button or dosimeter
                 if (e.target.closest('button') || e.target.closest('.dosimeter-container')) {
