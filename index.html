@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quest SoundPro SE-DL Simulation</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <script>
+        window.DEBUG_TOOLS_ENABLED = new URLSearchParams(window.location.search).get('debug') === '1';
+        if (window.DEBUG_TOOLS_ENABLED) document.documentElement.classList.add('debug-tools');
+    </script>
+    <link rel="stylesheet" href="css/styles.css?v=training-clean-2">
 </head>
 <body>
     <!-- Zoom Control Panel -->
@@ -318,12 +322,22 @@
     <script src="js/walkthrough.js"></script>
     <!-- FSM will be loaded conditionally in initializeApp -->
     
-    <!-- Development/debugging scripts -->
-    <script src="js/measure-photo.js"></script>
-    <script src="js/viewport-size-indicator.js"></script>
-    <script src="js/fix-percentages.js"></script>
-    <script src="js/recalculate-percentages.js"></script>
-    <script src="js/debug-positioning.js"></script>
+    <!-- Development/debugging scripts: load only with ?debug=1 -->
+    <script>
+        if (window.DEBUG_TOOLS_ENABLED) {
+            [
+                'js/measure-photo.js',
+                'js/viewport-size-indicator.js',
+                'js/fix-percentages.js',
+                'js/recalculate-percentages.js',
+                'js/debug-positioning.js',
+            ].forEach((src) => {
+                const script = document.createElement('script');
+                script.src = src;
+                document.currentScript.after(script);
+            });
+        }
+    </script>
     
     <!-- Initialize application -->
     <script>
@@ -1582,7 +1596,7 @@ console.log('[INIT] Setting up subscription...');
         // Custom dosimeter snap coordinates (can be adjusted via UI)
         // Using percentages relative to device frame for zoom/pan/resize compatibility
         window.dosimeterSnapCoords = {
-            snapXPercent: 0.1887,   // Percentage of device width (0.0 to 1.0)
+            snapXPercent: -0.0150,  // Percentage of device width (0.0 to 1.0)
             snapYPercent: -0.2172  // Percentage of device height (can be negative if above device frame)
         };
 
@@ -1861,9 +1875,10 @@ console.log('[INIT] Setting up subscription...');
             }
 
             // Mouse events - only drag when clicking on the photo, not the button
-            dosimeterPhoto.addEventListener('mousedown', function(e) {
-                // Don't drag if clicking on the button
-                if (e.target.closest('.dosimeter-btn')) return;
+            dosimeterContainer.addEventListener('mousedown', function(e) {
+                const isWalkthroughCalibratorDrag = window.getCurrentStepId?.() === 'dragCalibratorToMeter';
+                // Outside the drag step, preserve the calibrator power button behavior.
+                if (!isWalkthroughCalibratorDrag && e.target.closest('.dosimeter-btn')) return;
                 
                 // Don't start dosimeter drag if we're already panning the device
                 if (isDragging) return;
@@ -2084,9 +2099,10 @@ console.log('[INIT] Setting up subscription...');
             });
             
             // Touch events for mobile
-            dosimeterPhoto.addEventListener('touchstart', function(e) {
-                // Don't drag if clicking on the button
-                if (e.target.closest('.dosimeter-btn')) return;
+            dosimeterContainer.addEventListener('touchstart', function(e) {
+                const isWalkthroughCalibratorDrag = window.getCurrentStepId?.() === 'dragCalibratorToMeter';
+                // Outside the drag step, preserve the calibrator power button behavior.
+                if (!isWalkthroughCalibratorDrag && e.target.closest('.dosimeter-btn')) return;
                 
                 // Don't start dosimeter drag if we're already panning the device
                 if (isDragging) return;
@@ -2419,4 +2435,3 @@ console.log('[INIT] Setting up subscription...');
     </div>
 </body>
 </html>
-

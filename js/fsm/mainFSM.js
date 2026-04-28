@@ -1081,6 +1081,10 @@
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:620',message:'dispatch entry',data:{eventType:evt.type,locked:_state.flags.locked,viewId:_state.viewId,selectedIndex:_state.menu?.selectedIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
         // #endregion
+        if (typeof window.shouldBlockWalkthroughEvent === 'function' && window.shouldBlockWalkthroughEvent(evt, _state)) {
+            return;
+        }
+
         if (_state.flags.locked && evt.type !== "LOCK_SOFTKEY") {
             // #region agent log
             fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mainFSM.js:622',message:'dispatch blocked by lock',data:{eventType:evt.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
@@ -5758,4 +5762,3 @@
     window.dispatch = dispatch;
     window.beginWalkthroughCalSPLRamp125To114 = beginWalkthroughCalSPLRamp125To114;
 })();
-

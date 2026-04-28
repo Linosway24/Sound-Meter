@@ -26,13 +26,13 @@
 
     const walkthroughSteps = {
         powerOn: {
-            title: 'Power on',
+            title: 'Power On',
             text: 'Press the power button to turn on the device.',
             showButtons: false,
             buttons: [],
         },
         batteryCheck: {
-            title: 'Battery check',
+            title: 'Battery Check',
             text: 'Are the batteries fully charged?',
             showButtons: true,
             buttons: [
@@ -68,8 +68,8 @@
             // State-driven: highlight RIGHT until SIG INPUT (index 6), then ENTER
         },
         rangeCapacityCheck: {
-            title: 'Range capacity',
-            text: 'Confirm Range Capacity',
+            title: 'Range Capacity',
+            text: 'Confirm range capacity.',
             showButtons: true,
             buttons: [
                 { id: 'good', label: 'GOOD' },
@@ -104,8 +104,8 @@
             // State-driven: highlight LEFT when on right column (6-10), then DOWN until METER SET (index 1), then ENTER
         },
         confirmMeterParameters: {
-            title: 'Meter parameters',
-            text: 'Confirm meter Parameters.',
+            title: 'Meter Parameters',
+            text: 'Confirm meter parameters.',
             showButtons: true,
             buttons: [
                 { id: 'good', label: 'GOOD' },
@@ -116,8 +116,8 @@
                     if (typeof window.clearWalkthroughHighlights === 'function') window.clearWalkthroughHighlights();
                     advanceWalkthroughStep(stepId);
                     if (typeof window.dispatch === 'function') {
-                        window.dispatch({ type: 'ESC' });
-                        window.dispatch({ type: 'ESC' });
+                        dispatchWalkthroughInternal({ type: 'ESC' });
+                        dispatchWalkthroughInternal({ type: 'ESC' });
                     }
                 } else if (buttonId === 'notgood') {
                     showWalkthroughFeedback(
@@ -127,14 +127,14 @@
             },
         },
         softKeysIntro: {
-            title: 'Soft keys',
+            title: 'Soft Keys',
             text: 'Use the soft keys to access features. Soft key 2 (CAL) is highlighted.',
             showButtons: false,
             buttons: [],
             // State-driven: highlight soft-keys-region (rectangle) + soft-key--2 (primary)
         },
         confirmCalibratorSettings: {
-            title: 'Calibrator settings',
+            title: 'Calibrator Settings',
             text: 'Is the calibrator set to 114 dB and 1000 Hz?',
             showButtons: true,
             buttons: [
@@ -156,16 +156,16 @@
             },
         },
         dragCalibratorToMeter: {
-            title: 'Calibrator on the meter',
-            text: 'Drag the calibrator onto the sound meter microphone (top center). When you are ready, press Start — the calibrator will lock onto the mic, the reading will move from 125 dB down to 114 dB, and the next instructions will appear when the reading reaches 114 dB.',
+            title: 'Calibrator on the Meter',
+            text: 'Drag the calibrator onto the sound meter microphone until it locks in place. Then press Start to run the calibration. The reading will move from 125 dB down to 114 dB, and the next instructions will appear when the reading reaches 114 dB.',
             showButtons: true,
             buttons: [{ id: 'good', label: 'Start' }],
             onButtonClick: function (buttonId, stepId) {
                 if (buttonId !== 'good') return;
-                const snapped = window.applyDosimeterSnapToMicrophonePosition?.() === true;
-                if (!snapped) {
+                const calibrator = document.querySelector('.dosimeter-container');
+                if (calibrator?.dataset.snapped !== 'true') {
                     showWalkthroughFeedback(
-                        'Could not snap the calibrator to the meter. Make sure the simulator is visible, then try again.'
+                        'First drag the calibrator onto the microphone until it locks in place, then press Start.'
                     );
                     return;
                 }
@@ -187,45 +187,80 @@
             // Snap during drag only updates highlight (tryCompleteDragCalibratorStep); Start runs the ramp and advances.
         },
         stopCalibrationWithEnter: {
-            title: 'End calibration',
+            title: 'End Calibration',
             text: 'When the reading stabilizes at 114 dB, press ENTER to complete the calibration.\n\nIn the field, you would then turn off and remove the calibrator. The simulator performs these steps automatically.',
             showButtons: false,
             buttons: [],
         },
         escToHomeAfterCal: {
-            title: 'Back to start screen',
+            title: 'Back to Start Screen',
             text: 'Press ESC to leave the calibration menu and return to the start screen (home).',
             showButtons: false,
             buttons: [],
         },
         openCurrentStudy: {
-            title: 'View current study',
+            title: 'View Current Study',
             text: 'On the start screen, use the UP and DOWN arrows until VIEW CURRENT STUDY is highlighted, then press ENTER to open the current study screen.',
             showButtons: false,
             buttons: [],
             // State-driven: UP/DOWN until menu index 1, then ENTER (see applyOpenCurrentStudyHighlight).
         },
         selectSlmTimeConstantF: {
-            title: 'Fast response',
+            title: 'Fast Response',
             text: 'Press the second soft key (F-S-I) until F is underlined — that selects fast time response (as opposed to slow S or impulse I). Press repeatedly to cycle the underline across F, S, and I.',
             showButtons: false,
             buttons: [],
             // State-driven: SOFT2 cycles time constant; done when state.slm.timeConstant === 'F'.
         },
         selectSlmWeightingZ: {
-            title: 'Z weighting',
+            title: 'Z Weighting',
             text: 'Press the third soft key (A-C-Z-F) until Z is underlined — that selects Z frequency weighting. Each press cycles which letter is underlined.',
             showButtons: false,
             buttons: [],
             // State-driven: SOFT3 cycles weighting; done when state.slm.weighting === 'Z'.
         },
+        hammeringImpulseDemo: {
+            title: 'Hammering Scenario',
+            text: 'This sound source has short, sharp impacts. With fast (F) time response and Z weighting selected, watch how the meter reacts quickly to each hammer strike and shows the unweighted sound level. This demonstrates why fast response is useful when the sound changes rapidly.',
+            showButtons: false,
+            buttons: [],
+        },
+        selectSlmTimeConstantS: {
+            title: 'Slow Response',
+            text: 'Press the second soft key (F-S-I) until S is underlined — that selects slow time response.',
+            showButtons: false,
+            buttons: [],
+        },
+        selectSlmWeightingA: {
+            title: 'A Weighting',
+            text: 'Press the third soft key (A-C-Z-F) until A is underlined — that selects A-frequency weighting.',
+            showButtons: false,
+            buttons: [],
+            // FSM stores this as weighting 'R'; display shows A (see screen-renderer).
+        },
+        fanSoundDemo: {
+            title: 'Fan Noise',
+            text: 'This sound source is steadier than the hammering. With slow (S) time response and A weighting selected, watch how the meter smooths the reading and reports the level as the ear would typically perceive it. This demonstrates why slow response and A weighting are commonly used for steady workplace noise.',
+            showButtons: false,
+            buttons: [],
+        },
     };
 
-    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter', 'stopCalibrationWithEnter', 'escToHomeAfterCal', 'openCurrentStudy', 'selectSlmTimeConstantF', 'selectSlmWeightingZ'];
+    const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter', 'stopCalibrationWithEnter', 'escToHomeAfterCal', 'openCurrentStudy', 'selectSlmTimeConstantF', 'selectSlmWeightingZ', 'hammeringImpulseDemo', 'selectSlmTimeConstantS', 'selectSlmWeightingA', 'fanSoundDemo'];
     let completedSteps = new Set();
     let currentStepId = null;
     /** Cancels stale deferred reveals when another step hides the panel. */
     let batteryPanelRevealSeq = 0;
+    /** Invalidates hammer-instruction auto-advance timer when step changes or walkthrough resets. */
+    let hammerDemoAutoadvanceSeq = 0;
+    /** Same for fan sound / video demo step. */
+    let fanDemoAutoadvanceSeq = 0;
+    /** Play `Meter Set.mp3` once when "Meter Set: Switch Column" first appears. */
+    let meterSetSwitchColumnNarrationDone = false;
+    /** Play `Turn on Cal.mp3` once when "Calibrator Power" first appears (softKeysIntro + cal_running). */
+    let calibratorPowerNarrationDone = false;
+    /** Lets walkthrough-owned transitions dispatch FSM events without looking like user input. */
+    let isInternalWalkthroughDispatch = false;
 
     function getPanel() {
         return document.getElementById(PANEL_ID);
@@ -289,6 +324,14 @@
                 return '.soft-key--2';
             case 'selectSlmWeightingZ':
                 return '.soft-key--3';
+            case 'hammeringImpulseDemo':
+                return '#sound-video-panel';
+            case 'selectSlmTimeConstantS':
+                return '.soft-key--2';
+            case 'selectSlmWeightingA':
+                return '.soft-key--3';
+            case 'fanSoundDemo':
+                return '#sound-video-panel';
             case 'navigateToSetup':
                 if (!state) return '.nav__btn--down';
                 {
@@ -696,6 +739,10 @@
                     applySelectSlmTimeConstantFHighlight(state);
                 } else if (nextId === 'selectSlmWeightingZ') {
                     applySelectSlmWeightingZHighlight(state);
+                } else if (nextId === 'selectSlmTimeConstantS') {
+                    applySelectSlmTimeConstantSHighlight(state);
+                } else if (nextId === 'selectSlmWeightingA') {
+                    applySelectSlmWeightingAHighlight(state);
                 }
             }
         } else {
@@ -749,9 +796,18 @@
             else if (isCalMenu) instructionEl.textContent = 'Press ENTER to start calibration.';
             else if (isHome) instructionEl.textContent = 'Use the soft keys to access features. Soft key 2 (CAL) is highlighted.';
         }
-        if (isCalRunning) setWalkthroughPanelTitle('Calibrator power');
-        else if (isCalMenu) setWalkthroughPanelTitle('Start calibration');
-        else if (isHome) setWalkthroughPanelTitle('Soft keys');
+        if (isCalRunning) {
+            setWalkthroughPanelTitle('Calibrator Power');
+            if (
+                getCurrentStepId() === 'softKeysIntro' &&
+                !calibratorPowerNarrationDone &&
+                typeof window.AudioPlayer?.playNarration === 'function'
+            ) {
+                calibratorPowerNarrationDone = true;
+                window.AudioPlayer.playNarration('assets/audio/Turn on Cal.mp3');
+            }
+        } else if (isCalMenu) setWalkthroughPanelTitle('Start Calibration');
+        else if (isHome) setWalkthroughPanelTitle('Soft Keys');
         else setWalkthroughPanelTitle(walkthroughSteps.softKeysIntro.title);
     }
 
@@ -800,8 +856,17 @@
             }
         }
         if (isSetupMenu) {
-            if (onRightColumn) setWalkthroughPanelTitle('Meter Set — switch column');
-            else if (meterSetSelected) setWalkthroughPanelTitle('Open Meter Set');
+            if (onRightColumn) {
+                setWalkthroughPanelTitle('Meter Set: Switch Column');
+                if (
+                    getCurrentStepId() === 'navigateToMeterSet' &&
+                    !meterSetSwitchColumnNarrationDone &&
+                    typeof window.AudioPlayer?.playNarration === 'function'
+                ) {
+                    meterSetSwitchColumnNarrationDone = true;
+                    window.AudioPlayer.playNarration('assets/audio/Meter Set.mp3');
+                }
+            } else if (meterSetSelected) setWalkthroughPanelTitle('Open Meter Set');
             else setWalkthroughPanelTitle('Select Meter Set');
         }
     }
@@ -851,7 +916,7 @@
                 instructionEl.textContent = 'Press the UP arrow until VIEW CURRENT STUDY is selected.';
             }
         }
-        setWalkthroughPanelTitle(onTarget ? 'Open current study' : 'Select View Current Study');
+        setWalkthroughPanelTitle(onTarget ? 'Open Current Study' : 'Select View Current Study');
     }
 
     function isWalkthroughSlmMeasurementView(viewId) {
@@ -885,6 +950,28 @@
         setPrimary('.soft-key--3', true);
     }
 
+    /** SLM: highlight second soft key until slow time constant S is selected. */
+    function applySelectSlmTimeConstantSHighlight(state) {
+        if (!state || !isWalkthroughSlmMeasurementView(state.viewId)) return;
+        if (state.slm?.timeConstant === 'S') return;
+        const setHighlight = window.setWalkthroughHighlight;
+        const setPrimary = window.setWalkthroughPrimaryFocus;
+        if (!setHighlight || !setPrimary) return;
+        setHighlight('.soft-keys-region', true);
+        setPrimary('.soft-key--2', true);
+    }
+
+    /** SLM: SOFT3 until A is underlined (FSM slm.weighting === 'R'). */
+    function applySelectSlmWeightingAHighlight(state) {
+        if (!state || !isWalkthroughSlmMeasurementView(state.viewId)) return;
+        if (state.slm?.weighting === 'R') return;
+        const setHighlight = window.setWalkthroughHighlight;
+        const setPrimary = window.setWalkthroughPrimaryFocus;
+        if (!setHighlight || !setPrimary) return;
+        setHighlight('.soft-keys-region', true);
+        setPrimary('.soft-key--3', true);
+    }
+
     /** Completes the drag-to-microphone step when `data-snapped` is true (FSM state not required). */
     function tryCompleteDragCalibratorStep() {
         if (currentStepId !== 'dragCalibratorToMeter') return;
@@ -893,14 +980,99 @@
         const container = document.querySelector('.dosimeter-container');
         if (container?.dataset.snapped === 'true') {
             setHighlight('.dosimeter-container', false);
+            showWalkthroughFeedback('');
         } else {
             setHighlight('.dosimeter-container', true);
         }
     }
 
+    function getAllowedEventsForCurrentStep(state) {
+        switch (currentStepId) {
+            case 'powerOn':
+                return ['POWER'];
+            case 'navigateToSetup': {
+                const isHome = state?.viewId === 'home_screen' || state?.viewId === 'home_screen_dim';
+                if (!isHome) return [];
+                return state?.menu?.selectedIndex === HOME_MENU_SETUP_INDEX ? ['ENTER'] : ['DOWN'];
+            }
+            case 'navigateToSigInput': {
+                if (state?.viewId !== 'setup_menu') return [];
+                return state?.menu?.selectedIndex === SETUP_MENU_SIG_INPUT_INDEX ? ['ENTER'] : ['RIGHT'];
+            }
+            case 'escToSetup':
+                return ['ESC'];
+            case 'navigateToMeterSet': {
+                if (state?.viewId !== 'setup_menu') return [];
+                const selectedIndex = state?.menu?.selectedIndex ?? 0;
+                if (selectedIndex >= SETUP_MENU_RIGHT_COLUMN_START) return ['LEFT'];
+                return selectedIndex === SETUP_MENU_METER_SET_INDEX ? ['ENTER'] : ['DOWN'];
+            }
+            case 'softKeysIntro':
+                if (state?.viewId === 'home_screen' || state?.viewId === 'home_screen_dim') return ['SOFT2'];
+                if (state?.viewId === 'cal_menu') return ['ENTER'];
+                return [];
+            case 'stopCalibrationWithEnter':
+                return ['ENTER'];
+            case 'escToHomeAfterCal':
+                return ['ESC'];
+            case 'openCurrentStudy': {
+                const isHome = state?.viewId === 'home_screen' || state?.viewId === 'home_screen_dim';
+                if (!isHome) return [];
+                const selectedIndex = state?.menu?.selectedIndex ?? 0;
+                if (selectedIndex === HOME_MENU_CURRENT_STUDY_INDEX) return ['ENTER'];
+                return selectedIndex < HOME_MENU_CURRENT_STUDY_INDEX ? ['DOWN'] : ['UP'];
+            }
+            case 'selectSlmTimeConstantF':
+            case 'selectSlmTimeConstantS':
+                return ['SOFT2'];
+            case 'selectSlmWeightingZ':
+            case 'selectSlmWeightingA':
+                return ['SOFT3'];
+            case 'batteryCheck':
+            case 'rangeCapacityCheck':
+            case 'confirmMeterParameters':
+            case 'confirmCalibratorSettings':
+            case 'dragCalibratorToMeter':
+            case 'hammeringImpulseDemo':
+            case 'fanSoundDemo':
+                return [];
+            default:
+                return null;
+        }
+    }
+
+    function dispatchWalkthroughInternal(evt) {
+        if (typeof window.dispatch !== 'function') return;
+        isInternalWalkthroughDispatch = true;
+        try {
+            window.dispatch(evt);
+        } finally {
+            isInternalWalkthroughDispatch = false;
+        }
+    }
+
+    function warnBlockedWalkthroughEvent() {
+        showWalkthroughFeedback('Please follow the highlighted step before continuing.');
+        setPanelVisible(true);
+        scheduleWalkthroughPanelPosition();
+    }
+
+    function shouldBlockWalkthroughEvent(evt, state) {
+        if (isInternalWalkthroughDispatch) return false;
+        if (!evt || !currentStepId) return false;
+        const allowedEvents = getAllowedEventsForCurrentStep(state);
+        if (!allowedEvents) return false;
+        if (allowedEvents.includes(evt.type)) {
+            showWalkthroughFeedback('');
+            return false;
+        }
+        warnBlockedWalkthroughEvent();
+        return true;
+    }
+
     /**
      * Update walkthrough based on FSM state. Called from subscription callback.
-     * Handles state-driven steps (navigateToSetup, navigateToSigInput, escToSetup, navigateToMeterSet, openCurrentStudy, selectSlmTimeConstantF, selectSlmWeightingZ).
+     * Handles state-driven steps (navigateToSetup, navigateToSigInput, escToSetup, navigateToMeterSet, openCurrentStudy, selectSlmTimeConstantF, selectSlmWeightingZ, selectSlmTimeConstantS, selectSlmWeightingA).
      */
     function updateWalkthroughForState(state) {
         try {
@@ -1057,6 +1229,40 @@
                 return;
             }
 
+            if (currentStepId === 'selectSlmTimeConstantS') {
+                if (isWalkthroughSlmMeasurementView(state.viewId) && state.slm && state.slm.timeConstant === 'S') {
+                    const setPrimary = window.setWalkthroughPrimaryFocus;
+                    if (typeof setPrimary === 'function') {
+                        setPrimary('.soft-key--2', false);
+                    }
+                    setHighlight('.soft-keys-region', false);
+                    setHighlight('.soft-key--2', false);
+                    advanceWalkthroughStep('selectSlmTimeConstantS');
+                    return;
+                }
+                if (isWalkthroughSlmMeasurementView(state.viewId)) {
+                    applySelectSlmTimeConstantSHighlight(state);
+                }
+                return;
+            }
+
+            if (currentStepId === 'selectSlmWeightingA') {
+                if (isWalkthroughSlmMeasurementView(state.viewId) && state.slm && state.slm.weighting === 'R') {
+                    const setPrimary = window.setWalkthroughPrimaryFocus;
+                    if (typeof setPrimary === 'function') {
+                        setPrimary('.soft-key--3', false);
+                    }
+                    setHighlight('.soft-keys-region', false);
+                    setHighlight('.soft-key--3', false);
+                    advanceWalkthroughStep('selectSlmWeightingA');
+                    return;
+                }
+                if (isWalkthroughSlmMeasurementView(state.viewId)) {
+                    applySelectSlmWeightingAHighlight(state);
+                }
+                return;
+            }
+
             if (currentStepId === 'dragCalibratorToMeter') {
                 tryCompleteDragCalibratorStep();
                 return;
@@ -1083,6 +1289,62 @@
         const step = walkthroughSteps[stepId];
         if (!step) return;
 
+        const prevStepId = currentStepId;
+
+        if (currentStepId === 'powerOn' && stepId !== 'powerOn') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'batteryCheck' && stepId !== 'batteryCheck') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'navigateToSetup' && stepId !== 'navigateToSetup') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'navigateToSigInput' && stepId !== 'navigateToSigInput') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'rangeCapacityCheck' && stepId !== 'rangeCapacityCheck') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'escToSetup' && stepId !== 'escToSetup') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'navigateToMeterSet' && stepId !== 'navigateToMeterSet') {
+            window.AudioPlayer?.stopNarration?.();
+            meterSetSwitchColumnNarrationDone = false;
+        }
+        if (currentStepId === 'confirmMeterParameters' && stepId !== 'confirmMeterParameters') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'softKeysIntro' && stepId !== 'softKeysIntro') {
+            window.AudioPlayer?.stopNarration?.();
+            calibratorPowerNarrationDone = false;
+        }
+        if (currentStepId === 'dragCalibratorToMeter' && stepId !== 'dragCalibratorToMeter') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'stopCalibrationWithEnter' && stepId !== 'stopCalibrationWithEnter') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'escToHomeAfterCal' && stepId !== 'escToHomeAfterCal') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'openCurrentStudy' && stepId !== 'openCurrentStudy') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'selectSlmTimeConstantF' && stepId !== 'selectSlmTimeConstantF') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'selectSlmWeightingZ' && stepId !== 'selectSlmWeightingZ') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'selectSlmTimeConstantS' && stepId !== 'selectSlmTimeConstantS') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'selectSlmWeightingA' && stepId !== 'selectSlmWeightingA') {
+            window.AudioPlayer?.stopNarration?.();
+        }
+
         const deferBatteryPanel =
             stepId === 'batteryCheck' && typeof window.runAfterSoundMeterTransformIdle === 'function';
 
@@ -1091,6 +1353,14 @@
         }
 
         currentStepId = stepId;
+
+        if (stepId === 'navigateToMeterSet' && prevStepId !== 'navigateToMeterSet') {
+            meterSetSwitchColumnNarrationDone = false;
+        }
+
+        if (stepId === 'softKeysIntro' && prevStepId !== 'softKeysIntro') {
+            calibratorPowerNarrationDone = false;
+        }
 
         const instructionEl = getInstructionEl();
         const buttonsEl = getButtonsEl();
@@ -1125,15 +1395,168 @@
         if (deferBatteryPanel) {
             setPanelVisible(false);
             const seq = ++batteryPanelRevealSeq;
+            const prevForBatteryNarration = prevStepId;
             window.runAfterSoundMeterTransformIdle(() => {
                 if (seq !== batteryPanelRevealSeq) return;
                 if (currentStepId !== 'batteryCheck') return;
                 setPanelVisible(true);
                 scheduleWalkthroughPanelPosition();
+                if (
+                    prevForBatteryNarration !== 'batteryCheck' &&
+                    typeof window.AudioPlayer?.playNarration === 'function'
+                ) {
+                    window.AudioPlayer.playNarration('assets/audio/Batterys.mp3');
+                }
             });
         } else {
             setPanelVisible(true);
             scheduleWalkthroughPanelPosition();
+        }
+
+        if (stepId === 'powerOn' && prevStepId !== 'powerOn') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/First lets set up the SLM.mp3');
+            }
+        }
+
+        if (stepId === 'batteryCheck' && prevStepId !== 'batteryCheck' && !deferBatteryPanel) {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Batterys.mp3');
+            }
+        }
+
+        if (stepId === 'navigateToSetup' && prevStepId !== 'navigateToSetup') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Range Capacity.mp3');
+            }
+        }
+
+        if (stepId === 'navigateToSigInput' && prevStepId !== 'navigateToSigInput') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Signial Input.mp3');
+            }
+        }
+
+        if (stepId === 'rangeCapacityCheck' && prevStepId !== 'rangeCapacityCheck') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration(
+                    'assets/audio/' + encodeURIComponent('Is the Range Cap at?.mp3')
+                );
+            }
+        }
+
+        if (stepId === 'escToSetup' && prevStepId !== 'escToSetup') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/configure meter.mp3');
+            }
+        }
+
+        if (stepId === 'confirmMeterParameters' && prevStepId !== 'confirmMeterParameters') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Correct Meter settings.mp3');
+            }
+        }
+
+        if (stepId === 'softKeysIntro' && prevStepId !== 'softKeysIntro') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Start Cal.mp3');
+            }
+        }
+
+        if (stepId === 'dragCalibratorToMeter' && prevStepId !== 'dragCalibratorToMeter') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Place the calibrator.mp3');
+            }
+        }
+
+        if (stepId === 'stopCalibrationWithEnter' && prevStepId !== 'stopCalibrationWithEnter') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Stop Calabration.mp3');
+            }
+        }
+
+        if (stepId === 'escToHomeAfterCal' && prevStepId !== 'escToHomeAfterCal') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/collecting noise data.mp3');
+            }
+        }
+
+        if (stepId === 'openCurrentStudy' && prevStepId !== 'openCurrentStudy') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/View current.mp3');
+            }
+        }
+
+        if (stepId === 'selectSlmTimeConstantF' && prevStepId !== 'selectSlmTimeConstantF') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/Fast.mp3');
+            }
+        }
+
+        if (stepId === 'selectSlmWeightingZ' && prevStepId !== 'selectSlmWeightingZ') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/z weighting.mp3');
+            }
+        }
+
+        if (stepId === 'selectSlmTimeConstantS' && prevStepId !== 'selectSlmTimeConstantS') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/slow.mp3');
+            }
+        }
+
+        if (stepId === 'selectSlmWeightingA' && prevStepId !== 'selectSlmWeightingA') {
+            if (typeof window.AudioPlayer?.playNarration === 'function') {
+                window.AudioPlayer.playNarration('assets/audio/A for weighting.mp3');
+            }
+        }
+
+        if (stepId === 'hammeringImpulseDemo') {
+            if (typeof window.AudioPlayer?.playPreset === 'function') {
+                window.AudioPlayer.playPreset('hammering', true, true, false);
+            }
+            const seq = ++hammerDemoAutoadvanceSeq;
+            const WAIT_MS = 20000;
+            const FADE_MS = 1500;
+            window.setTimeout(() => {
+                if (seq !== hammerDemoAutoadvanceSeq) return;
+                if (getCurrentStepId() !== 'hammeringImpulseDemo') return;
+                const finishAdvance = function () {
+                    if (seq !== hammerDemoAutoadvanceSeq) return;
+                    if (getCurrentStepId() !== 'hammeringImpulseDemo') return;
+                    advanceWalkthroughStep('hammeringImpulseDemo');
+                };
+                if (typeof window.AudioPlayer?.fadeOutAndStop === 'function') {
+                    window.AudioPlayer.fadeOutAndStop(FADE_MS, finishAdvance);
+                } else {
+                    window.AudioPlayer?.stop?.();
+                    finishAdvance();
+                }
+            }, WAIT_MS);
+        }
+
+        if (stepId === 'fanSoundDemo') {
+            if (typeof window.AudioPlayer?.playPreset === 'function') {
+                window.AudioPlayer.playPreset('fan', true, true, false);
+            }
+            const seq = ++fanDemoAutoadvanceSeq;
+            const WAIT_MS = 20000;
+            const FADE_MS = 1500;
+            window.setTimeout(() => {
+                if (seq !== fanDemoAutoadvanceSeq) return;
+                if (getCurrentStepId() !== 'fanSoundDemo') return;
+                const finishAdvance = function () {
+                    if (seq !== fanDemoAutoadvanceSeq) return;
+                    if (getCurrentStepId() !== 'fanSoundDemo') return;
+                    advanceWalkthroughStep('fanSoundDemo');
+                };
+                if (typeof window.AudioPlayer?.fadeOutAndStop === 'function') {
+                    window.AudioPlayer.fadeOutAndStop(FADE_MS, finishAdvance);
+                } else {
+                    window.AudioPlayer?.stop?.();
+                    finishAdvance();
+                }
+            }, WAIT_MS);
         }
     }
 
@@ -1153,6 +1576,33 @@
      * Hide the walkthrough panel. Does not clear completed steps.
      */
     function hidePanel() {
+        if (
+            currentStepId === 'powerOn' ||
+            currentStepId === 'batteryCheck' ||
+            currentStepId === 'navigateToSetup' ||
+            currentStepId === 'navigateToSigInput' ||
+            currentStepId === 'rangeCapacityCheck' ||
+            currentStepId === 'escToSetup' ||
+            currentStepId === 'navigateToMeterSet' ||
+            currentStepId === 'confirmMeterParameters' ||
+            currentStepId === 'softKeysIntro' ||
+            currentStepId === 'dragCalibratorToMeter' ||
+            currentStepId === 'stopCalibrationWithEnter' ||
+            currentStepId === 'escToHomeAfterCal' ||
+            currentStepId === 'openCurrentStudy' ||
+            currentStepId === 'selectSlmTimeConstantF' ||
+            currentStepId === 'selectSlmWeightingZ' ||
+            currentStepId === 'selectSlmTimeConstantS' ||
+            currentStepId === 'selectSlmWeightingA'
+        ) {
+            window.AudioPlayer?.stopNarration?.();
+        }
+        if (currentStepId === 'navigateToMeterSet') {
+            meterSetSwitchColumnNarrationDone = false;
+        }
+        if (currentStepId === 'softKeysIntro') {
+            calibratorPowerNarrationDone = false;
+        }
         batteryPanelRevealSeq++;
         setPanelVisible(false);
         currentStepId = null;
@@ -1169,6 +1619,13 @@
      * Reset walkthrough state (e.g. when starting over).
      */
     function resetWalkthrough() {
+        hammerDemoAutoadvanceSeq++;
+        fanDemoAutoadvanceSeq++;
+        meterSetSwitchColumnNarrationDone = false;
+        calibratorPowerNarrationDone = false;
+        if (typeof window.AudioPlayer?.stop === 'function') {
+            window.AudioPlayer.stop();
+        }
         completedSteps.clear();
         currentStepId = null;
         showWalkthroughFeedback('');
@@ -1183,6 +1640,7 @@
     window.isWalkthroughStepCompleted = isStepCompleted;
     window.resetWalkthrough = resetWalkthrough;
     window.updateWalkthroughForState = updateWalkthroughForState;
+    window.shouldBlockWalkthroughEvent = shouldBlockWalkthroughEvent;
     window.getCurrentStepId = getCurrentStepId;
     window.scheduleWalkthroughPanelPosition = scheduleWalkthroughPanelPosition;
     window.tryCompleteDragCalibratorStep = tryCompleteDragCalibratorStep;

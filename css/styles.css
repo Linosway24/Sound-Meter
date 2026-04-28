@@ -112,8 +112,8 @@ body.hide-dosimeter .dosimeter-container {
 .dosimeter-btn {
     position: absolute;
     pointer-events: auto;
-    border: 2px solid var(--btn-border);
-    background: var(--btn-fill);
+    border: 2px solid transparent;
+    background: transparent;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 120ms ease, transform 60ms ease;
@@ -126,12 +126,25 @@ body.hide-dosimeter .dosimeter-container {
 }
 
 .dosimeter-btn:hover {
-    background: var(--btn-fill-hover);
+    background: transparent;
 }
 
 .dosimeter-btn:active {
-    background: var(--btn-fill-active);
+    background: transparent;
     transform: translateY(1px);
+}
+
+.debug-tools .dosimeter-btn {
+    border-color: var(--btn-border);
+    background: var(--btn-fill);
+}
+
+.debug-tools .dosimeter-btn:hover {
+    background: var(--btn-fill-hover);
+}
+
+.debug-tools .dosimeter-btn:active {
+    background: var(--btn-fill-active);
 }
 
 /* Power button on dosimeter - adjust position to match actual button location on device */
@@ -491,9 +504,11 @@ body.hide-dosimeter .dosimeter-container {
     filter: grayscale(0.4) brightness(0.8);
 }
 
-/* Testing overlay helper - will be removed after positioning verification */
-.testing-overlay { outline: 2px solid var(--debug-outline); }
-.testing-overlay:not(.lcd) { background: var(--debug-fill); }
+/* Testing overlay helper. Hidden by default; add ?debug=1 to show positioning guides. */
+.testing-overlay { outline: none; }
+.testing-overlay:not(.lcd) { background: transparent; }
+.debug-tools .testing-overlay { outline: 2px solid var(--debug-outline); }
+.debug-tools .testing-overlay:not(.lcd) { background: var(--debug-fill); }
 /* Make dosimeter display visible for debugging when it has testing-overlay class AND is on */
 .testing-overlay.dosimeter-display.dosimeter-display--on { opacity: 0.8 !important; }
 
@@ -503,8 +518,8 @@ body.hide-dosimeter .dosimeter-container {
 .fn-btn {
     position: absolute;
     pointer-events: auto; /* interactive */
-    border: 2px solid var(--btn-border);
-    background: var(--btn-fill);
+    border: 2px solid transparent;
+    background: transparent;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 120ms ease, transform 60ms ease;
@@ -512,16 +527,34 @@ body.hide-dosimeter .dosimeter-container {
 
 .soft-key:hover,
 .nav__btn:hover,
-.fn-btn:hover { background: var(--btn-fill-hover); }
+.fn-btn:hover { background: transparent; }
 
 .soft-key:active,
 .nav__btn:active,
-.fn-btn:active { background: var(--btn-fill-active); transform: translateY(1px); }
+.fn-btn:active { background: transparent; transform: translateY(1px); }
+
+.debug-tools .soft-key,
+.debug-tools .nav__btn,
+.debug-tools .fn-btn {
+    border-color: var(--btn-border);
+    background: var(--btn-fill);
+}
+
+.debug-tools .soft-key:hover,
+.debug-tools .nav__btn:hover,
+.debug-tools .fn-btn:hover { background: var(--btn-fill-hover); }
+
+.debug-tools .soft-key:active,
+.debug-tools .nav__btn:active,
+.debug-tools .fn-btn:active { background: var(--btn-fill-active); }
 
 /* Visual button press feedback for debugging */
 .button--pressed {
-    background: var(--btn-fill-active) !important;
     transform: translateY(1px);
+}
+
+.debug-tools .button--pressed {
+    background: var(--btn-fill-active) !important;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -2680,35 +2713,60 @@ body.hide-dosimeter .dosimeter-container {
 }
 
 /* Fan Video Overlay */
-/* Sound Video Panel - Side panel with all videos (hidden; use display:flex to restore) */
+/* Sound Video Panel — single clip (hammering): large, vertically centered on the right */
 .sound-video-panel {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    width: min(400px, calc(100vw - 40px));
-    max-height: calc(100vh - 40px);
+    top: 50%;
+    right: clamp(16px, 3vw, 40px);
+    transform: translateY(-50%);
+    width: min(720px, 52vw, calc(100vw - 32px));
+    max-height: min(88vh, 980px);
     background: rgba(20, 20, 25, 0.95);
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     z-index: 99999;
     display: none;
     flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
     overflow: hidden;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    opacity: 1;
+    transition: opacity 1.4s ease-out;
+}
+
+.sound-video-panel.sound-video-panel--fading {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .sound-video-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    padding: 16px;
-    overflow-y: auto;
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: clamp(12px, 2vw, 24px);
+    gap: 0;
+    overflow: visible;
+    flex: 0 1 auto;
+}
+
+/* Walkthrough: show only one tile (hammer vs fan), never both at once */
+.sound-video-panel .sound-video-item {
+    display: none;
+}
+
+.sound-video-panel[data-sound-video-preset="hammering"] .sound-video-item[data-preset="hammering"],
+.sound-video-panel[data-sound-video-preset="fan"] .sound-video-item[data-preset="fan"] {
+    display: block;
 }
 
 .sound-video-item {
     position: relative;
+    width: 100%;
+    max-width: 100%;
     background: #000;
     border-radius: 8px;
     overflow: hidden;
@@ -2777,31 +2835,29 @@ body.hide-dosimeter .dosimeter-container {
     box-shadow: 0 0 0 6px rgba(0, 255, 0, 0.8);
 }
 
-/* Responsive adjustments */
+/* Responsive — stay on the right, still vertically centered */
 @media (max-width: 768px) {
     .sound-video-panel {
-        width: min(350px, calc(100vw - 20px));
-        top: 10px;
-        right: 10px;
-        max-height: calc(100vh - 20px);
+        width: min(560px, 86vw, calc(100vw - 24px));
+        right: 12px;
+        max-height: min(82vh, 720px);
     }
-    
+
     .sound-video-grid {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
-        padding: 12px;
+        padding: 14px;
     }
 }
 
 @media (max-width: 480px) {
     .sound-video-panel {
-        width: calc(100vw - 20px);
-        right: 10px;
-        left: 10px;
+        width: min(420px, 92vw);
+        right: clamp(8px, 2vw, 16px);
+        left: auto;
+        max-height: min(78vh, 560px);
     }
-    
+
     .sound-video-grid {
-        grid-template-columns: repeat(2, 1fr);
+        padding: 10px;
     }
 }
 
@@ -2977,5 +3033,3 @@ body.hide-dosimeter .dosimeter-container {
     box-sizing: border-box !important;
     position: relative !important;
 }
-
-

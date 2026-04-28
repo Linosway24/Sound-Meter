@@ -15,7 +15,9 @@
     let analyserNode = null;
     let isPlaying = false;
     let currentPresetName = null; // Track current preset name
-    
+    /** Walkthrough voiceover only — not wired to SPL analysis; separate from preset `currentAudio`. */
+    let narrationAudio = null;
+
     // Audio analysis state
     let audioAnalysisState = {
         enabled: false,
@@ -271,6 +273,18 @@
                     console.log(`[AUDIO-ANALYSIS] 📊 Steady-state: ${spl.toFixed(1)} dB (RMS: ${rms.toFixed(3)})`);
                 }
             }
+
+            // Fan/HVAC: keep SLM readout in a realistic 50–60 dB band (training scenario)
+            if (currentPresetName === 'fan') {
+                if (impulse.detected) {
+                    spl = Math.max(50, Math.min(60, spl));
+                } else {
+                    const rmsLo = 0.02;
+                    const rmsHi = 0.26;
+                    const u = Math.max(0, Math.min(1, (rms - rmsLo) / (rmsHi - rmsLo)));
+                    spl = 50 + u * 10;
+                }
+            }
             
             // Apply smoothing
             const smoothing = audioAnalysisState.smoothing;
@@ -418,6 +432,17 @@
                     // Show video for presets that have videos (unless skipped)
                     if (!skipVideo && VIDEO_PATHS[presetName]) {
                         showSoundVideo(presetName);
+                        // Hammering: analyzed audio is hammering.wav; mute MP4 so meters follow one source
+                        if (presetName === 'hammering') {
+                            const vi = document.querySelector('.sound-video-item[data-preset="hammering"] video');
+                            if (vi) {
+                                vi.muted = true;
+                            }
+                        }
+                    }
+
+                    if (typeof window.scheduleWalkthroughPanelPosition === 'function') {
+                        window.scheduleWalkthroughPanelPosition();
                     }
                     
                     // Start audio analysis if enabled
@@ -452,6 +477,30 @@
      * @param {string} url - URL or path to audio file
      * @param {Object} options - Simulator options
      */
+    function stopNarration() {
+        if (narrationAudio) {
+            try {
+                narrationAudio.pause();
+                narrationAudio.currentTime = 0;
+            } catch (e) {}
+            narrationAudio = null;
+        }
+    }
+
+    /**
+     * Play a one-shot narration clip (walkthrough). Does not affect SPL presets/analysis.
+     * @param {string} url - Path or URL to audio file
+     */
+    function playNarration(url) {
+        stopNarration();
+        const el = new Audio(url);
+        narrationAudio = el;
+        el.addEventListener('ended', () => {
+            if (narrationAudio === el) narrationAudio = null;
+        });
+        el.play().catch((e) => console.warn(`[AUDIO] Narration failed: ${e.message}`));
+    }
+
     function playCustom(url, options = {}) {
         stop();
 
@@ -499,19 +548,36 @@
 
     // Video panel state
     let videoPanelInitialized = false;
+    let videoPanelResizeBound = false;
     let currentPlayingVideo = null;
 
+    /** Presets that get a tile in the sound-video side panel (walkthrough: hammer + fan only). */
+    const VIDEO_PANEL_PRESETS = ['hammering', 'fan'];
+
+    function setActiveSoundVideoPreset(presetName) {
+        const panelEl = document.getElementById('sound-video-panel');
+        if (!panelEl) return;
+        if (presetName && VIDEO_PANEL_PRESETS.includes(presetName)) {
+            panelEl.dataset.soundVideoPreset = presetName;
+        } else {
+            delete panelEl.dataset.soundVideoPreset;
+        }
+    }
+
     /**
-     * Initialize video panel with all videos
+     * Initialize video panel for walkthrough demos (not the full preset list).
+     * Safe to call repeatedly — only appends tiles for presets not yet in the grid.
      */
     function initVideoPanel() {
-        if (videoPanelInitialized) return;
-        
         const grid = document.getElementById('sound-video-grid');
         if (!grid) return;
 
-        // Create video items for each preset
-        Object.entries(VIDEO_PATHS).forEach(([presetName, videoPath]) => {
+        VIDEO_PANEL_PRESETS.forEach((presetName) => {
+            if (document.querySelector(`.sound-video-item[data-preset="${presetName}"]`)) {
+                return;
+            }
+            const videoPath = VIDEO_PATHS[presetName];
+            if (!videoPath) return;
             const item = document.createElement('div');
             item.className = 'sound-video-item';
             item.dataset.preset = presetName;
@@ -542,15 +608,17 @@
         });
 
         videoPanelInitialized = true;
-        
-        // Handle window resize
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                // Videos will automatically adjust with CSS
-            }, 100);
-        });
+
+        if (!videoPanelResizeBound) {
+            videoPanelResizeBound = true;
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    // Videos will automatically adjust with CSS
+                }, 100);
+            });
+        }
     }
 
     /**
@@ -568,9 +636,17 @@
             stop();
         }
 
+        initVideoPanel();
+
         const item = document.querySelector(`.sound-video-item[data-preset="${presetName}"]`);
         const video = item?.querySelector('video');
         if (!video) return;
+
+        const panelEl = document.getElementById('sound-video-panel');
+        if (panelEl) {
+            panelEl.style.display = 'flex';
+        }
+        setActiveSoundVideoPreset(presetName);
 
         // Mark as current playing video
         item.classList.add('playing');
@@ -781,6 +857,14 @@
                 }
             }
         }
+
+        if (!currentPlayingVideo) {
+            const panelEl = document.getElementById('sound-video-panel');
+            if (panelEl) {
+                panelEl.style.display = 'none';
+                delete panelEl.dataset.soundVideoPreset;
+            }
+        }
     }
 
     /**
@@ -802,8 +886,8 @@
     function showSoundVideo(presetName, skipAudio = true) {
         // Initialize panel if not already done
         initVideoPanel();
-        
-        // Stop currently playing video if switching
+
+        // Stop currently playing video if switching (may momentarily clear currentPlayingVideo)
         if (currentPlayingVideo && currentPlayingVideo !== presetName) {
             stopVideo(currentPlayingVideo, false);
         }
@@ -811,6 +895,12 @@
         const item = document.querySelector(`.sound-video-item[data-preset="${presetName}"]`);
         const video = item?.querySelector('video');
         if (!video) return;
+
+        const panelEl = document.getElementById('sound-video-panel');
+        if (panelEl) {
+            panelEl.style.display = 'flex';
+        }
+        setActiveSoundVideoPreset(presetName);
 
         // Play the video
         video.play().catch(e => console.warn(`[AUDIO] Video play failed for ${presetName}:`, e));
@@ -867,13 +957,59 @@
     }
 
     /**
+     * Fade video panel + master gain, then stop (for walkthrough hammer demo handoff).
+     * @param {number} durationMs
+     * @param {function} [onComplete]
+     */
+    function fadeOutAndStop(durationMs = 1500, onComplete) {
+        const durSec = Math.max(0.05, (durationMs || 1500) / 1000);
+        const panel = document.getElementById('sound-video-panel');
+        if (panel) {
+            panel.classList.add('sound-video-panel--fading');
+        }
+        if (audioContext && gainNode) {
+            try {
+                const now = audioContext.currentTime;
+                const g = gainNode.gain;
+                g.cancelScheduledValues(now);
+                g.setValueAtTime(Math.max(0.0001, g.value), now);
+                g.exponentialRampToValueAtTime(0.0001, now + durSec);
+            } catch (e) {
+                console.warn('[AUDIO] fadeOutAndStop gain ramp failed:', e);
+            }
+        }
+        window.setTimeout(() => {
+            stop();
+            if (panel) {
+                panel.classList.remove('sound-video-panel--fading');
+                panel.style.opacity = '';
+            }
+            if (typeof onComplete === 'function') {
+                try {
+                    onComplete();
+                } catch (e) {
+                    console.warn('[AUDIO] fadeOutAndStop onComplete failed:', e);
+                }
+            }
+        }, durationMs);
+    }
+
+    /**
      * Stop current audio playback
      */
     function stop() {
+        stopNarration();
         stopAudioAnalysis();
         
         // Hide video overlay when stopping (skip audio stop to avoid duplicate work)
         hideSoundVideo(true);
+
+        const panelReset = document.getElementById('sound-video-panel');
+        if (panelReset) {
+            panelReset.classList.remove('sound-video-panel--fading');
+            panelReset.style.opacity = '';
+            delete panelReset.dataset.soundVideoPreset;
+        }
         
         if (currentAudio) {
             currentAudio.pause();
@@ -1012,7 +1148,10 @@
     window.AudioPlayer = {
         playPreset,
         playCustom,
+        playNarration,
+        stopNarration,
         stop,
+        fadeOutAndStop,
         pause,
         resume,
         setVolume,

@@ -86,6 +86,16 @@
         }
     }
 
+    function dispatchWithWalkthroughGuard(evt) {
+        if (!window.dispatch) return false;
+        const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
+        if (typeof window.shouldBlockWalkthroughEvent === 'function' && window.shouldBlockWalkthroughEvent(evt, fsmState)) {
+            return false;
+        }
+        window.dispatch(evt);
+        return true;
+    }
+
     /**
      * Handle button press (short press)
      * @param {HTMLElement} element - Button element
@@ -144,7 +154,7 @@
         if (window.dispatch) {
             if (key === 1) {
                 console.log('[BUTTON] Soft Key 1: View menu (via mainFSM)');
-                window.dispatch({ type: 'SOFT1' });
+                dispatchWithWalkthroughGuard({ type: 'SOFT1' });
                 return;
             }
             if (key === 2) {
@@ -155,17 +165,17 @@
                 if (viewId === "battery_menu") {
                     // On battery menu, send SOFT2 for NiMH
                     console.log(`[BUTTON] Soft Key 2: Battery NiMH (via mainFSM)`);
-                    window.dispatch({ type: 'SOFT2' });
+                    dispatchWithWalkthroughGuard({ type: 'SOFT2' });
                 } else {
                     // On other screens (SLM, Home, etc.), send SOFT2 for Calibration
                     console.log('[BUTTON] Soft Key 2: Calibration menu (via mainFSM)');
-                    window.dispatch({ type: 'SOFT2' });
+                    dispatchWithWalkthroughGuard({ type: 'SOFT2' });
                 }
                 return;
             }
             if (key === 3) {
                 console.log('[BUTTON] Soft Key 3: Calibration menu (via mainFSM)');
-                window.dispatch({ type: 'SOFT3' });
+                dispatchWithWalkthroughGuard({ type: 'SOFT3' });
                 return;
             }
             if (key === 4) {
@@ -183,11 +193,11 @@
                 if (isSlmScreen || viewId === "logging_menu" || viewId === "auto_run_date_params" || viewId === "files_session_dir") {
                     // On SLM screens, logging menu, date params screen, or session directory, send SOFT4
                     console.log(`[BUTTON] Soft Key 4: (via mainFSM)`);
-                    window.dispatch({ type: 'SOFT4' });
+                    dispatchWithWalkthroughGuard({ type: 'SOFT4' });
                 } else {
                     // On other screens (home, etc.), send LOCK_SOFTKEY
                     console.log('[BUTTON] Soft Key 4: Lock menu (via mainFSM)');
-                    window.dispatch({ type: 'LOCK_SOFTKEY' });
+                    dispatchWithWalkthroughGuard({ type: 'LOCK_SOFTKEY' });
                 }
                 return;
             }
@@ -223,7 +233,7 @@
                 fetch('http://127.0.0.1:7242/ingest/d29d041b-3e2f-4de6-8d28-ee7a100756fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'buttons.js:214',message:'handleNavigation calling dispatch',data:{direction,fsmEvent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
                 // #endregion
                 console.log(`[BUTTON] Navigation ${direction}: (via mainFSM)`);
-                window.dispatch({ type: fsmEvent });
+                dispatchWithWalkthroughGuard({ type: fsmEvent });
                 return;
             }
         }
@@ -270,7 +280,7 @@
         // Use mainFSM dispatch if available
         if (window.dispatch) {
             console.log('[BUTTON] Backlight: Dispatching BACKLIGHT event (via mainFSM)');
-            window.dispatch({ type: 'BACKLIGHT' });
+            dispatchWithWalkthroughGuard({ type: 'BACKLIGHT' });
         } else {
             console.log('[BUTTON] Backlight: Toggle (placeholder for Task 4.0)');
             // Full implementation in Task 4.0
@@ -284,7 +294,7 @@
         // Use mainFSM dispatch if available
         if (window.dispatch) {
             console.log('[BUTTON] Run/Pause: Toggle (via mainFSM)');
-            window.dispatch({ type: 'RUNPAUSE' });
+            dispatchWithWalkthroughGuard({ type: 'RUNPAUSE' });
             return;
         }
         
@@ -311,7 +321,7 @@
             console.log('[BUTTON] Stop: Button down (via mainFSM)');
             
             // Dispatch STOP_DOWN - FSM will check if paused and start countdown
-            window.dispatch({ type: 'STOP_DOWN' });
+            dispatchWithWalkthroughGuard({ type: 'STOP_DOWN' });
             return;
         }
         
@@ -330,7 +340,7 @@
             console.log('[BUTTON] Stop: Button up (via mainFSM)');
             
             // Dispatch STOP_UP - FSM will cancel countdown if active
-            window.dispatch({ type: 'STOP_UP' });
+            dispatchWithWalkthroughGuard({ type: 'STOP_UP' });
             stopButtonState.pressStart = null;
             return;
         }
@@ -372,12 +382,17 @@
             if (isHome && !isOff) {
                 console.log('[BUTTON] Power: On home screen, starting 3-second countdown');
                 // Dispatch event to start countdown
-                window.dispatch({ type: 'POWER_HOLD_START' });
+                if (!dispatchWithWalkthroughGuard({ type: 'POWER_HOLD_START' })) {
+                    pressState.powerPressStart = null;
+                    pressState.activeButton = null;
+                    removePressFeedback(element);
+                    return;
+                }
                 
                 // Start countdown timer (3 seconds = 3000ms)
                 pressState.activePressTimer = setTimeout(() => {
                     console.log('[BUTTON] Power: 3-second hold complete - Powering OFF');
-                    window.dispatch({ type: 'POWER_HOLD_COMPLETE' });
+                    dispatchWithWalkthroughGuard({ type: 'POWER_HOLD_COMPLETE' });
                     pressState.powerPressStart = null;
                     pressState.activePressTimer = null;
                     removePressFeedback(element);
@@ -449,7 +464,7 @@
                 const fsmState = window.getMainFSMState();
                 if (fsmState && fsmState.viewId === 'power_off_countdown') {
                     console.log('[BUTTON] Power: Cancelling countdown');
-                    window.dispatch({ type: 'POWER_HOLD_CANCEL' });
+                    dispatchWithWalkthroughGuard({ type: 'POWER_HOLD_CANCEL' });
                 }
             }
             
@@ -467,14 +482,14 @@
                         console.log(`[BUTTON] Power: SHORT PRESS - Boot sequence (via mainFSM)`);
                         console.log(`[BUTTON] Power: Calling window.dispatch({ type: 'POWER' })`);
                         if (window.dispatch) {
-                            window.dispatch({ type: 'POWER' });
+                            dispatchWithWalkthroughGuard({ type: 'POWER' });
                             console.log(`[BUTTON] Power: window.dispatch called successfully`);
                         } else {
                             console.error(`[BUTTON] Power: window.dispatch is not available!`);
                         }
                     } else {
                         console.log(`[BUTTON] Power: SHORT PRESS - Esc/Back (via mainFSM)`);
-                        window.dispatch({ type: 'ESC' });
+                        dispatchWithWalkthroughGuard({ type: 'ESC' });
                     }
                 } else {
                     console.log('[BUTTON] Power: window.dispatch is NOT available');
@@ -506,11 +521,11 @@
                 if (isOff && duration < 1000) {
                     // Device is OFF and button was released quickly - power on
                     console.log('[BUTTON] Power: Device is OFF, treating as short press to power on');
-                    window.dispatch({ type: 'POWER' });
+                    dispatchWithWalkthroughGuard({ type: 'POWER' });
                 } else if (!isOff && duration < pressState.powerPressThreshold) {
                     // Device is on, short press = ESC/BACK
                     console.log('[BUTTON] Power: SHORT PRESS - ESC/BACK (via mainFSM)');
-                    window.dispatch({ type: 'ESC' });
+                    dispatchWithWalkthroughGuard({ type: 'ESC' });
                 } else {
                     console.log('[BUTTON] Power: No activePressTimer - button may have been released too quickly or not pressed correctly');
                 }

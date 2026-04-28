@@ -2337,4 +2337,3 @@
     window.renderScreen = renderScreen;
     window.getScreenDefinition = getScreenDefinition;
 })();
-
