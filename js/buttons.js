@@ -86,8 +86,22 @@
         }
     }
 
+    function isWalkthroughInputLocked() {
+        if (
+            document.body.classList.contains('setup-active') ||
+            document.body.classList.contains('calibration-active') ||
+            document.body.classList.contains('operation-active')
+        ) return false;
+        return typeof window.isWalkthroughGuidanceReady === 'function' &&
+            !window.isWalkthroughGuidanceReady();
+    }
+
     function dispatchWithWalkthroughGuard(evt) {
         if (!window.dispatch) return false;
+        if (document.body.classList.contains('setup-active')) {
+            window.dispatch(evt);
+            return true;
+        }
         const fsmState = window.getMainFSMState ? window.getMainFSMState() : null;
         if (typeof window.shouldBlockWalkthroughEvent === 'function' && window.shouldBlockWalkthroughEvent(evt, fsmState)) {
             return false;
@@ -554,6 +568,7 @@
         console.log(`[BUTTONS] handleDown: ${buttonInfo.name}, activeButton:`, pressState.activeButton?.className || 'null');
 
         event.preventDefault();
+        if (isWalkthroughInputLocked()) return;
 
         // Power button gets special handling
         if (buttonInfo.action === 'power') {
@@ -590,6 +605,7 @@
         console.log(`[BUTTONS] handleUp: ${buttonInfo.name}, activeButton:`, pressState.activeButton?.className || 'null');
 
         event.preventDefault();
+        if (isWalkthroughInputLocked()) return;
 
         // Power button gets special handling
         if (buttonInfo.action === 'power') {
@@ -622,6 +638,11 @@
      * @param {KeyboardEvent} event - Keyboard event
      */
     function handleKeyboard(event) {
+        // Forms must keep normal keyboard behavior. In particular, 1–4 are
+        // also SLM soft-key shortcuts and must not fire while entering values.
+        const typingTarget = event.target?.closest?.('input, textarea, select, [contenteditable="true"]');
+        if (typingTarget) return;
+
         // Map keyboard keys to button actions
         const keyMap = {
             'ArrowUp': 'nav__btn--up',
@@ -644,6 +665,7 @@
         if (!className) return;
 
         event.preventDefault();
+        if (isWalkthroughInputLocked()) return;
 
         // Find button element
         const button = document.querySelector(`.${className}`);

@@ -19,6 +19,25 @@ dist/
 .cache/
 coverage/
 
+# Local development, exports, and temporary working files
+tmp/
+tmp-*/
+render_project_99_timeline/
+tools/
+blender-vr-lab/
+blockout-digital-twin/
+metal-shearing-machine-threejs/
+storyline-web-object-calibrated-slm/
+
+# Standalone environment and concept prototypes
+environment-*-test.html
+js/environment-*-test.js
+css/environment-test.css
+environment-test.html
+js/environment-test.js
+disclaimer-concepts.html
+css/disclaimer-concepts.css
+
 # Logs
 *.log
 

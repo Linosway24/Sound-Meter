@@ -1484,7 +1484,10 @@
                     // Get battery level from state (default 100%)
                     const batteryLevel = state?.battery?.level ?? 100;
                     const batteryClass = batteryLevel > 50 ? 'full' : batteryLevel > 20 ? 'medium' : 'low';
-                    statusBarHtml += `<div class="status-bar__battery status-bar__battery--${batteryClass}" style="--battery-level: ${batteryLevel}%"></div>`;
+                    const batteryLabel = batteryLevel > 95
+                        ? 'Battery fully charged'
+                        : `Battery charge ${batteryLevel} percent`;
+                    statusBarHtml += `<div class="status-bar__battery status-bar__battery--${batteryClass}" role="img" aria-label="${batteryLabel}" title="${batteryLabel}" style="--battery-level: ${batteryLevel}%"></div>`;
                 }
                 if (showPlayIcon) {
                     statusBarHtml += `<span class="status-bar__play-icon">▶</span>`;
@@ -2149,7 +2152,7 @@
                     const activeIndex = letters.indexOf(timeConstant);
                     label = letters.map((letter, idx) => {
                         if (idx === activeIndex) {
-                            return `<span class="softkey-underline">${letter}</span>`;
+                            return `<span class="softkey-underline" aria-current="true">${letter}</span>`;
                         }
                         return letter;
                     }).join('-');
@@ -2162,7 +2165,7 @@
                     const activeIndex = stateToIndex[weighting] ?? 0;
                     label = letters.map((letter, idx) => {
                         if (idx === activeIndex) {
-                            return `<span class="softkey-underline">${letter}</span>`;
+                            return `<span class="softkey-underline" aria-current="true">${letter}</span>`;
                         }
                         return letter;
                     }).join('-');

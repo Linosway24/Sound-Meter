@@ -3,18 +3,846 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quest SoundPro SE-DL Simulation</title>
+    <title>Sound Level Meter (SLM) Training</title>
     <script>
         window.DEBUG_TOOLS_ENABLED = new URLSearchParams(window.location.search).get('debug') === '1';
         if (window.DEBUG_TOOLS_ENABLED) document.documentElement.classList.add('debug-tools');
     </script>
-    <link rel="stylesheet" href="css/styles.css?v=training-clean-2">
+    <link rel="stylesheet" href="css/styles.css?v=unit-continuity-7">
+    <script defer src="js/intro-logo-three.bundle.js?v=3"></script>
+    <script defer src="js/navigation-intro.js?v=21"></script>
+    <script defer src="js/overview.js?v=12"></script>
+    <script defer src="js/setup-section.js?v=25"></script>
+    <script defer src="js/calibration-section.js?v=24"></script>
+    <script defer src="js/resources-section.js?v=2"></script>
 </head>
-<body>
+<body class="menu-preview-mode intro-playing disclaimer-active navigation-intro-active">
+    <!-- Animated course opener based on the supplied BEE training reference. -->
+    <section id="training-intro" class="training-intro" aria-labelledby="training-intro-title">
+        <span class="training-intro__streak training-intro__streak--top" aria-hidden="true"></span>
+        <span class="training-intro__streak training-intro__streak--bottom" aria-hidden="true"></span>
+
+        <div class="training-intro__content">
+            <h1 id="training-intro-title" class="training-intro__title">Sound Level Meter (SLM)</h1>
+            <div id="training-intro-logo-stage" class="training-intro__logo-stage">
+                <span class="training-intro__logo-glow" aria-hidden="true"></span>
+                <canvas
+                    id="training-intro-logo-canvas"
+                    class="training-intro__logo-canvas"
+                    aria-hidden="true"
+                ></canvas>
+                <img
+                    class="training-intro__logo training-intro__logo--fallback"
+                    src="assets/branding/bee-logo.png"
+                    alt="BEE logo"
+                >
+            </div>
+            <p class="training-intro__subtitle">Setup, Operation and Scenario (Review)</p>
+        </div>
+
+        <audio
+            id="training-intro-music"
+            src="assets/audio/bee-intro-music.m4a?v=2"
+            preload="auto"
+            loop
+            aria-hidden="true"
+        ></audio>
+        <div class="training-intro__launch">
+            <img
+                class="training-intro__launch-logo"
+                src="assets/branding/bee-logo.png"
+                alt="BEE"
+            >
+            <button id="training-intro-sound" class="training-intro__sound" type="button">
+                <span>Start Training</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m9 5 7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+        <button id="training-intro-skip" class="training-intro__skip" type="button">
+            Skip Intro
+        </button>
+    </section>
+
+    <section
+        id="training-disclaimer"
+        class="training-disclaimer"
+        aria-labelledby="training-disclaimer-title"
+    >
+        <div class="training-disclaimer__panel">
+            <header class="training-disclaimer__course">
+                <img
+                    class="training-disclaimer__logo"
+                    src="assets/branding/bee-logo.png"
+                    alt="BEE"
+                >
+                <div>
+                    <p class="training-disclaimer__course-title">Sound Level Meter (SLM)</p>
+                    <p class="training-disclaimer__course-subtitle">
+                        Setup, Operation and Scenario (Review)
+                    </p>
+                </div>
+            </header>
+
+            <div class="training-disclaimer__divider" aria-hidden="true"></div>
+            <h2 id="training-disclaimer-title" class="training-disclaimer__title">Disclaimer</h2>
+
+            <div class="training-disclaimer__body">
+                <div class="training-disclaimer__notice">
+                    <p class="training-disclaimer__notice-label">Please note</p>
+                    <p>
+                        Before viewing this material, learners should understand basic operating principles
+                        and the operation of the sound level meter (SLM) device.
+                    </p>
+                </div>
+
+                <p class="training-disclaimer__warning">
+                    Do not attempt this learning module until
+                    <strong>AFTER</strong> receiving classroom training from a qualified instructor.
+                </p>
+            </div>
+
+            <div class="training-disclaimer__distribution">
+                <p>
+                    <strong>DISTRIBUTION D.</strong> Distribution authorized to the Department of Defense
+                    and US DoD Contractors only;
+                </p>
+                <p class="training-disclaimer__distribution-purpose">
+                    For Skills Enhancement Purposes;
+                    <span class="training-disclaimer__date">30 JULY 2026</span>.
+                </p>
+                <p>Refer other requests for the document to:</p>
+                <p>USAFSAM, 2510 5th St., Building 840 Wright-Patterson AFB, OH 45433-7913</p>
+            </div>
+
+            <button id="training-disclaimer-continue" class="training-disclaimer__continue" type="button" disabled>
+                Continue
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m9 5 7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+    </section>
+
+    <section
+        id="training-navigation-intro"
+        class="training-navigation-intro"
+        aria-label="Navigation introduction"
+    >
+        <div class="training-navigation-intro__rail" aria-hidden="true"></div>
+
+        <div id="navigation-intro-brand" class="training-navigation-intro__brand">
+            <img src="assets/branding/bee-logo.png" alt="BEE">
+            <span>Sound Level Meter (SLM)</span>
+        </div>
+
+        <div
+            id="navigation-intro-button-layer"
+            class="training-navigation-intro__button-layer"
+            aria-hidden="true"
+        ></div>
+
+        <div
+            id="navigation-intro-resources"
+            class="navigation-intro-resources"
+            aria-hidden="true"
+        >
+            <div class="navigation-intro-resources__trigger">
+                <span class="navigation-intro-resources__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 5.5A3.5 3.5 0 0 1 6.5 2H11v18H6.5A3.5 3.5 0 0 0 3 23Z"/>
+                        <path d="M21 5.5A3.5 3.5 0 0 0 17.5 2H13v18h4.5A3.5 3.5 0 0 1 21 23Z"/>
+                    </svg>
+                </span>
+                <span class="navigation-intro-resources__title">Resources</span>
+            </div>
+
+            <svg
+                class="navigation-intro-resources__pointer"
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+            >
+                <path d="M6 4v31l9-8 7 16 7-4-7-15h13Z"/>
+            </svg>
+
+            <div class="navigation-intro-resources__submenu">
+                <div>Components</div>
+                <div>Display</div>
+                <div>Soft Key Settings</div>
+                <div>Response Settings</div>
+                <div>Frequency Weightings</div>
+            </div>
+        </div>
+
+        <section
+            id="navigation-intro-final-notice"
+            class="navigation-intro-final-notice"
+            aria-label="Training prerequisite"
+            aria-hidden="true"
+        >
+            <div class="navigation-intro-final-notice__content">
+                <p class="navigation-intro-final-notice__statement">
+                    Please note that there should be a knowledge of the basic operation principles
+                    and an understanding of the operation of the SLM device prior to viewing this material.
+                </p>
+                <p class="navigation-intro-final-notice__warning">
+                    Do not attempt this learning module until
+                    <strong>AFTER</strong> receiving classroom training from a qualified instructor.
+                </p>
+            </div>
+
+            <button
+                id="navigation-intro-final-continue"
+                class="navigation-intro-final-notice__continue"
+                type="button"
+                disabled
+            >
+                Continue to Training
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m9 5 7 7-7 7"/>
+                </svg>
+            </button>
+        </section>
+
+        <div id="navigation-intro-timecode" class="training-navigation-intro__timecode" hidden>
+            <span id="navigation-intro-timecode-label">Narration time</span>
+            <output>00:00.00</output>
+        </div>
+
+        <audio
+            id="navigation-intro-audio"
+            src="assets/audio/be%20open.mp3?v=1"
+            preload="auto"
+        ></audio>
+        <audio
+            id="navigation-intro-resources-audio"
+            src="assets/audio/Resources%20tab.mp3?v=1"
+            preload="auto"
+        ></audio>
+        <audio
+            id="navigation-intro-guide-audio"
+            src="assets/audio/Guide%20Me.mp3?v=1"
+            preload="auto"
+        ></audio>
+
+        <button id="navigation-intro-skip" class="training-navigation-intro__skip" type="button">
+            Skip Navigation Introduction
+        </button>
+    </section>
+
+    <!-- Left course navigation prototype. The buttons only preview selection for now. -->
+    <nav class="course-nav" aria-label="Sound level meter training sections">
+        <div class="course-nav__brand">
+            <img
+                class="course-nav__logo"
+                src="assets/branding/bee-logo.png"
+                alt="BEE"
+            >
+            <span class="course-nav__course-title">Sound Level Meter (SLM)</span>
+            <button
+                id="course-nav-toggle"
+                class="course-nav__toggle"
+                type="button"
+                aria-label="Collapse navigation"
+                aria-expanded="true"
+                title="Collapse navigation"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m14 7-5 5 5 5"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="course-nav__items">
+            <button class="course-nav__item is-active" type="button" data-section="Overview" aria-current="page">
+                <span class="course-nav__indicator" aria-hidden="true"></span>
+                <span class="course-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>
+                </span>
+                <span class="course-nav__label">Overview</span>
+            </button>
+            <button class="course-nav__item" type="button" data-section="Setup">
+                <span class="course-nav__indicator" aria-hidden="true"></span>
+                <span class="course-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.15.38.36.72.66 1 .3.26.69.4 1.09.4H21v4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+                </span>
+                <span class="course-nav__label">Setup</span>
+            </button>
+            <button class="course-nav__item" type="button" data-section="Calibration">
+                <span class="course-nav__indicator" aria-hidden="true"></span>
+                <span class="course-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                </span>
+                <span class="course-nav__label">Calibration</span>
+            </button>
+            <button class="course-nav__item" type="button" data-section="Operation">
+                <span class="course-nav__indicator" aria-hidden="true"></span>
+                <span class="course-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M3 12h3l2.2-6 3.5 12 2.6-9 2.1 6H21"/></svg>
+                </span>
+                <span class="course-nav__label">Operation</span>
+            </button>
+            <button class="course-nav__item" type="button" data-section="Surveys">
+                <span class="course-nav__indicator" aria-hidden="true"></span>
+                <span class="course-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M9 5h6M9 3h6v4H9z"/><path d="M7 5H5v16h14V5h-2M8 12l2 2 4-4M8 18h8"/></svg>
+                </span>
+                <span class="course-nav__label">Surveys</span>
+            </button>
+            <button class="course-nav__item" type="button" data-section="Scenarios">
+                <span class="course-nav__indicator" aria-hidden="true"></span>
+                <span class="course-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                </span>
+                <span class="course-nav__label">Scenarios</span>
+            </button>
+            <button
+                class="course-nav__item"
+                type="button"
+                data-section="Resources"
+                aria-expanded="false"
+                aria-controls="course-nav-resources-submenu"
+            >
+                <span class="course-nav__indicator" aria-hidden="true"></span>
+                <span class="course-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M3 5.5A3.5 3.5 0 0 1 6.5 2H11v18H6.5A3.5 3.5 0 0 0 3 23Z"/><path d="M21 5.5A3.5 3.5 0 0 0 17.5 2H13v18h4.5A3.5 3.5 0 0 1 21 23Z"/></svg>
+                </span>
+                <span class="course-nav__label">Resources</span>
+                <span class="course-nav__disclosure" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+                </span>
+            </button>
+            <div
+                id="course-nav-resources-submenu"
+                class="course-nav__submenu"
+                aria-label="Resource topics"
+                aria-hidden="true"
+            >
+                <button type="button" class="course-nav__subitem" data-resource-section="Components">Components</button>
+                <button type="button" class="course-nav__subitem" data-resource-section="Display">Display</button>
+                <button type="button" class="course-nav__subitem" data-resource-section="Soft Key Settings">Soft Key Settings</button>
+                <button type="button" class="course-nav__subitem" data-resource-section="Response Settings">Response Settings</button>
+                <button type="button" class="course-nav__subitem" data-resource-section="Frequency Weightings">Frequency Weightings</button>
+                <button type="button" class="course-nav__subitem" data-resource-section="Navigation">Navigation</button>
+            </div>
+        </div>
+
+        <div class="course-nav__footer">
+            <div class="course-nav__footer-actions">
+                <button class="course-nav__item course-nav__item--guide" type="button" data-section="Guide Me" aria-pressed="false" title="Turn Guide Me on">
+                    <span class="course-nav__indicator" aria-hidden="true"></span>
+                    <span class="course-nav__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.4 2c-.75.42-1.2.9-1.2 2M12 17h.01"/></svg>
+                    </span>
+                    <span class="course-nav__label">Guide Me</span>
+                    <span class="course-nav__guide-state" aria-hidden="true">ON</span>
+                </button>
+                <button class="course-nav__item course-nav__item--end" type="button" data-section="End">
+                    <span class="course-nav__indicator" aria-hidden="true"></span>
+                    <span class="course-nav__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M14 4H5v16h9M10 12h11M17 8l4 4-4 4"/></svg>
+                    </span>
+                    <span class="course-nav__label">End</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <section
+        id="training-overview"
+        class="training-overview"
+        aria-label="Overview of workplace sound hazards"
+        aria-hidden="true"
+    >
+        <div
+            class="training-overview__screen training-overview__screen--hazards is-active"
+            data-overview-screen="hazards"
+            aria-hidden="false"
+        >
+            <div class="training-overview__content">
+                <h1 class="training-overview__title">Overview</h1>
+
+                <p
+                    class="training-overview__lead"
+                    data-overview-cue="lead"
+                    aria-hidden="true"
+                >
+                    Intense noise can be found on almost every Air Force base and is responsible for
+                    one of the most prevalent occupationally related health problems—noise-induced
+                    hearing loss.
+                </p>
+
+                <div class="training-overview__gallery">
+                    <figure
+                        class="training-overview__photo"
+                        data-overview-cue="photo-one"
+                        aria-hidden="true"
+                    >
+                        <img
+                            src="assets/training-photos/aircraft-sheet-metal-repair-hearing-protection.jpeg"
+                            alt="Airmen repairing aircraft sheet metal while wearing hearing protection"
+                        >
+                    </figure>
+                    <figure
+                        class="training-overview__photo"
+                        data-overview-cue="photo-two"
+                        aria-hidden="true"
+                    >
+                        <img
+                            src="assets/training-photos/industrial-angle-grinding-hearing-protection.jpg"
+                            alt="Industrial worker using an angle grinder while wearing eye and hearing protection"
+                        >
+                    </figure>
+                    <figure
+                        class="training-overview__photo"
+                        data-overview-cue="photo-three"
+                        aria-hidden="true"
+                    >
+                        <img
+                            src="assets/training-photos/flight-line-hearing-protection.jpeg"
+                            alt="Airman fitting hearing protection on a flight line near an aircraft"
+                        >
+                    </figure>
+                </div>
+
+                <p
+                    class="training-overview__reference"
+                    data-overview-cue="reference"
+                    aria-hidden="true"
+                >
+                    Air Force Instruction 48-127 (The Occupational Noise and Hearing Conservation Program)
+                </p>
+
+                <ul class="training-overview__points">
+                    <li data-overview-cue="point-one" aria-hidden="true">
+                        <strong>identifying analyzing</strong> noise exposures
+                    </li>
+                    <li data-overview-cue="point-two" aria-hidden="true">
+                        <strong>Making recommendations</strong> to eliminate, reduce, or prevent.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div
+            class="training-overview__screen training-overview__screen--meter"
+            data-overview-screen="meter"
+            aria-hidden="true"
+        >
+            <div class="training-overview__meter-content">
+                <h1 class="training-overview__title">Overview</h1>
+
+                <div class="training-overview__meter-layout">
+                    <div class="training-overview__meter-copy">
+                        <section
+                            class="training-overview__meter-group"
+                            data-overview-cue="meter-heading"
+                            aria-hidden="true"
+                        >
+                            <h2>Sound Level Meter</h2>
+                            <ul>
+                                <li data-overview-cue="meter-captures" aria-hidden="true">
+                                    captures acoustic pressure variations.
+                                </li>
+                                <li data-overview-cue="meter-decibels" aria-hidden="true">
+                                    digital measurements in <strong>decibels.</strong>
+                                </li>
+                            </ul>
+                        </section>
+
+                        <section
+                            class="training-overview__meter-group training-overview__meter-group--data"
+                            data-overview-cue="data-heading"
+                            aria-hidden="true"
+                        >
+                            <h2>Specific data</h2>
+                            <ul>
+                                <li data-overview-cue="data-hazard" aria-hidden="true">
+                                    <strong>hazard identification</strong>
+                                </li>
+                                <li data-overview-cue="data-weighting" aria-hidden="true">
+                                    <strong>A-weighting filters</strong>
+                                </li>
+                                <li data-overview-cue="data-noise" aria-hidden="true">
+                                    <strong>continuous</strong> and <strong>impulse noise</strong>
+                                </li>
+                                <li data-overview-cue="data-limits" aria-hidden="true">
+                                    <strong>safe exposure limits.</strong>
+                                </li>
+                            </ul>
+                        </section>
+                    </div>
+
+                    <figure
+                        class="training-overview__meter-figure"
+                        data-overview-cue="meter-device"
+                        aria-hidden="true"
+                    >
+                        <img
+                            src="assets/Quest%20Sound%20Meter.png"
+                            alt="Quest SoundPro sound level meter"
+                        >
+                    </figure>
+                </div>
+            </div>
+        </div>
+
+        <div
+            class="training-overview__screen training-overview__screen--instrument"
+            data-overview-screen="instrument"
+            aria-hidden="true"
+        >
+            <div class="training-overview__instrument-content">
+                <h1 class="training-overview__title">Overview</h1>
+
+                <div class="training-overview__instrument-layout">
+                    <div class="training-overview__instrument-copy">
+                        <ol class="training-overview__legend" aria-label="Sound level meter highlighted parts">
+                            <li
+                                class="training-overview__legend-item training-overview__legend-item--keypad"
+                                data-overview-cue="instrument-keypad"
+                                aria-hidden="true"
+                            >
+                                <span class="training-overview__legend-number">1</span>
+                                <span>Keypad</span>
+                            </li>
+                            <li
+                                class="training-overview__legend-item training-overview__legend-item--softkeys"
+                                data-overview-cue="instrument-softkeys"
+                                aria-hidden="true"
+                            >
+                                <span class="training-overview__legend-number">2</span>
+                                <span>Soft Keys</span>
+                            </li>
+                            <li
+                                class="training-overview__legend-item training-overview__legend-item--screen"
+                                data-overview-cue="instrument-screen"
+                                aria-hidden="true"
+                            >
+                                <span class="training-overview__legend-number">3</span>
+                                <span>Backlit Screen</span>
+                            </li>
+                            <li
+                                class="training-overview__legend-item training-overview__legend-item--calibrator"
+                                data-overview-cue="instrument-calibrator"
+                                aria-hidden="true"
+                            >
+                                <span class="training-overview__legend-number">4</span>
+                                <span>Calibrator</span>
+                            </li>
+                        </ol>
+
+                        <ul class="training-overview__functions" aria-label="Sound level meter functions">
+                            <li data-overview-cue="instrument-calibrator" aria-hidden="true">Calibrate</li>
+                            <li data-overview-cue="instrument-configure" aria-hidden="true">Configure Settings</li>
+                            <li data-overview-cue="instrument-studies" aria-hidden="true">Run Studies</li>
+                            <li data-overview-cue="instrument-data" aria-hidden="true">View Data</li>
+                        </ul>
+                    </div>
+
+                    <figure
+                        class="training-overview__calibrator-figure"
+                        data-overview-cue="instrument-calibrator"
+                        aria-hidden="true"
+                    >
+                        <div class="training-overview__calibrator-art">
+                            <img
+                                src="assets/Quest%20Sound%20Dosimeter.png"
+                                alt="Quest AC-300 sound calibrator"
+                            >
+                            <span class="training-overview__callout-badge training-overview__callout-badge--calibrator">4</span>
+                        </div>
+                        <figcaption>SLM calibrator</figcaption>
+                    </figure>
+
+                    <figure
+                        class="training-overview__instrument-meter"
+                        aria-label="Quest sound level meter with highlighted screen and controls"
+                    >
+                        <div class="training-overview__instrument-meter-canvas">
+                            <img
+                                src="assets/Quest%20Sound%20Meter.png"
+                                alt="Quest SoundPro sound level meter close-up"
+                            >
+                            <div
+                                class="training-overview__part-highlight training-overview__part-highlight--screen"
+                                data-overview-cue="instrument-screen"
+                                aria-hidden="true"
+                            >
+                                <span class="training-overview__callout-badge">3</span>
+                            </div>
+                            <div
+                                class="training-overview__part-highlight training-overview__part-highlight--softkeys"
+                                data-overview-cue="instrument-softkeys"
+                                aria-hidden="true"
+                            >
+                                <span class="training-overview__callout-badge">2</span>
+                            </div>
+                            <div
+                                class="training-overview__part-highlight training-overview__part-highlight--keypad"
+                                data-overview-cue="instrument-keypad"
+                                aria-hidden="true"
+                            >
+                                <span class="training-overview__callout-badge">1</span>
+                            </div>
+                        </div>
+                    </figure>
+                </div>
+            </div>
+        </div>
+
+        <audio
+            id="training-overview-audio"
+            src="assets/audio/overview%20audio.mp3?v=1"
+            preload="auto"
+            aria-hidden="true"
+        ></audio>
+        <audio
+            id="training-overview-audio-two"
+            src="assets/audio/overview_2.mp3?v=1"
+            preload="auto"
+            aria-hidden="true"
+        ></audio>
+        <audio
+            id="training-overview-audio-three"
+            src="assets/audio/overview%203.mp3?v=1"
+            preload="auto"
+            aria-hidden="true"
+        ></audio>
+    </section>
+
+    <section
+        id="training-setup"
+        class="training-setup"
+        aria-label="Setup"
+        aria-hidden="true"
+    >
+        <div id="training-setup-intro-panel" class="training-setup__panel training-setup__intro-panel">
+            <header class="training-setup__header">
+                <p class="training-setup__eyebrow">Before You Begin</p>
+                <h1 id="training-setup-intro-title" class="training-setup__title">Guide Me</h1>
+            </header>
+
+            <div class="training-setup__body training-setup__intro-body">
+                <aside class="training-setup__guide-note">
+                    <span class="training-setup__guide-note-icon" aria-hidden="true">?</span>
+                    <p><strong>Guide Me</strong> highlights the button or control needed for each step. You still perform each action yourself.</p>
+                </aside>
+                <p class="training-setup__intro-copy">You can turn Guide Me on or off at any time from the lower-left menu.</p>
+            </div>
+
+        </div>
+
+        <div id="training-setup-lesson-panel" class="training-setup__panel" hidden>
+            <header class="training-setup__header">
+                <p class="training-setup__eyebrow">Setup</p>
+                <h1 id="training-setup-title" class="training-setup__title">Power On</h1>
+                <div class="training-setup__progress" aria-label="Setup progress">
+                    <span class="training-setup__progress-step is-current" data-setup-progress="power">1</span>
+                    <span class="training-setup__progress-line" aria-hidden="true"></span>
+                    <span class="training-setup__progress-step" data-setup-progress="battery">2</span>
+                    <span class="training-setup__progress-line" aria-hidden="true"></span>
+                    <span class="training-setup__progress-step" data-setup-progress="range">3</span>
+                    <span class="training-setup__progress-line" aria-hidden="true"></span>
+                    <span class="training-setup__progress-step" data-setup-progress="parameters">4</span>
+                </div>
+            </header>
+
+            <div class="training-setup__body">
+                <p id="training-setup-instruction" class="training-setup__instruction">
+                    Press the power button to turn on the device.
+                </p>
+                <p id="training-setup-prompt" class="training-setup__prompt">
+                    Find the correct control on the sound level meter.
+                </p>
+
+                <div
+                    id="training-setup-question"
+                    class="training-setup__question"
+                    hidden
+                >
+                    <p>Battery check: Are the batteries fully charged?</p>
+                    <div class="training-setup__answers">
+                        <button type="button" data-setup-answer="yes">Yes</button>
+                        <button type="button" data-setup-answer="no">No</button>
+                    </div>
+                </div>
+
+                <div
+                    id="training-setup-feedback"
+                    class="training-setup__feedback"
+                    role="status"
+                    aria-live="polite"
+                ></div>
+
+                <div id="training-setup-range-question" class="training-setup__question" hidden>
+                    <p>Does RANGE CAP read 140 dB?</p>
+                    <div class="training-setup__answers">
+                        <button type="button" data-setup-range-answer="ok">OK</button>
+                        <button type="button" data-setup-range-answer="not-ok">Not OK</button>
+                    </div>
+                </div>
+
+                <form id="training-setup-parameters" class="training-setup__parameters" hidden>
+                    <p>Setting the Meter Parameters</p>
+                    <div class="training-setup__parameter-grid">
+                        <label>Threshold <input inputmode="numeric" name="threshold" autocomplete="off"><span>dB</span></label>
+                        <label>Exchange rate <input inputmode="numeric" name="exchange" autocomplete="off"><span>dB</span></label>
+                        <label>Criterion level <input inputmode="numeric" name="criterion" autocomplete="off"><span>dB</span></label>
+                        <label>Upper limit <input inputmode="numeric" name="upper" autocomplete="off"><span>dB</span></label>
+                        <label>Projected time <input inputmode="numeric" name="time" autocomplete="off"><span>Hr</span></label>
+                    </div>
+                    <button class="training-setup__parameter-submit" type="submit">Enter</button>
+                </form>
+
+                <div id="training-setup-classroom-question" class="training-setup__question" hidden>
+                    <p>Do these values coincide with the numbers presented in your classroom instruction?</p>
+                    <div class="training-setup__answers training-setup__answers--wide">
+                        <button type="button" data-setup-classroom-answer="yes">Yes</button>
+                        <button type="button" data-setup-classroom-answer="no">No</button>
+                        <button type="button" data-setup-classroom-answer="unknown">I don’t know</button>
+                    </div>
+                </div>
+
+                <div id="training-setup-completion-actions" class="training-setup__completion-actions" hidden>
+                    <button type="button" data-setup-destination="Calibration">Review Calibration</button>
+                    <button type="button" data-setup-destination="Scenarios">Skip to Scenarios</button>
+                </div>
+            </div>
+
+            <footer class="training-setup__footer">
+                <span id="training-setup-status">Step 1 of 4</span>
+                <span class="training-setup__guide-status" aria-hidden="true">Guide Me is on</span>
+            </footer>
+        </div>
+    </section>
+
+    <section
+        id="training-calibration"
+        class="training-calibration"
+        aria-labelledby="training-calibration-title"
+        aria-hidden="true"
+    >
+        <div class="training-calibration__panel">
+            <header class="training-calibration__header">
+                <p class="training-calibration__eyebrow">Calibration</p>
+                <h1 id="training-calibration-title" class="training-calibration__title">Open Calibration</h1>
+                <div class="training-calibration__progress" aria-label="Calibration progress">
+                    <span class="training-calibration__progress-step is-current" data-calibration-progress="open">1</span>
+                    <span class="training-calibration__progress-line" aria-hidden="true"></span>
+                    <span class="training-calibration__progress-step" data-calibration-progress="start">2</span>
+                    <span class="training-calibration__progress-line" aria-hidden="true"></span>
+                    <span class="training-calibration__progress-step" data-calibration-progress="windscreen">3</span>
+                    <span class="training-calibration__progress-line" aria-hidden="true"></span>
+                    <span class="training-calibration__progress-step" data-calibration-progress="calibrator">4</span>
+                    <span class="training-calibration__progress-line" aria-hidden="true"></span>
+                    <span class="training-calibration__progress-step" data-calibration-progress="place">5</span>
+                    <span class="training-calibration__progress-line" aria-hidden="true"></span>
+                    <span class="training-calibration__progress-step" data-calibration-progress="finish">6</span>
+                    <span class="training-calibration__progress-line" aria-hidden="true"></span>
+                    <span class="training-calibration__progress-step" data-calibration-progress="remove">7</span>
+                    <span class="training-calibration__progress-line" aria-hidden="true"></span>
+                    <span class="training-calibration__progress-step" data-calibration-progress="exit">8</span>
+                </div>
+            </header>
+
+            <div class="training-calibration__body">
+                <p id="training-calibration-instruction" class="training-calibration__instruction">
+                    Select CAL on the sound level meter.
+                </p>
+                <p id="training-calibration-prompt" class="training-calibration__prompt">
+                    Press the second soft key below the display.
+                </p>
+
+                <div id="training-calibration-actions" class="training-calibration__actions" hidden></div>
+
+                <div
+                    id="training-calibration-feedback"
+                    class="training-calibration__feedback"
+                    role="status"
+                    aria-live="polite"
+                ></div>
+            </div>
+
+            <footer class="training-calibration__footer">
+                <span id="training-calibration-status">Step 1 of 8</span>
+                <span class="training-calibration__guide-status" aria-hidden="true">Guide Me is on</span>
+            </footer>
+        </div>
+    </section>
+
+    <section
+        id="training-operation"
+        class="training-operation"
+        aria-labelledby="training-operation-title"
+        aria-hidden="true"
+    >
+        <div class="training-operation__panel">
+            <header class="training-operation__header">
+                <p class="training-operation__eyebrow">Operation</p>
+                <h1 id="training-operation-title" class="training-operation__title">Open Current Study</h1>
+                <div class="training-operation__progress" aria-label="Operation progress">
+                    <span class="training-operation__progress-step is-current" data-operation-progress="open">1</span>
+                    <span class="training-operation__progress-line" aria-hidden="true"></span>
+                    <span class="training-operation__progress-step" data-operation-progress="weightings">2</span>
+                    <span class="training-operation__progress-line" aria-hidden="true"></span>
+                    <span class="training-operation__progress-step" data-operation-progress="fast-z">3</span>
+                    <span class="training-operation__progress-line" aria-hidden="true"></span>
+                    <span class="training-operation__progress-step" data-operation-progress="hammer">4</span>
+                    <span class="training-operation__progress-line" aria-hidden="true"></span>
+                    <span class="training-operation__progress-step" data-operation-progress="slow-a">5</span>
+                    <span class="training-operation__progress-line" aria-hidden="true"></span>
+                    <span class="training-operation__progress-step" data-operation-progress="fan">6</span>
+                    <span class="training-operation__progress-line" aria-hidden="true"></span>
+                    <span class="training-operation__progress-step" data-operation-progress="complete">7</span>
+                </div>
+            </header>
+            <div class="training-operation__body">
+                <p id="training-operation-instruction" class="training-operation__instruction"></p>
+                <div id="training-operation-details" class="training-operation__details"></div>
+                <p id="training-operation-prompt" class="training-operation__prompt"></p>
+                <div id="training-operation-actions" class="training-operation__actions" hidden></div>
+                <div id="training-operation-feedback" class="training-operation__feedback" role="status" aria-live="polite"></div>
+            </div>
+            <footer class="training-operation__footer">
+                <span id="training-operation-status">Step 1 of 7</span>
+                <span class="training-operation__guide-status" aria-hidden="true">Guide Me is on</span>
+            </footer>
+        </div>
+    </section>
+
+    <section
+        id="training-resources"
+        class="training-resources"
+        aria-labelledby="training-resources-title"
+        aria-hidden="true"
+    >
+        <div class="training-resources__shell">
+            <header class="training-resources__header">
+                <div>
+                    <p class="training-resources__eyebrow">Resources</p>
+                    <h1 id="training-resources-title" class="training-resources__title" tabindex="-1">Meter Components</h1>
+                </div>
+                <p id="training-resources-count" class="training-resources__count" aria-live="polite">1 of 6</p>
+            </header>
+
+            <div id="training-resources-content" class="training-resources__content"></div>
+
+            <footer class="training-resources__footer">
+                <p>Choose a resource from the menu or move through the topics in order.</p>
+                <div class="training-resources__controls">
+                    <button id="training-resources-previous" type="button">Previous</button>
+                    <button id="training-resources-next" type="button">Next</button>
+                </div>
+            </footer>
+        </div>
+    </section>
+
     <!-- Zoom Control Panel -->
     <div id="zoom-control" class="zoom-control">
         <div class="zoom-control__header">
-            <span class="zoom-control__title">🔍 Zoom</span>
+            <span class="zoom-control__title">Device zoom</span>
         </div>
         <div class="zoom-control__content">
             <div class="zoom-control__slider-container">
@@ -28,16 +856,16 @@
                     step="5"
                     oninput="window.setDeviceZoom(this.value)"
                 >
-                <div class="zoom-control__labels">
+                <div class="zoom-control__labels" aria-hidden="true">
                     <span>-30%</span>
-                    <span id="zoom-value">0%</span>
                     <span>200%</span>
                 </div>
             </div>
             <div class="zoom-control__buttons">
-                <button class="zoom-btn" onclick="window.setDeviceZoom(0)">Reset</button>
-                <button class="zoom-btn" onclick="window.zoomIn()">+</button>
-                <button class="zoom-btn" onclick="window.zoomOut()">−</button>
+                <button class="zoom-btn zoom-btn--icon" type="button" aria-label="Zoom out" title="Zoom out" onclick="window.zoomOut()">−</button>
+                <output id="zoom-value" class="zoom-control__value" for="zoom-slider">0%</output>
+                <button class="zoom-btn zoom-btn--icon" type="button" aria-label="Zoom in" title="Zoom in" onclick="window.zoomIn()">+</button>
+                <button class="zoom-btn zoom-btn--reset" type="button" onclick="window.setDeviceZoom(0)">Reset</button>
             </div>
         </div>
     </div>
@@ -123,6 +951,15 @@
     <div id="walkthrough-panel" class="walkthrough-panel" style="display: none;">
         <div class="walkthrough-panel__header">
             <span id="walkthrough-panel-title" class="walkthrough-panel__title">Power on</span>
+            <button
+                id="walkthrough-replay"
+                class="walkthrough-panel__replay"
+                type="button"
+                aria-label="Replay narration"
+                title="Replay narration"
+                disabled
+                onclick="window.AudioPlayer?.replayNarration?.()"
+            >&#8635;</button>
         </div>
         <div class="walkthrough-panel__content">
             <div id="walkthrough-instruction" class="walkthrough-panel__instruction"></div>
@@ -143,6 +980,261 @@
                 content.style.display = 'none';
                 toggle.textContent = '+';
             }
+        }
+
+        function initializeCourseNavigationPreview() {
+            const items = document.querySelectorAll('.course-nav__item');
+            const toggle = document.getElementById('course-nav-toggle');
+            const resourcesButton = document.querySelector('.course-nav__item[data-section="Resources"]');
+            const resourcesSubmenu = document.getElementById('course-nav-resources-submenu');
+            const resourceSubitems = document.querySelectorAll('.course-nav__subitem');
+            const storageKey = 'slm-course-nav-collapsed';
+
+            items.forEach((item) => {
+                item.title = item.dataset.section;
+            });
+
+            function setNavigationCollapsed(collapsed) {
+                document.body.classList.toggle('course-nav-collapsed', collapsed);
+                if (!toggle) return;
+
+                toggle.setAttribute('aria-expanded', String(!collapsed));
+                toggle.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
+                toggle.title = collapsed ? 'Expand navigation' : 'Collapse navigation';
+
+                try {
+                    window.localStorage.setItem(storageKey, String(collapsed));
+                } catch (error) {
+                    // The navigation still works if browser storage is unavailable.
+                }
+            }
+
+            function setResourcesExpanded(expanded) {
+                const shouldExpand =
+                    Boolean(expanded) &&
+                    !document.body.classList.contains('course-nav-collapsed');
+
+                resourcesButton?.setAttribute('aria-expanded', String(shouldExpand));
+                resourcesSubmenu?.setAttribute('aria-hidden', String(!shouldExpand));
+                resourcesSubmenu?.classList.toggle('is-open', shouldExpand);
+            }
+
+            try {
+                setNavigationCollapsed(window.localStorage.getItem(storageKey) === 'true');
+            } catch (error) {
+                setNavigationCollapsed(false);
+            }
+
+            items.forEach((item) => {
+                item.addEventListener('click', () => {
+                    items.forEach((otherItem) => {
+                        otherItem.classList.remove('is-active');
+                        otherItem.removeAttribute('aria-current');
+                    });
+                    item.classList.add('is-active');
+                    item.setAttribute('aria-current', 'page');
+
+                    if (item === resourcesButton) {
+                        setResourcesExpanded(item.getAttribute('aria-expanded') !== 'true');
+                    } else {
+                        setResourcesExpanded(false);
+                    }
+                });
+            });
+
+            resourceSubitems.forEach((subitem) => {
+                subitem.addEventListener('click', () => {
+                    resourceSubitems.forEach((otherSubitem) => {
+                        otherSubitem.classList.remove('is-active');
+                        otherSubitem.removeAttribute('aria-current');
+                    });
+                    subitem.classList.add('is-active');
+                    subitem.setAttribute('aria-current', 'page');
+                });
+            });
+
+            toggle?.addEventListener('click', () => {
+                const willCollapse = !document.body.classList.contains('course-nav-collapsed');
+                if (willCollapse) setResourcesExpanded(false);
+                setNavigationCollapsed(willCollapse);
+            });
+        }
+
+        function initializeTrainingIntro() {
+            const intro = document.getElementById('training-intro');
+            const skipButton = document.getElementById('training-intro-skip');
+            const soundButton = document.getElementById('training-intro-sound');
+            const introMusic = document.getElementById('training-intro-music');
+            const logoStage = document.getElementById('training-intro-logo-stage');
+            if (!intro) {
+                document.body.classList.remove('intro-playing');
+                return;
+            }
+
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const holdDuration = prefersReducedMotion ? 2400 : 5200;
+            let exitTimer = null;
+            let cleanupTimer = null;
+            let isFinished = false;
+            let hasStarted = false;
+
+            const logoFallbackTimer = window.setTimeout(() => {
+                if (logoStage && !logoStage.classList.contains('is-three-ready')) {
+                    logoStage.classList.add('three-unavailable');
+                }
+            }, 3000);
+
+            function beginIntro() {
+                if (hasStarted || isFinished) return;
+                hasStarted = true;
+                if (logoStage && !logoStage.classList.contains('is-three-ready')) {
+                    logoStage.classList.add('three-unavailable');
+                }
+                intro.classList.remove('audio-blocked');
+                intro.classList.add('intro-started');
+                intro.dispatchEvent(new Event('training-intro-start'));
+                exitTimer = window.setTimeout(finishIntro, holdDuration);
+            }
+
+            function attemptMusicPlayback(allowSilentStart = false) {
+                if (!introMusic) {
+                    beginIntro();
+                    return;
+                }
+
+                introMusic.volume = 0.7;
+                introMusic.currentTime = 0;
+                const playAttempt = introMusic.play();
+
+                if (!playAttempt) {
+                    beginIntro();
+                    return;
+                }
+
+                playAttempt.then(beginIntro).catch(() => {
+                    if (allowSilentStart) {
+                        beginIntro();
+                    } else {
+                        intro.classList.add('audio-blocked');
+                    }
+                });
+            }
+
+            function finishIntro() {
+                if (isFinished) return;
+                isFinished = true;
+                window.clearTimeout(exitTimer);
+                document.body.classList.remove('intro-playing');
+                intro.classList.add('is-exiting');
+                intro.setAttribute('aria-hidden', 'true');
+                const disclaimer = document.getElementById('training-disclaimer');
+                disclaimer?.classList.add('is-visible');
+                disclaimer?.dispatchEvent(new Event('training-disclaimer-visible'));
+
+                cleanupTimer = window.setTimeout(() => {
+                    intro.classList.add('is-complete');
+                }, 1000);
+            }
+
+            soundButton?.addEventListener('click', () => attemptMusicPlayback(true));
+            skipButton?.addEventListener('click', finishIntro);
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !isFinished) finishIntro();
+            });
+
+            window.addEventListener('pagehide', () => {
+                window.clearTimeout(exitTimer);
+                window.clearTimeout(cleanupTimer);
+                window.clearTimeout(logoFallbackTimer);
+                introMusic?.pause();
+            }, { once: true });
+        }
+
+        function initializeTrainingDisclaimer() {
+            const disclaimer = document.getElementById('training-disclaimer');
+            const continueButton = document.getElementById('training-disclaimer-continue');
+            const introMusic = document.getElementById('training-intro-music');
+            if (!disclaimer || !continueButton) {
+                document.body.classList.remove('disclaimer-active');
+                return;
+            }
+
+            let hasContinued = false;
+            let revealTimer = null;
+            let musicFadeTimer = null;
+
+            function scheduleContinueButton() {
+                const readingDelay = 10000;
+
+                disclaimer.dataset.readingDelay = String(readingDelay);
+                window.clearTimeout(revealTimer);
+                revealTimer = window.setTimeout(() => {
+                    continueButton.disabled = false;
+                    disclaimer.classList.add('continue-ready');
+                }, readingDelay);
+            }
+
+            function fadeOutIntroMusic() {
+                if (!introMusic || introMusic.paused) return;
+
+                window.clearInterval(musicFadeTimer);
+                const startingVolume = introMusic.volume;
+                const fadeSteps = 12;
+                let currentStep = 0;
+
+                musicFadeTimer = window.setInterval(() => {
+                    currentStep += 1;
+                    introMusic.volume = Math.max(
+                        0,
+                        startingVolume * (1 - currentStep / fadeSteps)
+                    );
+
+                    if (currentStep >= fadeSteps) {
+                        window.clearInterval(musicFadeTimer);
+                        introMusic.pause();
+                        introMusic.currentTime = 0;
+                        introMusic.volume = startingVolume;
+                    }
+                }, 50);
+            }
+
+            function continueToTraining() {
+                if (hasContinued) return;
+                hasContinued = true;
+                fadeOutIntroMusic();
+                document.body.classList.remove('disclaimer-active');
+                disclaimer.classList.add('is-exiting');
+                disclaimer.setAttribute('aria-hidden', 'true');
+
+                window.setTimeout(() => {
+                    disclaimer.classList.add('is-complete');
+                    const navigationIntro = document.getElementById('training-navigation-intro');
+                    if (navigationIntro) {
+                        navigationIntro.dispatchEvent(new Event('training-navigation-intro-start'));
+                    } else {
+                        document.body.classList.remove('navigation-intro-active');
+                        document.querySelector('.course-nav__item.is-active')?.focus();
+                    }
+                }, 650);
+            }
+
+            continueButton.addEventListener('click', continueToTraining);
+            disclaimer.addEventListener(
+                'training-disclaimer-visible',
+                scheduleContinueButton,
+                { once: true }
+            );
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeCourseNavigationPreview);
+            document.addEventListener('DOMContentLoaded', initializeTrainingIntro);
+            document.addEventListener('DOMContentLoaded', initializeTrainingDisclaimer);
+        } else {
+            initializeCourseNavigationPreview();
+            initializeTrainingIntro();
+            initializeTrainingDisclaimer();
         }
 
         function stopAllVideos() {
@@ -171,6 +1263,14 @@
             }
         }
 
+        function hideWalkthroughGuidance() {
+            document.body.classList.add('walkthrough-guidance-pending');
+        }
+
+        function flushWalkthroughGuidance() {
+            document.body.classList.remove('walkthrough-guidance-pending');
+        }
+
         function clearWalkthroughHighlights() {
             document.querySelectorAll('.walkthrough-highlight').forEach(el => el.classList.remove('walkthrough-highlight'));
             document.querySelectorAll('.walkthrough-highlight--primary').forEach(el => el.classList.remove('walkthrough-highlight--primary'));
@@ -178,12 +1278,15 @@
         window.setWalkthroughHighlight = setWalkthroughHighlight;
         window.setWalkthroughPrimaryFocus = setWalkthroughPrimaryFocus;
         window.clearWalkthroughHighlights = clearWalkthroughHighlights;
+        window.hideWalkthroughGuidance = hideWalkthroughGuidance;
+        window.flushWalkthroughGuidance = flushWalkthroughGuidance;
 
         // Dosimeter button press state
         let dosimeterPressState = {
             pressStart: null,
             holdTimer: null,
-            holdThreshold: 500 // milliseconds
+            holdThreshold: 500, // milliseconds
+            holdTriggered: false
         };
 
         function updateDosimeterDisplay() {
@@ -226,35 +1329,62 @@
             }
         }
 
+        function isWalkthroughCalibratorDragStep() {
+            return window.getCurrentStepId?.() === 'dragCalibratorToMeter';
+        }
+
         function handleDosimeterButtonDown() {
+            // A drag may begin on top of the calibrator power hotspot. Do not arm
+            // its click/hold behavior while the walkthrough is asking for a drag.
+            if (isWalkthroughCalibratorDragStep()) {
+                dosimeterPressState.pressStart = null;
+                dosimeterPressState.holdTriggered = false;
+                if (dosimeterPressState.holdTimer) {
+                    clearTimeout(dosimeterPressState.holdTimer);
+                    dosimeterPressState.holdTimer = null;
+                }
+                return;
+            }
             dosimeterPressState.pressStart = Date.now();
+            dosimeterPressState.holdTriggered = false;
             
             // Start hold timer - if held long enough, stop audio
             dosimeterPressState.holdTimer = setTimeout(() => {
                 // Press and hold detected - stop audio
                 window.AudioPlayer?.stop();
                 dosimeterPressState.holdTimer = null;
+                dosimeterPressState.holdTriggered = true;
                 // Hide display immediately when stopping
                 updateDosimeterDisplay();
             }, dosimeterPressState.holdThreshold);
         }
 
         function handleDosimeterButtonUp() {
-            const pressDuration = dosimeterPressState.pressStart ? 
-                Date.now() - dosimeterPressState.pressStart : 0;
-            
+            if (isWalkthroughCalibratorDragStep()) {
+                dosimeterPressState.pressStart = null;
+                dosimeterPressState.holdTriggered = false;
+                if (dosimeterPressState.holdTimer) {
+                    clearTimeout(dosimeterPressState.holdTimer);
+                    dosimeterPressState.holdTimer = null;
+                }
+                return;
+            }
             // Clear hold timer if it hasn't fired yet
             if (dosimeterPressState.holdTimer) {
                 clearTimeout(dosimeterPressState.holdTimer);
                 dosimeterPressState.holdTimer = null;
-                
-                // Quick press - toggle audio
-                if (pressDuration < dosimeterPressState.holdThreshold) {
-                    toggleDosimeter();
-                }
             }
             
             dosimeterPressState.pressStart = null;
+        }
+
+        function handleDosimeterClick() {
+            if (dosimeterPressState.holdTriggered) {
+                dosimeterPressState.holdTriggered = false;
+                return;
+            }
+            if (isWalkthroughCalibratorDragStep()) return;
+            toggleDosimeter();
         }
 
         // Update dosimeter button position to scale with image (simplified - CSS percentages handle most of it)
@@ -276,9 +1406,6 @@
         function initDosimeterButton() {
             const dosimeterButton = document.querySelector('.dosimeter-btn--power');
             if (!dosimeterButton) return;
-            
-            // Remove onclick handler - we'll handle it with event listeners
-            dosimeterButton.removeAttribute('onclick');
             
             // Add press and hold handlers
             dosimeterButton.addEventListener('mousedown', handleDosimeterButtonDown);
@@ -311,15 +1438,16 @@
     <script src="js/measurement.js"></script>
     <!-- Audio data module (Base64-encoded, generated by build-audio.js) -->
     <script src="js/audio-data.js"></script>
-    <script src="js/audio.js"></script>
+    <script src="js/audio.js?v=phase2-5"></script>
     <script src="js/device.js"></script>
     <script src="js/display.js"></script>
     <script src="js/menu.js"></script>
-    <script src="js/buttons.js"></script>
+    <script src="js/buttons.js?v=phase2-10"></script>
     
     <!-- FSM integration -->
-    <script src="js/screen-renderer.js"></script>
-    <script src="js/walkthrough.js"></script>
+    <script src="js/screen-renderer.js?v=phase2-1"></script>
+    <script src="js/walkthrough.js?v=phase2-11"></script>
+    <script src="js/operation-section.js?v=12"></script>
     <!-- FSM will be loaded conditionally in initializeApp -->
     
     <!-- Development/debugging scripts: load only with ?debug=1 -->
@@ -385,7 +1513,13 @@
 console.log('[INIT] Setting up subscription...');
                     const unsubscribe = window.subscribeMainFSM((state) => {
                         // Auto-zoom when boot screen appears (start zoom during boot for smoother effect)
-                        if (previousViewId === 'OFF' && state.viewId === 'boot_screen') {
+                        if (
+                            previousViewId === 'OFF' &&
+                            state.viewId === 'boot_screen' &&
+                            !window.isSetupSectionActive?.() &&
+                            !window.isCalibrationSectionActive?.() &&
+                            !document.body.classList.contains('operation-active')
+                        ) {
                             // Start zoom animation during boot screen - this keeps boot screen visible during zoom
                             setTimeout(() => {
                                 autoZoomToLCD();
@@ -419,7 +1553,12 @@ console.log('[INIT] Setting up subscription...');
                             }
                             
                             // Walkthrough Step 1: powerOn - show panel + highlight power button when OFF
-                            if (state.viewId === 'OFF') {
+                            if (
+                                state.viewId === 'OFF' &&
+                                !window.isSetupSectionActive?.() &&
+                                !window.isCalibrationSectionActive?.() &&
+                                !document.body.classList.contains('operation-active')
+                            ) {
                                 setWalkthroughHighlight('.fn-btn--power', true);
                                 setWalkthroughHighlight('.status-bar__battery', false);
                                 if (window.showWalkthroughStep && !window.isWalkthroughStepCompleted?.('powerOn')) {
@@ -427,7 +1566,11 @@ console.log('[INIT] Setting up subscription...');
                                 } else if (window.hideWalkthroughPanel && window.isWalkthroughStepCompleted?.('powerOn')) {
                                     window.hideWalkthroughPanel();
                                 }
-                            } else {
+                            } else if (
+                                !window.isSetupSectionActive?.() &&
+                                !window.isCalibrationSectionActive?.() &&
+                                !document.body.classList.contains('operation-active')
+                            ) {
                                 clearWalkthroughHighlights();
                             }
 
@@ -486,7 +1629,14 @@ console.log('[INIT] Setting up subscription...');
                                 }
                                 
                                 // Walkthrough Step 2: after power-on (past boot), highlight battery and show panel if not completed
-                                if (state.viewId !== 'boot_screen' && (rendered.mainHTML || '').includes('status-bar__battery')) {
+                                if (
+                                    !window.isSetupSectionActive?.() &&
+                                    !window.isCalibrationSectionActive?.() &&
+                                    !document.body.classList.contains('operation-active') &&
+                                    !document.body.classList.contains('resources-active') &&
+                                    state.viewId !== 'boot_screen' &&
+                                    (rendered.mainHTML || '').includes('status-bar__battery')
+                                ) {
                                     const batteryStepDone = window.isWalkthroughStepCompleted?.('batteryCheck');
                                     setWalkthroughHighlight('.status-bar__battery', !batteryStepDone);
                                     if (window.showWalkthroughStep && !batteryStepDone) {
@@ -837,6 +1987,10 @@ console.log('[INIT] Setting up subscription...');
                 }
             }
         }
+
+        window.resetSoundMeterView = function (instant = true) {
+            setDeviceZoom(0, instant);
+        };
         
         // Pan/drag functionality for zoomed device
         function initDevicePanning() {
@@ -1498,7 +2652,7 @@ console.log('[INIT] Setting up subscription...');
                         if (window.updateSoftKeyLabels) window.updateSoftKeyLabels(rendered.softkeys);
 
                         // Re-apply walkthrough highlight (re-render wipes it) - only if battery step not completed
-                        if (state.viewId !== 'boot_screen' && (rendered.mainHTML || '').includes('status-bar__battery') && !window.isWalkthroughStepCompleted?.('batteryCheck')) {
+                        if (!window.isSetupSectionActive?.() && !window.isCalibrationSectionActive?.() && !document.body.classList.contains('operation-active') && !document.body.classList.contains('resources-active') && state.viewId !== 'boot_screen' && (rendered.mainHTML || '').includes('status-bar__battery') && !window.isWalkthroughStepCompleted?.('batteryCheck')) {
                             setWalkthroughHighlight('.status-bar__battery', true);
                             if (window.showWalkthroughStep) {
                                 window.showWalkthroughStep('batteryCheck');
@@ -1877,6 +3031,10 @@ console.log('[INIT] Setting up subscription...');
             // Mouse events - only drag when clicking on the photo, not the button
             dosimeterContainer.addEventListener('mousedown', function(e) {
                 const isWalkthroughCalibratorDrag = window.getCurrentStepId?.() === 'dragCalibratorToMeter';
+                if (isWalkthroughCalibratorDrag && window.disableWalkthroughCalibratorDragForFeedbackTesting) {
+                    e.preventDefault();
+                    return;
+                }
                 // Outside the drag step, preserve the calibrator power button behavior.
                 if (!isWalkthroughCalibratorDrag && e.target.closest('.dosimeter-btn')) return;
                 
@@ -2101,6 +3259,10 @@ console.log('[INIT] Setting up subscription...');
             // Touch events for mobile
             dosimeterContainer.addEventListener('touchstart', function(e) {
                 const isWalkthroughCalibratorDrag = window.getCurrentStepId?.() === 'dragCalibratorToMeter';
+                if (isWalkthroughCalibratorDrag && window.disableWalkthroughCalibratorDragForFeedbackTesting) {
+                    e.preventDefault();
+                    return;
+                }
                 // Outside the drag step, preserve the calibrator power button behavior.
                 if (!isWalkthroughCalibratorDrag && e.target.closest('.dosimeter-btn')) return;
                 
@@ -2374,7 +3536,7 @@ console.log('[INIT] Setting up subscription...');
                 </div>
             </div>
             <!-- Dosimeter power button overlay -->
-            <button class="dosimeter-btn dosimeter-btn--power testing-overlay" type="button" aria-label="Dosimeter Power"></button>
+            <button class="dosimeter-btn dosimeter-btn--power testing-overlay" type="button" aria-label="Dosimeter Power" onclick="handleDosimeterClick()"></button>
         </div>
         <div class="device-frame" aria-label="Quest SoundPro SE-DL device" role="img">
             <img

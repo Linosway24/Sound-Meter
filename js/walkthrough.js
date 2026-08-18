@@ -162,12 +162,16 @@
             buttons: [{ id: 'good', label: 'Start' }],
             onButtonClick: function (buttonId, stepId) {
                 if (buttonId !== 'good') return;
-                const calibrator = document.querySelector('.dosimeter-container');
-                if (calibrator?.dataset.snapped !== 'true') {
-                    showWalkthroughFeedback(
-                        'First drag the calibrator onto the microphone until it locks in place, then press Start.'
-                    );
-                    return;
+                if (disableCalibratorDragForFeedbackTesting) {
+                    window.applyDosimeterSnapToMicrophonePosition?.();
+                } else {
+                    const calibrator = document.querySelector('.dosimeter-container');
+                    if (calibrator?.dataset.snapped !== 'true') {
+                        showWalkthroughFeedback(
+                            'First drag the calibrator onto the microphone until it locks in place, then press Start.'
+                        );
+                        return;
+                    }
                 }
                 showWalkthroughFeedback('');
                 if (typeof window.clearWalkthroughHighlights === 'function') {
@@ -207,14 +211,14 @@
         },
         selectSlmTimeConstantF: {
             title: 'Fast Response',
-            text: 'Press the second soft key (F-S-I) until F is underlined — that selects fast time response (as opposed to slow S or impulse I). Press repeatedly to cycle the underline across F, S, and I.',
+            text: 'Press the second soft key (F-S-I) until F is underlined. Each press moves the underline to the next response setting.',
             showButtons: false,
             buttons: [],
             // State-driven: SOFT2 cycles time constant; done when state.slm.timeConstant === 'F'.
         },
         selectSlmWeightingZ: {
             title: 'Z Weighting',
-            text: 'Press the third soft key (A-C-Z-F) until Z is underlined — that selects Z frequency weighting. Each press cycles which letter is underlined.',
+            text: 'Press the third soft key (A-C-Z-F) until Z is underlined. Each press moves the underline to the next weighting.',
             showButtons: false,
             buttons: [],
             // State-driven: SOFT3 cycles weighting; done when state.slm.weighting === 'Z'.
@@ -227,13 +231,13 @@
         },
         selectSlmTimeConstantS: {
             title: 'Slow Response',
-            text: 'Press the second soft key (F-S-I) until S is underlined — that selects slow time response.',
+            text: 'Press the second soft key (F-S-I) until S is underlined. Each press moves the underline to the next response setting.',
             showButtons: false,
             buttons: [],
         },
         selectSlmWeightingA: {
             title: 'A Weighting',
-            text: 'Press the third soft key (A-C-Z-F) until A is underlined — that selects A-frequency weighting.',
+            text: 'Press the third soft key (A-C-Z-F) until A is underlined. Each press moves the underline to the next weighting.',
             showButtons: false,
             buttons: [],
             // FSM stores this as weighting 'R'; display shows A (see screen-renderer).
@@ -249,6 +253,9 @@
     const stepOrder = ['powerOn', 'batteryCheck', 'navigateToSetup', 'navigateToSigInput', 'rangeCapacityCheck', 'escToSetup', 'navigateToMeterSet', 'confirmMeterParameters', 'softKeysIntro', 'confirmCalibratorSettings', 'dragCalibratorToMeter', 'stopCalibrationWithEnter', 'escToHomeAfterCal', 'openCurrentStudy', 'selectSlmTimeConstantF', 'selectSlmWeightingZ', 'hammeringImpulseDemo', 'selectSlmTimeConstantS', 'selectSlmWeightingA', 'fanSoundDemo'];
     let completedSteps = new Set();
     let currentStepId = null;
+    let walkthroughGuidanceReady = true;
+    let walkthroughGuidanceTimer = null;
+    let walkthroughGuidanceSeq = 0;
     /** Cancels stale deferred reveals when another step hides the panel. */
     let batteryPanelRevealSeq = 0;
     /** Invalidates hammer-instruction auto-advance timer when step changes or walkthrough resets. */
@@ -261,6 +268,61 @@
     let calibratorPowerNarrationDone = false;
     /** Lets walkthrough-owned transitions dispatch FSM events without looking like user input. */
     let isInternalWalkthroughDispatch = false;
+    /** Temporary feedback-test mode: Start snaps the calibrator instead of requiring drag/drop. */
+    const disableCalibratorDragForFeedbackTesting = true;
+    window.disableWalkthroughCalibratorDragForFeedbackTesting = disableCalibratorDragForFeedbackTesting;
+
+    function instructionReadingDelayMs(text) {
+        const wordCount = String(text || '').trim().split(/\s+/).filter(Boolean).length;
+        return Math.max(2500, Math.min(7000, Math.round((wordCount / 3) * 1000)));
+    }
+
+    function releaseWalkthroughGuidance(seq) {
+        if (typeof seq === 'number' && seq !== walkthroughGuidanceSeq) return;
+        if (walkthroughGuidanceTimer) {
+            clearTimeout(walkthroughGuidanceTimer);
+            walkthroughGuidanceTimer = null;
+        }
+        walkthroughGuidanceReady = true;
+        window.flushWalkthroughGuidance?.();
+    }
+
+    function beginWalkthroughGuidanceDelay(text, waitForNarration = false) {
+        const seq = ++walkthroughGuidanceSeq;
+        if (walkthroughGuidanceTimer) clearTimeout(walkthroughGuidanceTimer);
+        walkthroughGuidanceTimer = null;
+        walkthroughGuidanceReady = false;
+        window.hideWalkthroughGuidance?.();
+
+        if (!waitForNarration) {
+            walkthroughGuidanceTimer = setTimeout(
+                () => releaseWalkthroughGuidance(seq),
+                instructionReadingDelayMs(text)
+            );
+        }
+    }
+
+    function cancelWalkthroughGuidanceDelay() {
+        walkthroughGuidanceSeq++;
+        if (walkthroughGuidanceTimer) clearTimeout(walkthroughGuidanceTimer);
+        walkthroughGuidanceTimer = null;
+        walkthroughGuidanceReady = true;
+        window.hideWalkthroughGuidance?.();
+    }
+
+    window.addEventListener('walkthrough-narration-start', () => {
+        if (!currentStepId) return;
+        beginWalkthroughGuidanceDelay(getInstructionEl()?.textContent, true);
+    });
+    window.addEventListener('walkthrough-narration-end', () => {
+        if (currentStepId) releaseWalkthroughGuidance();
+    });
+    window.addEventListener('walkthrough-narration-unavailable', () => {
+        if (!currentStepId) return;
+        beginWalkthroughGuidanceDelay(getInstructionEl()?.textContent, false);
+    });
+
+    window.isWalkthroughGuidanceReady = () => walkthroughGuidanceReady;
 
     function getPanel() {
         return document.getElementById(PANEL_ID);
@@ -442,6 +504,22 @@
         return !(right <= ex.left || left >= ex.right || bottom <= ex.top || top >= ex.bottom);
     }
 
+    function panelIntersectsProtectedControls(left, top, pw, ph) {
+        const right = left + pw;
+        const bottom = top + ph;
+        const protectedEls = document.querySelectorAll('.zoom-control, .audio-panel, .sound-video-panel');
+        for (let i = 0; i < protectedEls.length; i++) {
+            const el = protectedEls[i];
+            const style = window.getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden') continue;
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) continue;
+            const overlaps = !(right <= r.left || left >= r.right || bottom <= r.top || top >= r.bottom);
+            if (overlaps) return true;
+        }
+        return false;
+    }
+
     function fallbackCornerPosition(panel) {
         const margin = 14;
         const gap = 18;
@@ -469,6 +547,7 @@
             const left = clampNum(candidates[i].left, margin, vw - pw - margin);
             const top = clampNum(candidates[i].top, margin, vh - ph - margin);
             if (ex && panelIntersectsExclusion(left, top, pw, ph, ex)) continue;
+            if (panelIntersectsProtectedControls(left, top, pw, ph)) continue;
             const key = left + top * 0.001 + i * 1e-6;
             if (key < bestKey) {
                 bestKey = key;
@@ -478,10 +557,10 @@
         if (!best && ex) {
             let left = clampNum(ex.left - pw - METER_GAP, margin, vw - pw - margin);
             let top = clampNum(vh - ph - margin, margin, vh - ph - margin);
-            if (!panelIntersectsExclusion(left, top, pw, ph, ex)) best = { left, top };
+            if (!panelIntersectsExclusion(left, top, pw, ph, ex) && !panelIntersectsProtectedControls(left, top, pw, ph)) best = { left, top };
             if (!best) {
                 left = clampNum(ex.right + METER_GAP, margin, vw - pw - margin);
-                if (!panelIntersectsExclusion(left, top, pw, ph, ex)) best = { left, top };
+                if (!panelIntersectsExclusion(left, top, pw, ph, ex) && !panelIntersectsProtectedControls(left, top, pw, ph)) best = { left, top };
             }
         }
         if (!best) best = { left: margin, top: vh - ph - margin };
@@ -525,6 +604,14 @@
             ph = pr.height;
         }
 
+        // Keep instructions in one predictable desktop location. The dynamic
+        // anchor placement below remains for narrower screens where a side rail
+        // is not available.
+        if (vw >= 1200) {
+            applyWalkthroughPanelPosition(panel, vw - pw - 20, 20);
+            return;
+        }
+
         if (!anchor || !anchorElementVisible(anchor)) {
             fallbackCornerPosition(panel);
             return;
@@ -549,6 +636,7 @@
             if (left + pw > vw - margin) return null;
             const top = topAligned;
             if (panelIntersectsExclusion(left, top, pw, ph, ex)) return null;
+            if (panelIntersectsProtectedControls(left, top, pw, ph)) return null;
             return { left, top };
         }
 
@@ -562,6 +650,7 @@
             }
             const top = topAligned;
             if (panelIntersectsExclusion(left, top, pw, ph, ex)) return null;
+            if (panelIntersectsProtectedControls(left, top, pw, ph)) return null;
             return { left, top };
         }
 
@@ -571,6 +660,7 @@
             if (left < margin) return null;
             const top = topAligned;
             if (panelIntersectsExclusion(left, top, pw, ph, ex)) return null;
+            if (panelIntersectsProtectedControls(left, top, pw, ph)) return null;
             return { left, top };
         }
 
@@ -580,6 +670,7 @@
             if (top + ph > vh - margin) return null;
             const left = clampNum(anchorMidX - pw / 2, margin, vw - pw - margin);
             if (panelIntersectsExclusion(left, top, pw, ph, ex)) return null;
+            if (panelIntersectsProtectedControls(left, top, pw, ph)) return null;
             return { left, top };
         }
 
@@ -589,6 +680,7 @@
             if (top < margin) return null;
             const left = clampNum(anchorMidX - pw / 2, margin, vw - pw - margin);
             if (panelIntersectsExclusion(left, top, pw, ph, ex)) return null;
+            if (panelIntersectsProtectedControls(left, top, pw, ph)) return null;
             return { left, top };
         }
 
@@ -800,6 +892,7 @@
             setWalkthroughPanelTitle('Calibrator Power');
             if (
                 getCurrentStepId() === 'softKeysIntro' &&
+                window.isCalibrationSectionActive?.() !== true &&
                 !calibratorPowerNarrationDone &&
                 typeof window.AudioPlayer?.playNarration === 'function'
             ) {
@@ -1058,8 +1151,14 @@
     }
 
     function shouldBlockWalkthroughEvent(evt, state) {
+        if (
+            document.body.classList.contains('calibration-active') ||
+            document.body.classList.contains('operation-active') ||
+            document.body.classList.contains('resources-active')
+        ) return false;
         if (isInternalWalkthroughDispatch) return false;
         if (!evt || !currentStepId) return false;
+        if (!walkthroughGuidanceReady) return true;
         const allowedEvents = getAllowedEventsForCurrentStep(state);
         if (!allowedEvents) return false;
         if (allowedEvents.includes(evt.type)) {
@@ -1367,6 +1466,9 @@
         const feedbackEl = getFeedbackEl();
 
         if (instructionEl) instructionEl.textContent = step.text || '';
+        if (prevStepId !== stepId) {
+            beginWalkthroughGuidanceDelay(step.text, false);
+        }
         setWalkthroughPanelTitle(step.title || 'Instructions');
         if (feedbackEl) {
             feedbackEl.textContent = '';
@@ -1392,6 +1494,9 @@
             }
         }
 
+        const setupSectionOwnsNarration = window.isSetupSectionActive?.() === true;
+        const calibrationSectionOwnsNarration = window.isCalibrationSectionActive?.() === true;
+
         if (deferBatteryPanel) {
             setPanelVisible(false);
             const seq = ++batteryPanelRevealSeq;
@@ -1402,6 +1507,7 @@
                 setPanelVisible(true);
                 scheduleWalkthroughPanelPosition();
                 if (
+                    window.isSetupSectionActive?.() !== true &&
                     prevForBatteryNarration !== 'batteryCheck' &&
                     typeof window.AudioPlayer?.playNarration === 'function'
                 ) {
@@ -1413,31 +1519,31 @@
             scheduleWalkthroughPanelPosition();
         }
 
-        if (stepId === 'powerOn' && prevStepId !== 'powerOn') {
+        if (!setupSectionOwnsNarration && stepId === 'powerOn' && prevStepId !== 'powerOn') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/First lets set up the SLM.mp3');
             }
         }
 
-        if (stepId === 'batteryCheck' && prevStepId !== 'batteryCheck' && !deferBatteryPanel) {
+        if (!setupSectionOwnsNarration && stepId === 'batteryCheck' && prevStepId !== 'batteryCheck' && !deferBatteryPanel) {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/Batterys.mp3');
             }
         }
 
-        if (stepId === 'navigateToSetup' && prevStepId !== 'navigateToSetup') {
+        if (!setupSectionOwnsNarration && stepId === 'navigateToSetup' && prevStepId !== 'navigateToSetup') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/Range Capacity.mp3');
             }
         }
 
-        if (stepId === 'navigateToSigInput' && prevStepId !== 'navigateToSigInput') {
+        if (!setupSectionOwnsNarration && stepId === 'navigateToSigInput' && prevStepId !== 'navigateToSigInput') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/Signial Input.mp3');
             }
         }
 
-        if (stepId === 'rangeCapacityCheck' && prevStepId !== 'rangeCapacityCheck') {
+        if (!setupSectionOwnsNarration && stepId === 'rangeCapacityCheck' && prevStepId !== 'rangeCapacityCheck') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration(
                     'assets/audio/' + encodeURIComponent('Is the Range Cap at?.mp3')
@@ -1445,37 +1551,44 @@
             }
         }
 
-        if (stepId === 'escToSetup' && prevStepId !== 'escToSetup') {
+        if (!setupSectionOwnsNarration && stepId === 'escToSetup' && prevStepId !== 'escToSetup') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/configure meter.mp3');
             }
         }
 
-        if (stepId === 'confirmMeterParameters' && prevStepId !== 'confirmMeterParameters') {
+        if (!setupSectionOwnsNarration && stepId === 'confirmMeterParameters' && prevStepId !== 'confirmMeterParameters') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/Correct Meter settings.mp3');
             }
         }
 
-        if (stepId === 'softKeysIntro' && prevStepId !== 'softKeysIntro') {
+        if (!calibrationSectionOwnsNarration && stepId === 'softKeysIntro' && prevStepId !== 'softKeysIntro') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/Start Cal.mp3');
             }
         }
 
-        if (stepId === 'dragCalibratorToMeter' && prevStepId !== 'dragCalibratorToMeter') {
+        if (!calibrationSectionOwnsNarration && stepId === 'dragCalibratorToMeter' && prevStepId !== 'dragCalibratorToMeter') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
-                window.AudioPlayer.playNarration('assets/audio/Place the calibrator.mp3');
+                window.AudioPlayer.playNarration('assets/audio/Place the calibrator.mp3', {
+                    onEnded: function () {
+                        if (getCurrentStepId() !== 'dragCalibratorToMeter') return;
+                        showWalkthroughFeedback(
+                            'Feedback testing note: drag and drop is temporarily disabled for this review. Please click Start to automatically place the calibrator and continue. The normal training instruction above is what learners will see in the final version.'
+                        );
+                    },
+                });
             }
         }
 
-        if (stepId === 'stopCalibrationWithEnter' && prevStepId !== 'stopCalibrationWithEnter') {
+        if (!calibrationSectionOwnsNarration && stepId === 'stopCalibrationWithEnter' && prevStepId !== 'stopCalibrationWithEnter') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/Stop Calabration.mp3');
             }
         }
 
-        if (stepId === 'escToHomeAfterCal' && prevStepId !== 'escToHomeAfterCal') {
+        if (!calibrationSectionOwnsNarration && stepId === 'escToHomeAfterCal' && prevStepId !== 'escToHomeAfterCal') {
             if (typeof window.AudioPlayer?.playNarration === 'function') {
                 window.AudioPlayer.playNarration('assets/audio/collecting noise data.mp3');
             }
@@ -1604,6 +1717,7 @@
             calibratorPowerNarrationDone = false;
         }
         batteryPanelRevealSeq++;
+        cancelWalkthroughGuidanceDelay();
         setPanelVisible(false);
         currentStepId = null;
     }

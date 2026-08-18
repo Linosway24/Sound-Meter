@@ -15,6 +15,8 @@
     let analyserNode = null;
     let isPlaying = false;
     let currentPresetName = null; // Track current preset name
+    let mediaSyncCleanup = null;
+    let lastNarrationUrl = null;
     /** Walkthrough voiceover only — not wired to SPL analysis; separate from preset `currentAudio`. */
     let narrationAudio = null;
 
@@ -62,7 +64,7 @@
             file: 'hammering.wav',
             baseLevel: 85,
             variation: 15,
-            gain: 1.0,
+            gain: 0.55,
             description: 'Intermittent hammering/impacts',
             impulsePattern: {
                 interval: 650,    // Hammer hits every ~650ms (1.5 hits/second)
@@ -415,47 +417,49 @@
         }
         
         const audioElement = currentAudio;
-        currentAudio.addEventListener('canplaythrough', () => {
-            if (!currentAudio || currentAudio !== audioElement) return;
-            currentAudio.play()
-                .then(() => {
-                    if (!currentAudio || currentAudio !== audioElement) return;
-                    isPlaying = true;
-                    const mode = useAnalysis ? '🎤 Analyzing' : `${preset.baseLevel} dB`;
-                    console.log(`[AUDIO] Playing: ${preset.name} (${useAnalysis ? 'analysis mode' : 'preset mode'})`);
-                    if (useAnalysis) {
-                        console.log(`[AUDIO] ✅ Waveform analysis enabled - device will respond to actual audio events`);
-                        console.log(`[AUDIO] 💡 Enable debug: window.AudioPlayer._debugAnalysis = true`);
-                    }
-                    updateStatus(`▶ ${preset.name} (${mode})`);
-                    
-                    // Show video for presets that have videos (unless skipped)
-                    if (!skipVideo && VIDEO_PATHS[presetName]) {
-                        showSoundVideo(presetName);
-                        // Hammering: analyzed audio is hammering.wav; mute MP4 so meters follow one source
-                        if (presetName === 'hammering') {
-                            const vi = document.querySelector('.sound-video-item[data-preset="hammering"] video');
-                            if (vi) {
-                                vi.muted = true;
-                            }
-                        }
-                    }
+        const hasVideo = !skipVideo && Boolean(VIDEO_PATHS[presetName]);
+        if (hasVideo && presetName === 'hammering') {
+            const hammerVideo = document.querySelector('.sound-video-item[data-preset="hammering"] video');
+            if (hammerVideo) hammerVideo.muted = true;
+        }
 
-                    if (typeof window.scheduleWalkthroughPanelPosition === 'function') {
-                        window.scheduleWalkthroughPanelPosition();
-                    }
-                    
-                    // Start audio analysis if enabled
-                    if (useAnalysis && audioAnalysisState.enabled) {
-                        startAudioAnalysis();
-                    }
-                })
-                .catch(e => {
-                    if (!currentAudio || currentAudio !== audioElement) return;
-                    console.warn(`[AUDIO] Playback failed: ${e.message}`);
-                    updateStatus(`⚠ Playback failed`);
-                });
+        // Invoke both play() calls while the learner's click is still active.
+        // Waiting for canplaythrough can lose browser autoplay permission.
+        const videoPlayback = hasVideo ? showSoundVideo(presetName) : Promise.resolve();
+        const audioPlayback = audioElement.play();
+        const toleratedVideoPlayback = Promise.resolve(videoPlayback).catch((e) => {
+            console.warn(`[AUDIO] Continuing without synchronized ${presetName} video:`, e);
         });
+
+        Promise.all([toleratedVideoPlayback, audioPlayback])
+            .then(() => {
+                if (!currentAudio || currentAudio !== audioElement) return;
+                isPlaying = true;
+                const mode = useAnalysis ? '🎤 Analyzing' : `${preset.baseLevel} dB`;
+                console.log(`[AUDIO] Playing: ${preset.name} (${useAnalysis ? 'analysis mode' : 'preset mode'})`);
+                if (useAnalysis) {
+                    console.log(`[AUDIO] Waveform analysis enabled`);
+                }
+                updateStatus(`▶ ${preset.name} (${mode})`);
+
+                if (hasVideo) {
+                    const video = document.querySelector(`.sound-video-item[data-preset="${presetName}"] video`);
+                    synchronizeVideoWithAudio(audioElement, video);
+                }
+
+                if (typeof window.scheduleWalkthroughPanelPosition === 'function') {
+                    window.scheduleWalkthroughPanelPosition();
+                }
+
+                if (useAnalysis && audioAnalysisState.enabled) {
+                    startAudioAnalysis();
+                }
+            })
+            .catch(e => {
+                if (!currentAudio || currentAudio !== audioElement) return;
+                console.warn(`[AUDIO] Playback failed: ${e.message}`);
+                updateStatus(`⚠ Playback failed`);
+            });
 
         currentAudio.addEventListener('error', (e) => {
             console.warn(`[AUDIO] Error loading ${preset.file}:`, e);
@@ -469,7 +473,6 @@
             updateStatus(`⚠ No audio - Sim: ${preset.baseLevel} dB ±${preset.variation}`);
         });
 
-        currentAudio.load();
     }
 
     /**
@@ -487,18 +490,51 @@
         }
     }
 
+    function updateNarrationReplayButton() {
+        const replayButton = document.getElementById('walkthrough-replay');
+        if (replayButton) replayButton.disabled = !lastNarrationUrl;
+    }
+
+    function dispatchNarrationEvent(type, url) {
+        window.dispatchEvent(new CustomEvent(type, { detail: { url } }));
+    }
+
     /**
      * Play a one-shot narration clip (walkthrough). Does not affect SPL presets/analysis.
      * @param {string} url - Path or URL to audio file
      */
-    function playNarration(url) {
+    function playNarration(url, options = {}) {
         stopNarration();
+        lastNarrationUrl = url;
+        updateNarrationReplayButton();
         const el = new Audio(url);
         narrationAudio = el;
+        let finished = false;
+        dispatchNarrationEvent('walkthrough-narration-start', url);
         el.addEventListener('ended', () => {
+            if (finished) return;
+            finished = true;
             if (narrationAudio === el) narrationAudio = null;
+            dispatchNarrationEvent('walkthrough-narration-end', url);
+            if (typeof options.onEnded === 'function') options.onEnded();
         });
-        el.play().catch((e) => console.warn(`[AUDIO] Narration failed: ${e.message}`));
+        const signalUnavailable = () => {
+            if (finished) return;
+            finished = true;
+            if (narrationAudio === el) narrationAudio = null;
+            dispatchNarrationEvent('walkthrough-narration-unavailable', url);
+            if (typeof options.onUnavailable === 'function') options.onUnavailable();
+        };
+        el.addEventListener('error', signalUnavailable, { once: true });
+        el.play().catch((e) => {
+            console.warn(`[AUDIO] Narration failed: ${e.message}`);
+            signalUnavailable();
+        });
+    }
+
+    function replayNarration() {
+        if (!lastNarrationUrl) return;
+        playNarration(lastNarrationUrl);
     }
 
     function playCustom(url, options = {}) {
@@ -551,6 +587,35 @@
     let videoPanelResizeBound = false;
     let currentPlayingVideo = null;
 
+    function clearMediaSync() {
+        if (typeof mediaSyncCleanup === 'function') mediaSyncCleanup();
+        mediaSyncCleanup = null;
+    }
+
+    function synchronizeVideoWithAudio(audio, video) {
+        clearMediaSync();
+        if (!audio || !video) return;
+
+        const sync = () => {
+            if (!video.duration || !Number.isFinite(video.duration)) return;
+            const target = audio.currentTime % video.duration;
+            const drift = Math.abs(video.currentTime - target);
+            const wrappedDrift = Math.min(drift, Math.abs(video.duration - drift));
+            if (wrappedDrift > 0.3) video.currentTime = target;
+            if (!audio.paused && video.paused) {
+                video.play().catch((e) => console.warn('[AUDIO] Video resync failed:', e));
+            }
+        };
+
+        audio.addEventListener('timeupdate', sync);
+        audio.addEventListener('seeked', sync);
+        mediaSyncCleanup = () => {
+            audio.removeEventListener('timeupdate', sync);
+            audio.removeEventListener('seeked', sync);
+        };
+        sync();
+    }
+
     /** Presets that get a tile in the sound-video side panel (walkthrough: hammer + fan only). */
     const VIDEO_PANEL_PRESETS = ['hammering', 'fan'];
 
@@ -585,10 +650,17 @@
             const video = document.createElement('video');
             video.src = videoPath;
             video.loop = true;
-            // Unmute hammer video to use its audio track
-            video.muted = presetName !== 'hammering';
+            video.preload = 'auto';
+            // Walkthrough presets use the separate analyzed audio file. Keep the
+            // visual tile muted until playVideo explicitly chooses video audio.
+            video.muted = true;
             video.playsInline = true;
             video.dataset.preset = presetName;
+            video.addEventListener('ended', () => {
+                if (currentPlayingVideo !== presetName) return;
+                video.currentTime = 0;
+                video.play().catch((e) => console.warn(`[AUDIO] Video restart failed for ${presetName}:`, e));
+            });
 
             const stopBtn = document.createElement('button');
             stopBtn.className = 'sound-video-item-stop';
@@ -641,6 +713,7 @@
         const item = document.querySelector(`.sound-video-item[data-preset="${presetName}"]`);
         const video = item?.querySelector('video');
         if (!video) return;
+        if (skipAudio) video.muted = true;
 
         const panelEl = document.getElementById('sound-video-panel');
         if (panelEl) {
@@ -902,8 +975,13 @@
         }
         setActiveSoundVideoPreset(presetName);
 
-        // Play the video
-        video.play().catch(e => console.warn(`[AUDIO] Video play failed for ${presetName}:`, e));
+        // Start every walkthrough clip from a known frame. The returned promise lets
+        // preset audio wait until video playback is actually running.
+        video.currentTime = 0;
+        const videoPlayback = video.play().catch(e => {
+            console.warn(`[AUDIO] Video play failed for ${presetName}:`, e);
+            throw e;
+        });
         item.classList.add('playing');
         currentPlayingVideo = presetName;
         
@@ -911,6 +989,7 @@
         if (!skipAudio && SOUND_PRESETS[presetName]) {
             playPreset(presetName, true, true, true); // skipVideo = true to avoid loop
         }
+        return videoPlayback;
     }
 
     /**
@@ -1000,6 +1079,7 @@
     function stop() {
         stopNarration();
         stopAudioAnalysis();
+        clearMediaSync();
         
         // Hide video overlay when stopping (skip audio stop to avoid duplicate work)
         hideSoundVideo(true);
@@ -1149,6 +1229,7 @@
         playPreset,
         playCustom,
         playNarration,
+        replayNarration,
         stopNarration,
         stop,
         fadeOutAndStop,
@@ -1191,4 +1272,3 @@
     };
 
 })();
-

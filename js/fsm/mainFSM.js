@@ -5341,9 +5341,10 @@
                 } else if (isSlm()) {
                 // SLM SOFT2: Cycle F/S/I (time constant)
                     const timeConstants = ['F', 'S', 'I'];
+                    const requestedTimeConstant = timeConstants.includes(evt.value) ? evt.value : null;
                     const currentIndex = timeConstants.indexOf(_state.slm.timeConstant || 'S');
                     const nextIndex = (currentIndex + 1) % timeConstants.length;
-                    _state.slm.timeConstant = timeConstants[nextIndex];
+                    _state.slm.timeConstant = requestedTimeConstant || timeConstants[nextIndex];
                     // Update units format: L + {A/C/Z/F} + {F/S/I}
                     // Map weighting state to display letter: R->A, C->C, Z->Z, F->F
                     const weightingDisplayMap = { 'R': 'A', 'C': 'C', 'Z': 'Z', 'F': 'F' };
@@ -5445,9 +5446,10 @@
                 } else if (isSlm()) {
                 // SLM SOFT3: Cycle R/C/Z/F (weighting)
                     const weightings = ['R', 'C', 'Z', 'F'];
+                    const requestedWeighting = weightings.includes(evt.value) ? evt.value : null;
                     const currentIndex = weightings.indexOf(_state.slm.weighting || 'R');
                     const nextIndex = (currentIndex + 1) % weightings.length;
-                    _state.slm.weighting = weightings[nextIndex];
+                    _state.slm.weighting = requestedWeighting || weightings[nextIndex];
                     // Update units format: L + {A/C/Z/F} + {F/S/I}
                     // Map weighting state to display letter: R->A, C->C, Z->Z, F->F
                     const weightingDisplayMap = { 'R': 'A', 'C': 'C', 'Z': 'Z', 'F': 'F' };
